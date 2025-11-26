@@ -1,0 +1,65 @@
+🔄 <b>Flexible vs Locked: When to choose the type of earn product</b>
+
+<b>📋 Step-by-step guide:</b>
+
+━━━━━━━━━━━━━━
+
+<b>1️⃣ Assess your liquidity needs</b>
+💧 If you plan to withdraw funds frequently — choose <b>Flexible</b>: you can exit anytime without losing profit.
+🔒 If you're ready to "freeze" the asset for a specific period — <b>Locked</b> will provide a higher rate.
+
+<b>2️⃣ Compare yield (APY)</b>
+• <b>Flexible:</b> 2–6% (daily accrual, reduced volatility risk).
+• <b>Locked:</b> 6–20%+ (depending on term 7–180 days, network, and token type).
+💡 <i>Example:</i> USDT Flexible on Binance — ~5% annually; BTC Locked on Bybit — ~7% for 60 days.
+
+<b>3️⃣ When to choose Flexible</b>
+• Unstable market or correction expected.
+• Short-term holding of stablecoins (USDT, USDC).
+• Need quick liquidity for new opportunities (IEO, airdrops).
+🧭 <i>Strategy:</i> Keep 70% of deposit in Flexible and 30% in Locked — for balance between income and risk.
+
+<b>4️⃣ When to choose Locked</b>
+• Long-term HODL approach (BTC, ETH, TON).
+• High confidence in the coin and desire to maximize profit.
+• Using <b>Auto-Renew</b> for automatic reinvestment.
+💰 <i>Example:</i> ETH Locked for 90 days via OKX Earn — ~9% APY with auto-renewal.
+
+<b>5️⃣ Check early withdrawal terms</b>
+⚙️ Flexible — instant access without penalties.
+⏳ Locked — withdrawal after term completion; early withdrawal — with interest loss or impossible.
+❗ Clarify the policy of the specific exchange — some platforms (Bybit, OKX) offer "Early Unlock" with partial penalty.
+
+<b>6️⃣ Combined strategy (Pro approach 2025)</b>
+🧩 Use <b>Dual Investment</b> or <b>Shark Fin</b> for hedging volatility.
+📊 Distribute profit:
+• 50% in Flexible (for maneuverability)
+• 30% in Locked (for steady income)
+• 20% in strategic Earn products with bonuses or cashback.
+
+━━━━━━━━━━━━━━
+
+<b>✅ Flexible Advantages:</b>
+• High liquidity
+• Daily interest accrual
+• Suitable for traders and active users
+
+<b>🚀 Locked Advantages:</b>
+• Higher APY (2–3 times)
+• Fixed income regardless of volatility
+• Discipline of long-term storage
+
+<b>⚠️ Locked Risks:</b>
+• Inability to quickly react to market
+• Potential profit loss when coin price drops
+
+<b>💡 Tip:</b>
+• Start with <b>Flexible</b> for testing and analyzing daily APY.
+• If yield is stable >5 days — gradually move part to <b>Locked</b>.
+• Check current rates via bot or on exchange pages (Binance Earn, Bybit Savings, OKX Grow).
+
+━━━━━━━━━━━━━━
+
+🔎 <b>Quick reference:</b> 
+<b>• Flexible</b> = control & freedom to use coins 💧 
+<b>• Locked</b> = higher profit & longer coin holding 💰

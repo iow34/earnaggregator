@@ -1,0 +1,53 @@
+{
+  "ua": {
+    "nav.back_to_list": "⬅️ Назад до списку",
+    "nav.back": "⬅️ Назад",
+    "nav.to_main": "🏠 На головну",
+    "nav.previous": "⬅️ Попередня",
+    "nav.prev": "⬅️ Попередня",
+    "nav.next": "Наступна ➡️",
+    "nav.show_all_products": "Всі продукти",
+    "nav.all_products": "Всі продукти",
+    "nav.all_exchanges": "Всі біржі",
+    "nav.all_types": "Всі типи",
+    "nav.show_all_exchange_products": "Показати: /all_{exchange}_products",
+    "nav.visit": "перейти ↗️",
+    "nav.page": "сторінка",
+    "nav.of": "з",
+    "nav.exchanges": "бірж"
+  },
+  "ru": {
+    "nav.back_to_list": "⬅️ Назад к списку",
+    "nav.back": "⬅️ Назад",
+    "nav.to_main": "🏠 На главную",
+    "nav.previous": "⬅️ Предыдущая",
+    "nav.prev": "⬅️ Предыдущая",
+    "nav.next": "Следующая ➡️",
+    "nav.show_all_products": "Все продукты",
+    "nav.all_products": "Все продукты",
+    "nav.all_exchanges": "Все биржи",
+    "nav.all_types": "Все типы",
+    "nav.show_all_exchange_products": "Показать: /all_{exchange}_products",
+    "nav.visit": "перейти ↗️",
+    "nav.page": "страница",
+    "nav.of": "из",
+    "nav.exchanges": "бирж"
+  },
+  "en": {
+    "nav.back_to_list": "⬅️ Back to List",
+    "nav.back": "⬅️ Back",
+    "nav.to_main": "🏠 To Main",
+    "nav.previous": "⬅️ Previous",
+    "nav.prev": "⬅️ Previous",
+    "nav.next": "Next ➡️",
+    "nav.show_all_products": "All Products",
+    "nav.all_products": "All Products",
+    "nav.all_exchanges": "All Exchanges",
+    "nav.all_types": "All Types",
+    "nav.show_all_exchange_products": "Show: /all_{exchange}_products",
+    "nav.visit": "visit ↗️",
+    "nav.page": "page",
+    "nav.of": "of",
+    "nav.exchanges": "exchanges"
+  }
+}

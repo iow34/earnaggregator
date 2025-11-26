@@ -1,0 +1,118 @@
+📊 <b>Criteria for Choosing Earn Products for Investment</b>
+
+<b>📋 Key Criteria:</b>
+
+━━━━━━━━━━━━━━
+
+<b>📘 Main Goal:</b>
+To find a balance between profitability (APY), asset security, and flexibility of access to funds.
+
+━━━━━━━━━━━━━━
+
+<b>1️⃣ Asset Type: Stability vs. Higher Yield Potential</b>
+
+💵 <b>Stablecoins</b> (USDT, USDC, DAI):
+• Low risk and predictable returns (2–6% APY).
+• Ideal for beginners and short-term investments.
+
+⚡ <b>Altcoins</b> (ETH, TON, SOL, AVAX):
+• Higher earning potential (6–20% APY).
+• But carry the risk of price drops during volatile markets.
+
+💡 <i>Example:</i> USDT Flexible on Bybit — ~4% APY, low risk.
+TON Locked for 60 days — ~10% APY, but with the risk of price fluctuation.
+
+━━━━━━━━━━━━━━
+
+<b>2️⃣ APY vs. Risk</b>
+
+📈 <b>APY > 10%</b> — usually comes with increased risk (altcoins, DeFi platforms).
+🛡️ <b>APY < 5%</b> — more stable programs (Binance, OKX, Bybit Earn).
+
+⚖️ Evaluate the <b>effective yield</b>:
+• <code>real APY = nominal APY × (1 - probability of asset drop)</code>
+
+<b>Example</b>
+
+Assume:
+
+• Nominal APY = 12% (0.12)
+• Estimated probability of a major drop (e.g., -30% or more) = 25% (0.25) — meaning a 1 in 4 chance of the asset declining in value.
+
+Formula:
+
+• <code>real APY = 0.12 × (1 - 0.25) = 0.12 × 0.75 = 0.09 → 9%</code>
+
+So, although the platform promises 12% annually, the <b>risk-adjusted</b> yield may be closer to 9%.
+
+💡 <i>Tip:</i> Don’t focus solely on the percentage — also evaluate the project’s reputation, liquidity, and the risk of funds being locked.
+
+━━━━━━━━━━━━━━
+
+<b>3️⃣ Term Length & Liquidity</b>
+
+⏳ <b>Short term (1–30 days):</b> more flexibility, lower risks, lower APY.
+📆 <b>Long term (60–180 days):</b> more stable yield but lower liquidity.
+
+🪙 <b>Pro tip:</b> Split your deposit (“Ladder Strategy”):
+• 30% – Flexible
+• 40% – 30-day Locked
+• 30% – 90-day Locked
+
+This ensures both liquidity and a steady income flow.
+
+━━━━━━━━━━━━━━
+
+<b>4️⃣ Exchange: Reliability Above All</b>
+
+🏦 Choose only well-established platforms:
+• <b>Binance Earn</b> — largest SAFU insurance fund.
+• <b>Bybit Earn</b> — high liquidity and flexible terms.
+• <b>OKX Grow</b> — innovative products (Shark Fin, Dual Investment).
+
+🔐 Check for licenses, proof-of-reserves, and user insurance coverage.
+
+━━━━━━━━━━━━━━
+
+<b>5️⃣ Additional Factors</b>
+
+📊 <b>Diversification:</b> don’t keep all funds in one asset or on one exchange.
+🧾 <b>Taxes:</b> in most countries, APY is considered income — include this in your planning.
+⚠️ <b>Slashing:</b> for staking (especially PoS), validators may be penalized for improper performance.
+
+💻 <b>Monitoring platforms:</b>
+• <a href="https://defillama.com/yields">DeFiLlama Yields</a>
+• <a href="https://coindix.com/">CoinDix</a>
+• <a href="https://earn.bitcompare.net/">BitCompare Earn</a>
+
+━━━━━━━━━━━━━━
+
+<b>💡 Example Portfolio Structure</b>
+
+• 40% — Stablecoins (USDT, USDC) in Flexible products
+• 30% — Top-5 coins in Locked Earn (ETH, BTC, TON)
+• 20% — DeFi / Launchpool programs
+• 10% — High-risk staking projects with APY > 15%
+
+━━━━━━━━━━━━━━
+
+<b>✅ Advantages of a Well-Chosen Asset Mix:</b>
+
+• Optimized returns without excessive risk
+• Liquidity control
+• Reduced impact of market volatility
+• Ability to reinvest regularly
+
+━━━━━━━━━━━━━━
+
+<b>⚠️ Common Mistakes:</b>
+
+❌ Chasing the highest APY without assessing risks
+❌ Using questionable DeFi projects without audits
+❌ Ignoring early withdrawal restrictions
+
+━━━━━━━━━━━━━━
+
+<b>📘 Conclusion:</b>
+📌 Earn product yields have increased recently, but so has competition between platforms.
+🎯 Your choice should be based not only on APY, but also on the <b>reliability of the exchange, stability of the asset, and your liquidity strategy</b>.

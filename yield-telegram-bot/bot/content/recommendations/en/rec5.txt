@@ -1,0 +1,96 @@
+📈 <b>Monitoring: How to Track APY Changes and Risks</b>
+
+<b>📋 Monitoring System:</b>
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>1. Use the bot for regular checks</b>
+Review APY several times per week and perform a complete portfolio audit once a month.
+
+<b>2. Track rate changes</b>
+APY may change depending on:
+• Demand for the product
+• Market conditions
+• Exchange policies
+
+<b>3. Reinvest when APY increases</b>
+If you find a better offer, consider moving your funds (always check fees).
+
+<b>Reinvestment rule:</b>
+• If APY increases by 1–2% → consider relocating
+• If APY increases by 3%+ → relocation recommended
+• Always check withdrawal fees
+
+<b>Example calculation:</b>
+You have 10,000 USDT on Binance at 4% APY; Bybit offers 6.5% APY:
+• Difference: 2.5% × 10,000 = +250 USDT/year
+• Fee: 1 USDT
+• Net profit: +249 USDT/year
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>4. Monitor risks</b>
+
+<b>Types of risks:</b>
+
+🚨 <b>Hacking risk</b>
+• Enable 2FA (Google Authenticator, not SMS)
+• Use Withdrawal Whitelist
+• Activate Anti-Phishing Code
+• Regularly review Login History
+
+🔄 <b>Volatility risk</b>
+• Keep 50–60% of your portfolio in stablecoins
+• Stake only what you believe in long-term
+• Use Flexible for short-term investments
+
+⚠️ <b>Risk of changing conditions</b>
+• Read the Terms of Service
+• Diversify across exchanges
+• Follow official exchange channels
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>📊 Monitoring tools:</b>
+
+<b>CeFi (exchanges):</b>
+• CoinStats — portfolio monitoring
+• Delta — tracking APY changes
+
+<b>DeFi:</b>
+• DeFiLlama — APY comparison
+• APY.vision — Impermanent Loss calculations
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>🚨 Red flags — act immediately:</b>
+
+❌ Exchange delays withdrawals for >24 hours
+❌ Massive user complaints on Reddit
+❌ Trading volume drops by 30%+
+❌ Sudden Terms update without notice
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>📋 Monitoring checklist:</b>
+
+<b>Weekly (20 minutes):</b>
+☑️ Update APY table
+☑️ Compare rates across exchanges
+☑️ Check Login History
+☑️ Review critical news
+
+<b>Monthly (1–2 hours):</b>
+☑️ Portfolio audit
+☑️ Rebalancing
+☑️ Change passwords (every 3 months)
+☑️ Test withdrawal with a small amount
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>💡 Tip:</b>
+Create a Google Sheets table to track your portfolio and APY changes.
+Regular monitoring = capital protection!
+
+<b>⚠️ Important:</b>
+Use 2FA, Withdrawal Whitelist, and a Hardware Wallet for large amounts (>$10,000).

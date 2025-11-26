@@ -1,0 +1,19 @@
+👋 <b>Welcome to ChainAdvisor Bot!</b>
+
+I help you find the best passive income opportunities across crypto exchanges.
+
+<b>📱 How to enable the command menu:</b>
+1. Tap the menu icon (☰) at the bottom left of your keyboard
+2. Select "Menu" to see all available commands
+
+<b>🎯 Available Commands:</b>
+• /start - Show main menu with top yields
+• /help - Detailed guide on using the bot
+• /recommendations - Personalized earning strategies
+• /exchanges - Browse products by exchange
+
+<b>💡 Quick Start:</b>
+Just type /start to see the best earning opportunities right now!
+
+Need help? Type /help anytime.
+

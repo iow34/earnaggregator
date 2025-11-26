@@ -1,0 +1,39 @@
+{
+  "ua": {
+    "error.api_unavailable": "⚠️ API тимчасово недоступний",
+    "error.data_unavailable": "📭 Дані тимчасово недоступні",
+    "error.system_unavailable": "⚠️ Система тимчасово недоступна",
+    "error.empty_page": "📭 Ця сторінка порожня",
+    "error.nothing_found": "📭 Нічого не знайдено",
+    "error.try_different_criteria": "💡 Спробуйте змінити критерії пошуку",
+    "error.invalid_product": "❌ Некоректний символ продукту",
+    "error.unknown_exchange": "❌ Невідома біржа: {exchange}",
+    "error.data_unavailable_for_exchange": "⚠️ Дані для біржі {exchange} тимчасово недоступні",
+    "error.display_results_error": "❌ Неможливо відобразити результати. Спробуйте пізніше."
+  },
+  "ru": {
+    "error.api_unavailable": "⚠️ API временно недоступен",
+    "error.data_unavailable": "📭 Данные временно недоступны",
+    "error.system_unavailable": "⚠️ Система временно недоступна",
+    "error.empty_page": "📭 Эта страница пуста",
+    "error.nothing_found": "📭 Ничего не найдено",
+    "error.try_different_criteria": "💡 Попробуйте изменить критерии поиска",
+    "error.invalid_product": "❌ Некорректный символ продукта",
+    "error.unknown_exchange": "❌ Неизвестная биржа: {exchange}",
+    "error.data_unavailable_for_exchange": "⚠️ Данные для биржи {exchange} временно недоступны",
+    "error.display_results_error": "❌ Невозможно отобразить результаты. Попробуйте позже."
+  },
+  "en": {
+    "error.api_unavailable": "⚠️ API temporarily unavailable",
+    "error.data_unavailable": "📭 Data temporarily unavailable",
+    "error.system_unavailable": "⚠️ System temporarily unavailable",
+    "error.empty_page": "📭 This page is empty",
+    "error.nothing_found": "📭 Nothing found",
+    "error.try_different_criteria": "💡 Try changing search criteria",
+    "error.invalid_product": "❌ Invalid product symbol",
+    "error.unknown_exchange": "❌ Unknown exchange: {exchange}",
+    "error.data_unavailable_for_exchange": "⚠️ Data for exchange {exchange} temporarily unavailable",
+    "error.display_results_error": "❌ Unable to display results. Please try again later."
+  }
+}
+

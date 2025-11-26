@@ -1,0 +1,63 @@
+---
+alwaysApply: false
+---
+Правила налаштування, реалізації та використання моніторингу (Prometheus, Grafana, Alertmanager)
+🎯 Мета
+
+Забезпечити повну видимість стану системи EarnAggregator — її сервісів, баз даних, кешу та ботів.
+Мета моніторингу — швидко виявляти проблеми, а не реагувати на користувацькі скарги.
+
+1. Архітектура моніторингу
+
+Компоненти:
+
+- Prometheus — система збору та зберігання метрик (HTTP endpoint /metrics).
+- Grafana — візуалізація у вигляді дашбордів.
+- Alertmanager — обробка сповіщень (наприклад, якщо API не відповідає > 30 сек).
+
+
+2. Базові метрики, які треба збирати
+
+| Категорія           | Метрики                                                             | Опис                                               |
+| ------------------- | ------------------------------------------------------------------- | -------------------------------------------------- |
+| **API Performance** | `http_request_duration_seconds`, `http_requests_total`              | Середній час відповіді, кількість запитів          |
+| **Database**        | `db_query_time`, `db_connections_active`                            | Навантаження та кількість підключень до PostgreSQL |
+| **Redis**           | `redis_keys_total`, `redis_memory_bytes`                            | Показники кешу, кількість ключів, пам’ять          |
+| **System**          | `container_cpu_usage_seconds_total`, `container_memory_usage_bytes` | Споживання ресурсів кожним контейнером             |
+| **Bot**             | `bot_message_latency`, `bot_active_users`                           | Продуктивність Telegram-бота                       |
+| **Scheduler**       | `jobs_scheduled_total`, `jobs_failed_total`                         | Кількість запущених та збоїв у задачах             |
+
+
+3. Конфігурація Prometheus
+
+У Docker-мережі Prometheus може звертатися до контейнерів по їхніх DNS-іменах.
+
+
+
+4. Alertmanager (опціонально)
+📄 monitoring/alertmanager.yml
+
+
+5. Використання метрик у коді
+
+Використовуй Counter для накопичуваних значень, Gauge — для поточних станів, Histogram — для часу.
+
+
+6. Практичні поради для продакшну
+
+Scrape interval не менше 5 секунд.
+Інакше Prometheus може перевантажити API.
+
+Винось Prometheus на окремий сервер при великій кількості мікросервісів.
+
+Регулярно чисти старі метрики:
+docker exec -it prometheus rm -rf /prometheus/wal
+
+Бекапи Prometheus:
+Використовуй volume: ./monitoring/data:/prometheus
+
+Grafana auto-provisioning:
+
+Створи dashboard_provisioning.yml
+
+Помісти його у /etc/grafana/provisioning/dashboards/

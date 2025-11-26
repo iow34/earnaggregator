@@ -1,0 +1,74 @@
+---
+alwaysApply: false
+---
+# EarnAggregator - Огляд Проекту
+
+## 📋 Загальна Інформація
+
+**EarnAggregator** - мікросервісна платформа для агрегації даних про пасивний дохід (Yield/Earn продукти) з криптовалютних бірж.
+
+### Призначення
+- Збір даних про Yield Products з бірж (Binance, Bybit, та інших у майбутньому)
+- Агрегація та нормалізація даних з різних джерел
+- Надання REST API для доступу до даних
+- Telegram бот для взаємодії з користувачами
+- Монетизація через реферальні програми
+
+---
+
+## 🏗️ Архітектура Системи
+
+### Мікросервісна Структура
+
+### Компоненти Системи
+
+#### 1. **Yield Data Service** (Головний Backend)
+- **Технології**: FastAPI, PostgreSQL, Redis, SQLAlchemy 2.0
+- **Відповідальність**:
+  - Інтеграція з API бірж (Binance, Bybit)
+  - Кешування даних у Redis (TTL: 60 хвилин)
+  - Збереження в PostgreSQL
+  - REST API з 24+ endpoints
+  - Автоматична синхронізація через Scheduler
+
+#### 2. **Telegram Bot Service**
+- **Технології**: Aiogram 3.x, httpx
+- **Відповідальність**:
+  - Клієнтський інтерфейс для користувачів
+  - Команди: /start, /yield, /top, /help, /recommendations
+  - Інтеграція з Yield Data API
+  - Реферальні кнопки (Binance, Bybit, Nexo)
+
+#### 3. **Monitoring Stack**
+- **Технології**: Prometheus, Grafana
+- **Відповідальність**:
+  - Збір метрик (request rate, latency, errors)
+  - Візуалізація через дашборди
+  - Alerting при критичних проблемах
+
+#### 4. **Database Layer**
+- **PostgreSQL**: основне сховище даних
+- **Redis**: кеш для швидкого доступу
+
+---
+
+## 🎯 Список етапів Розробки
+
+- [ ] FastAPI базова структура
+- [ ] PostgreSQL інтеграція
+- [ ] Redis кешування
+- [ ] Binance API інтеграція
+- [ ] Bybit API інтеграція
+- [ ] Scheduler для автооновлення
+- [ ] Docker контейнеризація
+- [ ] Prometheus metrics
+- [ ] Grafana дашборди
+- [ ] Telegram Bot повна функціональність
+- [ ] Персоналізовані рекомендації
+- [ ] Реферальна аналітика
+- [ ] Frontend (Next.js)
+- [ ] Додаткові біржі (OKX, Coinbase)
+- [ ] Email нотифікації
+- [ ] Rate limiting
+- [ ] Authentication для API
+

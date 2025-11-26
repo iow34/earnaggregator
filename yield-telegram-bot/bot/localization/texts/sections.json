@@ -1,0 +1,51 @@
+{
+  "ua": {
+    "section.main_title": "💰 Crypto Earn Products",
+    "section.trending_top": "🚀 TOP 10 trending products",
+    "section.exchanges_overview": "🏦 Огляд по біржам",
+    "section.exchanges_list": "🏦 Всі біржі",
+    "section.recommendations": "🎯 Рекомендації по Earn продуктам",
+    "section.available_rec": "📚 Доступні рекомендації",
+    "section.hint": "💡 Натисніть на біржу або використовуйте команди нижче",
+    "section.exchange_products_title": "🏦 <b>Всі продукти біржі <a href=\"{url}\">{exchange}</a></b>",
+    "section.flexible_products_all_exchanges": "Flexible продукти з усіх бірж",
+    "section.locked_products_all_exchanges": "Locked продукти з усіх бірж",
+    "section.all_products_all_exchanges": "Всі продукти з усіх бірж",
+    "section.help_title": "Довідковий центр",
+    "section.recommendations_title": "Персональні рекомендації",
+    "section.available_recommendations": "Доступні рекомендації"
+  },
+  "ru": {
+    "section.main_title": "💰 Крипто Earn Продукты",
+    "section.trending_top": "🚀 ТОП 10 трендовых продуктов",
+    "section.exchanges_overview": "🏦 Обзор по биржам",
+    "section.exchanges_list": "🏦 Все биржи",
+    "section.recommendations": "🎯 Рекомендации по Earn продуктам",
+    "section.available_rec": "📚 Доступные рекомендации",
+    "section.hint": "💡 Нажмите на биржу или используйте команды ниже",
+    "section.exchange_products_title": "🏦 <b>Все продукты биржи <a href=\"{url}\">{exchange}</a></b>",
+    "section.flexible_products_all_exchanges": "Flexible продукты со всех бирж",
+    "section.locked_products_all_exchanges": "Locked продукты со всех бирж",
+    "section.all_products_all_exchanges": "Все продукты со всех бирж",
+    "section.help_title": "Справочный центр",
+    "section.recommendations_title": "Персональные рекомендации",
+    "section.available_recommendations": "Доступные рекомендации"
+  },
+  "en": {
+    "section.main_title": "💰 Crypto Earn Products",
+    "section.trending_top": "🚀 TOP 10 trending products",
+    "section.exchanges_overview": "🏦 Exchanges Overview",
+    "section.exchanges_list": "🏦 All Exchanges",
+    "section.recommendations": "🎯 Earn Product Recommendations",
+    "section.available_rec": "📚 Available Recommendations",
+    "section.hint": "💡 Click on exchange or use commands below",
+    "section.exchange_products_title": "🏦 <b>All products on <a href=\"{url}\">{exchange}</a></b>",
+    "section.flexible_products_all_exchanges": "Flexible products across all exchanges",
+    "section.locked_products_all_exchanges": "Locked products across all exchanges",
+    "section.all_products_all_exchanges": "All products across all exchanges",
+    "section.help_title": "Help Center",
+    "section.recommendations_title": "Personalized recommendations",
+    "section.available_recommendations": "Available recommendations"
+  }
+}
+

@@ -1,0 +1,48 @@
+{
+  "ua": {
+    "table.header.number": "№",
+    "table.header.product": "Продукт",
+    "table.header.exchange": "Біржа",
+    "table.header.apy": "APY",
+    "table.header.type": "Тип",
+    "table.header.period": "Період",
+    "table.product.flexible": "Flexible",
+    "table.product.locked": "Locked",
+    "table.period.flexible": "—",
+    "table.empty": "📭 Немає продуктів для відображення",
+    "table.results.found": "Знайдено {count} продуктів",
+    "table.results.shown": "Показано {shown} з {total} продуктів",
+    "table.summary.shown": "Показано {shown} з {total} продуктів"
+  },
+  "ru": {
+    "table.header.number": "№",
+    "table.header.product": "Продукт",
+    "table.header.exchange": "Биржа",
+    "table.header.apy": "APY",
+    "table.header.type": "Тип",
+    "table.header.period": "Период",
+    "table.product.flexible": "Flexible",
+    "table.product.locked": "Locked",
+    "table.period.flexible": "—",
+    "table.empty": "📭 Нет продуктов для отображения",
+    "table.results.found": "Найдено {count} продуктов",
+    "table.results.shown": "Показано {shown} из {total} продуктов",
+    "table.summary.shown": "Показано {shown} из {total} продуктов"
+  },
+  "en": {
+    "table.header.number": "№",
+    "table.header.product": "Product",
+    "table.header.exchange": "Exchange",
+    "table.header.apy": "APY",
+    "table.header.type": "Type",
+    "table.header.period": "Period",
+    "table.product.flexible": "Flexible",
+    "table.product.locked": "Locked",
+    "table.period.flexible": "—",
+    "table.empty": "📭 No products to display",
+    "table.results.found": "Found {count} products",
+    "table.results.shown": "Shown {shown} of {total} products",
+    "table.summary.shown": "Shown {shown} of {total} products"
+  }
+}
+
