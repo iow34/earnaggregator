@@ -1,0 +1,139 @@
+🌐 <b>Diversification: How to Allocate Your Assets</b>
+
+<b>📋 Diversification Rules:</b>
+
+━━━━━━━━━━━━━━
+
+<b>1️⃣ Never keep all your assets in one coin or on a single exchange</b>
+
+<b>2️⃣ Allocate between different types of assets</b>
+• <b>Stablecoins</b> — protection from volatility
+• <b>Blue-chip cryptocurrencies</b> (BTC, ETH) — stability and long-term growth
+• <b>Altcoins</b> — potential for high returns, but with increased risk
+
+<b>3️⃣ Use multiple exchanges and platforms</b>
+The risks of centralized exchanges are real. Spread your funds across 3–4 trusted platforms.
+
+<b>4️⃣ Combine different earning products</b>
+• <b>Flexible</b> — liquidity, funds can be withdrawn anytime
+• <b>Locked</b> — higher APY, but assets are locked for a fixed period
+
+━━━━━━━━━━━━━━
+
+<b>📈 OPTIMAL PORTFOLIO ALLOCATION</b>
+
+<b>Strategies for different risk levels:</b>
+
+<b>🟢 CONSERVATIVE PORTFOLIO</b>
+Ideal for low-risk investors:
+
+• <b>60%</b> — Stablecoins (USDT, USDC, DAI)
+• <b>30%</b> — Bitcoin (BTC)
+• <b>10%</b> — Ethereum (ETH)
+
+<b>Example:</b> Portfolio $10,000
+→ $6,000 USDT Flexible (Binance/Bybit) — 4–5% APY
+→ $3,000 BTC Flexible — 2–3% APY
+→ $1,000 ETH Locked 30 days — 4–5% APY
+
+<b>Expected annual return:</b> 3.5–4.5%
+
+<b>🟡 BALANCED PORTFOLIO</b>
+The optimal option for most investors:
+
+• <b>50%</b> — Stablecoins (USDT, USDC)
+• <b>30%</b> — BTC + ETH (20% BTC, 10% ETH)
+• <b>20%</b> — Top-30 Altcoins (SOL, BNB, XRP, ADA)
+
+<b>Example:</b> Portfolio $10,000
+→ $5,000 USDT Flexible (split across 2 exchanges) — 4–6% APY
+→ $2,000 BTC Locked 60 days — 5–7% APY
+→ $1,000 ETH Flexible — 5% APY
+→ $2,000 Altcoins (e.g., $500 in SOL, BNB, XRP, ADA) — 6–10% APY
+
+<b>Expected annual return:</b> 5–7%
+
+<b>🔴 AGGRESSIVE PORTFOLIO</b>
+For high-volatility strategies:
+
+• <b>30%</b> — Stablecoins
+• <b>30%</b> — BTC + ETH
+• <b>40%</b> — Altcoins + DeFi + emerging projects
+
+<b>Example:</b> Portfolio $10,000
+→ $3,000 USDC Flexible — 4–5% APY
+→ $3,000 BTC + ETH — ~5% APY
+→ $4,000 altcoins (Top-50 + DeFi)
+
+<b>Expected return:</b> 8–15%+
+
+━━━━━━━━━━━━━━
+
+<b>🏦 ALLOCATION ACROSS EXCHANGES</b>
+
+<b>Why is it important to use multiple platforms?</b>
+
+• <b>Protection against exchange bankruptcy</b> (FTX, Mt.Gox cases)
+• <b>Diversification of hacking risks</b>
+• <b>Access to different products</b> and APY rates
+• <b>Independence</b> from a single ecosystem
+
+<b>Recommended platforms:</b>
+
+<b>1. Binance</b> 🟡
+✅ Highest liquidity
+✅ Wide selection of Earn products
+✅ Competitive APY
+✅ Flexible + Locked options
+
+<b>2. Bybit</b> 🟢
+✅ High APY for Locked products
+✅ Reliable platform
+✅ Great staking conditions
+
+<b>3. OKX</b> 🔵
+✅ Innovative DeFi products
+✅ Competitive rates
+✅ Wide range of altcoins
+
+<b>4. Nexo</b> ⚪
+✅ CeFi platform with high rates
+✅ Fixed terms
+✅ Deposit insurance
+
+<b>Optimal strategy:</b>
+Distribute assets across 2–3 platforms in proportions of 50% / 30% / 20%
+
+━━━━━━━━━━━━━━
+
+<b>🔄 PORTFOLIO REBALANCING</b>
+
+<b>What is rebalancing?</b>
+It is the process of restoring the target allocation of assets in your portfolio.
+
+<b>Why is it important?</b>
+Over time, some assets grow while others fall → the portfolio becomes unbalanced → the risk profile changes.
+
+<b>Threshold rebalancing strategy:</b>
+Rebalance whenever any asset deviates from the target allocation by <b>10–15%</b>.
+
+<b>Example:</b>
+Your portfolio: 50% USDT / 30% BTC / 20% ETH
+After BTC growth: 50% USDT / 40% BTC / 10% ETH <b>→ Time to rebalance!</b> Sell part of BTC, buy ETH.
+
+━━━━━━━━━━━━━━
+
+<b>🎓 ADDITIONAL STRATEGIES</b>
+
+<b>1. DCA (Dollar-Cost Averaging):</b> invest a fixed amount regularly <b>2. Core-Satellite:</b> 70% core (BTC/ETH/USDT) + 30% altcoins <b>3. Protection:</b> keep 30–50% in stablecoins during bear markets
+
+━━━━━━━━━━━━━━
+
+<b>✅ DIVERSIFICATION CHECKLIST</b>
+
+☑️ Allocate by asset type (Stablecoins/BTC/ETH/Altcoins)
+☑️ Use 3–4 trusted exchanges
+☑️ 60% Flexible + 40% Locked
+☑️ Rebalance monthly/quarterly
+☑️ Hold 30–50% in stablecoins for safety
+☑️ Review your portfolio regularly

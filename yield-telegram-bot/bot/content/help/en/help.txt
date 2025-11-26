@@ -1,0 +1,85 @@
+🆘 <b>ChainAdvisor Bot - Complete Guide</b>
+
+The bot helps you find the best passive income offers on cryptocurrency exchanges.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📱 <b>Main Menu Functions:</b>
+
+🏠 <b>Main Menu (Page 1)</b>
+   • View TOP-10 trending cryptocurrencies
+   • Quick access to popular coins: BTC, ETH, SOL, USDT
+   • Browse products by exchanges (Binance, Bybit, OKX, etc.)
+   • Click on buttons for detailed yield information: All Products, Flexible, Locked, Advanced Search
+
+🎯 <b>Recommendations</b>
+   • 10 practical tips for working with Earn products
+   • Available topics:
+     📝 Transfers between exchanges with minimal fees
+     📝 Flexible vs Locked - when to choose
+     📝 Criteria for selecting earn products
+     📝 Investment diversification
+     📝 APY and risk monitoring
+     📝 Referral programs
+     📝 Income compounding
+     📝 Risk reduction during volatility
+     📝 Exchange reliability verification
+     📝 Portfolio planning based on goals
+   • Each recommendation includes step-by-step instructions with examples
+
+🏦 <b>Exchange Products (Page 2)</b>
+   • View all products of a specific exchange
+   • 📊 Sort products by APY, popularity
+   • Table view: Product, Type, APY, Duration
+   • Pagination for convenient browsing
+
+📋 <b>Filtered Views (Pages 3-9)</b>
+   • <b>Page 3</b>: All Flexible products from all exchanges
+   • <b>Page 4</b>: All Locked products from all exchanges
+   • <b>Page 5</b>: Specific product across all exchanges
+   • <b>Pages 6-9</b>: Various filter combinations, Advanced Search button
+
+🔍 <b>How to use filters:</b>
+   1. Press the 🔍 <b>Filter</b> button on any page
+   2. Choose your criteria (product, exchange, type)
+   3. Apply filters to view matching results
+   4. Use 🔄 <b>Reset filters</b> to clear
+   5. Navigate with ◀️ ▶️ buttons for pagination
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 <b>Supported Cryptocurrencies:</b>
+BTC, ETH, SOL, USDT, USDC, BNB, ADA, DOT, XRP, AVAX, MATIC, LINK, UNI and many others
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🏦 <b>Supported Exchanges:</b>
+Binance, Bybit, OKX, MEXC, Gate.io, BitMart, Bitget, Kraken, KuCoin, HTX, Nexo
+
+💡 <b>Useful Tips:</b>
+   • Use menu buttons at the bottom for quick access
+   • Click visit to go to the exchange
+   • Flexible products = withdraw anytime
+   • Locked products = higher APY, but fixed holding period
+   • Compare APY across different exchanges before investing
+
+📊 <b>Understanding APY:</b>
+   • APY (Annual Percentage Yield) - annual rate of return
+   • Higher APY = higher potential profit
+   • Consider risk level: Stablecoins (lower APY, safer) vs Altcoins (higher APY, riskier)
+
+🌐 <b>Language</b>
+   • Language selection feature (coming soon)
+   • Currently supporting Ukrainian, Russian and English
+
+⚡ <b>Quick Commands:</b>
+   • /start - Show main menu with trending coins
+   • /help - Show this guide
+   • /recommendations - View all recommendations
+   • /exchanges - Show list of all exchanges
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ <b>Disclaimer:</b>
+This bot provides information only. Always conduct your own research before investing. Past performance does not guarantee future results.
+

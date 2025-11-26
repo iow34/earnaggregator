@@ -1,0 +1,41 @@
+🛡️ <b>How to Reduce Risks During Market Volatility</b>
+
+<b>📋 Risk-Reduction Algorithm:</b>
+
+<b>1️⃣ Keep a Portion of Funds in Stablecoins</b>
+• At least 30–50% of your portfolio in USDT/USDC or similar stablecoins — this creates a “safety base.”
+• This position helps reduce the risk of capital loss during market shocks.
+Diversification is a key risk-management tool.
+
+<b>2️⃣ Exit Locked products before high volatility</b>
+Signs that a period of elevated volatility is approaching:
+• Major news (regulation changes, exchange attacks, hacking incidents)
+• Sharp Bitcoin moves (±10% or more per day)
+• High trading volumes and rising open interest on futures
+Exiting products with fixed terms (“Locked”) gives you flexibility to react quickly.
+
+<b>3️⃣ Switch to Flexible during important events</b>
+Flexible products allow you to exit a position instantly without penalties. During periods of expected or ongoing major events, this is a smart approach.
+Example: move an asset from Locked to Flexible, wait for stabilization, then return to a long-term position.
+
+<b>4️⃣ Set a Stop-Loss</b>
+Even if you don’t have a full exit system, set a predefined level at which you exit a product or change your strategy.
+📌 Example: “If BTC drops by –15%, I exit Locked and move everything into USDT.”
+Such rules reduce panic-based decisions and protect capital.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>💡 Example Strategy:</b>
+When BTC drops by 15–20%:
+• Exit the Locked position (e.g., ETH or BTC),
+• Move funds into USDT Flexible,
+• Wait for market stabilization,
+• After stabilization, re-enter investments.
+This tactic helps you take advantage of volatility and reduce potential losses.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>⚠️ Volatility Risks:</b>
+• Possible capital loss of up to 50% in a short period without proper protection.
+• Panic and emotional decisions are one of the main causes of major losses.
+• Locked products may not allow quick exit, increasing exposure to risk.

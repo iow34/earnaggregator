@@ -1,0 +1,42 @@
+{
+  "ua": {
+    "language.title": "🌐 Вибір мови інтерфейсу",
+    "language.current": "Поточна мова: {language}",
+    "language.select_prompt": "Оберіть мову інтерфейсу:",
+    "language.ua_name": "🇺🇦 Українська",
+    "language.ru_name": "🇷🇺 Русский",
+    "language.en_name": "🇬🇧 English",
+    "language.ua_description": "Українська мова (за замовчуванням)",
+    "language.ru_description": "Русский язык",
+    "language.en_description": "English language",
+    "language.changed": "✅ Мову змінено!",
+    "language.back_to_main": "⬅️ На головну"
+  },
+  "ru": {
+    "language.title": "🌐 Выбор языка интерфейса",
+    "language.current": "Текущий язык: {language}",
+    "language.select_prompt": "Выберите язык интерфейса:",
+    "language.ua_name": "🇺🇦 Українська",
+    "language.ru_name": "🇷🇺 Русский",
+    "language.en_name": "🇬🇧 English",
+    "language.ua_description": "Украинский язык (по умолчанию)",
+    "language.ru_description": "Русский язык",
+    "language.en_description": "Английский язык",
+    "language.changed": "✅ Язык изменен!",
+    "language.back_to_main": "⬅️ На главную"
+  },
+  "en": {
+    "language.title": "🌐 Language Selection",
+    "language.current": "Current language: {language}",
+    "language.select_prompt": "Select interface language:",
+    "language.ua_name": "🇺🇦 Ukrainian",
+    "language.ru_name": "🇷🇺 Russian",
+    "language.en_name": "🇬🇧 English",
+    "language.ua_description": "Ukrainian language (default)",
+    "language.ru_description": "Russian language",
+    "language.en_description": "English language",
+    "language.changed": "✅ Language changed!",
+    "language.back_to_main": "⬅️ Back to Main"
+  }
+}
+

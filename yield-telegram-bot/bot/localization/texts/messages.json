@@ -1,0 +1,54 @@
+{
+  "ua": {
+    "loading.main_menu": "🔄 Завантаження головного меню, зачекайте...",
+    "loading.products": "🔄 Завантаження продуктів...",
+    "loading.exchanges": "🔄 Завантаження списку бірж...",
+    "loading.search": "🔍 Виконую пошук...",
+    "loading.products_for_exchange": "🔄 Завантаження продуктів біржі {exchange}...",
+    "loading.filters_for_exchange": "🔄 Завантаження фільтрів для {exchange}...",
+    "success.language_selected": "✅ Мову змінено на {language}",
+    "success.product_selected": "✅ Обрано продукт: {product}",
+    "messages.available_exchanges": "📋 Доступні біржі: Binance, Bybit, BitMart, OKX, MEXC, Gate.io, Bitget, Kraken, KuCoin, HTX",
+    "messages.nothing_found": "📭 Нічого не знайдено",
+    "messages.click_for_details": "Клікни на команду для деталей",
+    "messages.nexo_coming_soon": "Продукти біржі {exchange} будуть додані пізніше, з повним списком актуальних продуктів можна ознайомитись на самій біржі {exchange_link}.",
+    "error.general": "❌ Сталася помилка. Спробуйте пізніше.",
+    "error.loading_products": "❌ Помилка завантаження продуктів. Спробуйте пізніше.",
+    "error.showing_help": "❌ Сталася помилка при показі довідки."
+  },
+  "ru": {
+    "loading.main_menu": "🔄 Загрузка главного меню, подождите...",
+    "loading.products": "🔄 Загрузка продуктов...",
+    "loading.exchanges": "🔄 Загрузка списка бирж...",
+    "loading.search": "🔍 Выполняю поиск...",
+    "loading.products_for_exchange": "🔄 Загрузка продуктов биржи {exchange}...",
+    "loading.filters_for_exchange": "🔄 Загрузка фильтров для {exchange}...",
+    "success.language_selected": "✅ Язык изменен на {language}",
+    "success.product_selected": "✅ Выбран продукт: {product}",
+    "messages.available_exchanges": "📋 Доступные биржи: Binance, Bybit, BitMart, OKX, MEXC, Gate.io, Bitget, Kraken, KuCoin, HTX",
+    "messages.nothing_found": "📭 Ничего не найдено",
+    "messages.click_for_details": "Нажмите на команду для деталей",
+    "messages.nexo_coming_soon": "Продукты биржи {exchange} будут добавлены позже, с полным списком актуальных продуктов можно ознакомиться на самой бирже {exchange_link}.",
+    "error.general": "❌ Произошла ошибка. Попробуйте позже.",
+    "error.loading_products": "❌ Ошибка загрузки продуктов. Попробуйте позже.",
+    "error.showing_help": "❌ Произошла ошибка при показе справки."
+  },
+  "en": {
+    "loading.main_menu": "🔄 Loading main menu, please wait...",
+    "loading.products": "🔄 Loading products...",
+    "loading.exchanges": "🔄 Loading exchanges list...",
+    "loading.search": "🔍 Searching...",
+    "loading.products_for_exchange": "🔄 Loading products for {exchange}...",
+    "loading.filters_for_exchange": "🔄 Loading filters for {exchange}...",
+    "success.language_selected": "✅ Language changed to {language}",
+    "success.product_selected": "✅ Product selected: {product}",
+    "messages.available_exchanges": "📋 Available exchanges: Binance, Bybit, BitMart, OKX, MEXC, Gate.io, Bitget, Kraken, KuCoin, HTX",
+    "messages.nothing_found": "📭 Nothing found",
+    "messages.click_for_details": "Click on a command for details",
+    "messages.nexo_coming_soon": "Products for {exchange} exchange will be added later, you can check the full list of current products on the {exchange_link} exchange itself.",
+    "error.general": "❌ An error occurred. Please try again later.",
+    "error.loading_products": "❌ Error loading products. Please try again later.",
+    "error.showing_help": "❌ Error displaying help."
+  }
+}
+

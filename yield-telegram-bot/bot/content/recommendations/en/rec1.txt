@@ -1,0 +1,72 @@
+🛡️ <b>How to profitably transfer cryptocurrency between exchanges with minimal fees</b>
+
+<b>📋 Step-by-step guide:</b>
+
+━━━━━━━━━━━━━━
+
+📋 <b>1. Choose the optimal asset for transfer</b>
+💰 Cheapest coins for transfers:
+- <b><code>XLM</code> (Stellar):</b> ~$0.00001  
+- <b><code>TON</code> (The Open Network):</b> &lt;$0.005  
+- <b><code>TRX</code> (Tron):</b> &lt;$0.001  
+- <b><code>XRP</code> (Ripple):</b> &lt;$0.0001  
+- <b><code>ALGO</code> (Algorand):</b> ~$0.0003  
+
+🧭 Recommendation: Before transferring, convert your asset to one of these coins on the sending exchange.
+📊 Use services like <a href="https://fees.wtf">fees.wtf</a> or <a href="https://txstreet.com">txstreet.com</a> to check network congestion.
+
+━━━━━━━━━━━━━━
+
+🌐 <b>2. Choosing the right network</b>
+For <b>USDT</b>:
+- ✅ <b>TRC20</b> (Tron): &lt;$1  
+- ✅ <b>Polygon</b>: &lt;$0.01  
+- ✅ <b>TON</b>: &lt;$0.001  
+- ⚠️ <b>ERC20</b> (Ethereum): $5–$50 during peak hours  
+
+📌 Before sending, make sure both exchanges support the chosen network.
+❗ Use <b>Binance Proof of Address</b> or <b>Bybit Network Checker</b> to avoid losses due to network incompatibility.
+
+━━━━━━━━━━━━━━
+
+💸 <b>3. Use internal transfers or P2P</b>
+- 🔄 <b>Binance ↔ OKX ↔ Bybit:</b> support internal transfers without fees (via UID or email).  
+- 💱 <b>P2P platforms:</b> ideal for transfers between accounts or different exchanges (transfer in fiat with subsequent USDT purchase).  
+
+📈 Use <a href="https://www.bestchange.com">BestChange</a> or <a href="https://swapspace.co">SwapSpace</a> to compare the most profitable directions.
+
+━━━━━━━━━━━━━━
+
+🕓 <b>4. Timing your transfer</b>
+🕐 Optimal time — night UTC or weekends when networks are not congested.  
+🔍 Check status on <a href="https://etherscan.io/gastracker">Gas Tracker</a> or <a href="https://tronscan.org">TronScan</a>.
+
+━━━━━━━━━━━━━━
+
+🧩 <b>5. Test transfer</b>
+🚀 Always send a test amount (~$5–$10) before the main transaction.  
+If the address or network is wrong — funds will be lost forever.
+
+━━━━━━━━━━━━━━
+
+💡 <b>Example</b>
+Transfer <b>1000 USDT from Binance to Bybit via TRC20</b>:  
+- Fee: ~$1  
+- Time: 1–3 min  
+- Savings: up to <b>99%</b> compared to ERC20  
+
+━━━━━━━━━━━━━━
+
+⚙️ <b>Additional tips</b>
+- 🧾 Enable <b>2FA and anti-phishing code</b> on exchanges.  
+- 🔍 Use <b>portfolio trackers</b> (CoinStats, Zapper, DeBank) to monitor transfers.  
+- 🪙 When converting between networks, use a <b>bridge</b>:  
+  for example, <a href="https://portalbridge.com">Portal Bridge</a> or <a href="https://app.allbridge.io">Allbridge</a>.
+
+━━━━━━━━━━━━━━
+
+⚠️ <b>Risks</b>
+- ❌ Wrong network = irreversible loss of funds  
+- ⚠️ High fee when converting via DEX  
+- 🔐 Phishing sites disguised as Binance Withdraw
+

@@ -1,0 +1,25 @@
+{
+  "exchange": "MEXC",
+  "updated_at": "2025-10-30T12:00:00Z",
+  "products": [
+    {
+      "product_type": "Flexible",
+      "symbol": "BTC",
+      "apy": 2.5,
+      "min_amount": 0.001,
+      "max_amount": null,
+      "lock_period_days": 0,
+      "status": "active"
+    },
+    {
+      "product_type": "Locked",
+      "symbol": "ETH",
+      "apy": 5.5,
+      "min_amount": 0.01,
+      "max_amount": 100.0,
+      "lock_period_days": 30,
+      "status": "active"
+    }
+  ]
+}
+

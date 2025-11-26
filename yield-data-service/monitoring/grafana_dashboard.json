@@ -1,0 +1,205 @@
+{
+  "dashboard": {
+    "title": "EarnAggregator - Data Service Monitoring",
+    "description": "Dashboard для моніторингу EarnAggregator Data Service",
+    "tags": ["earnaggregator", "scheduler", "cache", "api"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Service Health Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "database_status",
+            "legendFormat": "Database"
+          },
+          {
+            "expr": "cache_status",
+            "legendFormat": "Cache"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "value": "healthy",
+                "text": "✅ Healthy"
+              },
+              {
+                "type": "value",
+                "value": "unhealthy",
+                "text": "❌ Unhealthy"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Cache Hit Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "cache_hit_rate_percent",
+            "legendFormat": "Hit Rate %"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "max": 100,
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Scheduler Jobs Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "jobs_executed_total",
+            "legendFormat": "Executed"
+          },
+          {
+            "expr": "jobs_failed_total",
+            "legendFormat": "Failed"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "API Response Times",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "binance_api_response_time_ms",
+            "legendFormat": "Binance API"
+          },
+          {
+            "expr": "bybit_api_response_time_ms",
+            "legendFormat": "Bybit API"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "ms",
+            "label": "Response Time"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Database Sync Statistics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(db_syncs_total[5m])",
+            "legendFormat": "Syncs per minute"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Total Products in Database",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "total_products",
+            "legendFormat": "Products"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "red"
+                },
+                {
+                  "value": 100,
+                  "color": "yellow"
+                },
+                {
+                  "value": 300,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Cache Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "redis_memory_used_bytes",
+            "legendFormat": "Redis Memory"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "bytes"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Average Job Execution Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "average_execution_time_ms",
+            "legendFormat": "Avg Execution Time"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "ms",
+            "label": "Execution Time"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "API Calls Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(api_calls_total[5m])",
+            "legendFormat": "API Calls/min"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Recent Errors",
+        "type": "logs",
+        "targets": [
+          {
+            "expr": "{job=\"earnaggregator-api\"} |= \"ERROR\" or \"ALERT\"",
+            "legendFormat": "Errors"
+          }
+        ]
+      }
+    ],
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+    }
+  }
+}

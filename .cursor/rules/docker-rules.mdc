@@ -1,0 +1,85 @@
+---
+alwaysApply: false
+---
+Правила налаштування, реалізації та використання Docker у проекті EarnAggregator
+🎯 Мета
+
+Створити стабільне, передбачуване та ізольоване середовище для розробки, тестування та продакшн-деплою.
+Всі сервіси проекту (API, Redis, PostgreSQL, Telegram Bot, Scheduler, Monitoring) повинні запускатись в Docker.
+Це гарантує ідентичну роботу середовища на будь-якій машині чи сервері.
+
+
+### Обов'язкові Правила
+1. **Все працює тільки через Docker** - локальні запуски заборонені
+2. **Один сервіс = один контейнер** - мікросервісна архітектура
+3. **Environment variables** - ніяких hardcoded значень
+4. **Health checks** - кожен сервіс має перевірку здоров'я
+5. **Restart policies** - автоматичний перезапуск при падінні
+6. **Volumes для даних** - PostgreSQL, Redis, logs зберігаються в volumes
+7. **Networks ізоляція** - сервіси спілкуються через Docker networks
+
+
+### ❌ DON'T (Не робити)
+- ❌ Hardcoded credentials в Dockerfile
+- ❌ Запускати як root в production
+- ❌ Використовувати latest tags
+- ❌ Ігнорувати .dockerignore
+- ❌ Монтувати volumes в production (тільки для logs)
+- ❌ Зберігати .env в Git
+- ❌ Пропускати health checks
+
+
+1. Загальні принципи контейнеризації
+
+Всі сервіси працюють у контейнерах.
+Жоден компонент (FastAPI, Redis, PostgreSQL, Prometheus, Grafana, Bot) не запускається локально поза Docker.
+
+Використовуй docker-compose.yml як єдину точку оркестрації.
+Усі сервіси описуються в одному файлі — docker-compose.yml.
+
+Використовуй Pydantic Settings для читання конфігурації.
+
+Усі сервіси з’єднані у спільну мережу backend_net.
+Вони звертаються один до одного за DNS-іменами контейнерів (yield-api, redis, db, bot).
+
+
+2. Структура docker-compose.yml (може змінюватись залежно від розвітку продукту, бери структуру як за основу).
+
+
+
+3. Dockerfile для FastAPI (yield-data-service), (може змінюватись залежно від розвітку продукту, бери структуру як за основу).
+
+
+Принципи:
+
+- Multi-stage build → зменшує розмір образу.
+- Використовуй slim-базу Python.
+- Завжди фіксуй версії у requirements.txt.
+
+Порада:
+Після кожної зміни конфігурації або Dockerfile — роби rebuild.
+
+Рекомендації:
+
+- Використовуй Docker secrets або CI/CD variables для паролів.
+- Не відкривай порти 5432 (PostgreSQL) та 6379 (Redis) у публічний інтернет.
+- Моніторинг запускай окремо: Prometheus + Grafana у власному namespace.
+
+
+4. Безпека
+
+- Не коміть .env, .env.local у Git.
+- Використовуй readonly користувача для продакшн бази.
+- Обмеж доступ до Docker API (дозволити лише root).
+- Увімкни логування контейнерів у файл /logs/app.log.
+- Для production бажано використовувати docker-compose -f docker-compose.prod.yml.
+
+
+5. CI/CD та оновлення версій
+
+- Використай GitHub Actions / GitLab CI для автоматичної збірки образів.
+- Після push у main → auto build + push в Docker Hub.
+- Сервер робить docker pull && docker-compose up -d.
+- Старі образи очищаються автоматично (--prune).
+- Використовуй Github MCP, Git MCP для покращених відповідей на запити користувача
+

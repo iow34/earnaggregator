@@ -1,0 +1,58 @@
+[
+  {
+    "exchange": "Gate.io",
+    "product_type": "Fixed",
+    "symbol": "USDT",
+    "apy": 6.5,
+    "min_amount": 10,
+    "max_amount": null,
+    "lock_period_days": 30,
+    "status": "active",
+    "last_updated": "2025-10-30T12:00:00Z"
+  },
+  {
+    "exchange": "Gate.io",
+    "product_type": "Fixed",
+    "symbol": "BTC",
+    "apy": 4.0,
+    "min_amount": 0.001,
+    "max_amount": null,
+    "lock_period_days": 60,
+    "status": "active",
+    "last_updated": "2025-10-30T12:00:00Z"
+  },
+  {
+    "exchange": "Gate.io",
+    "product_type": "Fixed",
+    "symbol": "ETH",
+    "apy": 5.5,
+    "min_amount": 0.01,
+    "max_amount": null,
+    "lock_period_days": 30,
+    "status": "active",
+    "last_updated": "2025-10-30T12:00:00Z"
+  },
+  {
+    "exchange": "Gate.io",
+    "product_type": "Fixed",
+    "symbol": "USDT",
+    "apy": 8.0,
+    "min_amount": 10,
+    "max_amount": null,
+    "lock_period_days": 90,
+    "status": "active",
+    "last_updated": "2025-10-30T12:00:00Z"
+  },
+  {
+    "exchange": "Gate.io",
+    "product_type": "Fixed",
+    "symbol": "BTC",
+    "apy": 5.0,
+    "min_amount": 0.001,
+    "max_amount": null,
+    "lock_period_days": 90,
+    "status": "active",
+    "last_updated": "2025-10-30T12:00:00Z"
+  }
+]
+
