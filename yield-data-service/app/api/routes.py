@@ -41,6 +41,7 @@ from app.services.scheduler import (
     trigger_health_check
 )
 from app.utils.logger import logger
+from app.__version__ import __version__
 
 # Створюємо роутер для основних API
 router = APIRouter(prefix="/api/v1", tags=["yield"])
@@ -653,7 +654,7 @@ async def health_check_detailed() -> HealthResponse:
         return HealthResponse(
             success=True,
             service="yield-data-service",
-            version="1.0.0",
+            version=__version__,
             database_status=db_status,
             cache_status=cache_status,
             api_status={
@@ -667,7 +668,7 @@ async def health_check_detailed() -> HealthResponse:
         return HealthResponse(
             success=False,
             service="yield-data-service",
-            version="1.0.0",
+            version=__version__,
             database_status="unhealthy",
             cache_status="unknown",
             api_status={"error": str(e)}
