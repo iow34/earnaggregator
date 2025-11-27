@@ -11,6 +11,7 @@ from datetime import datetime, UTC
 from enum import Enum
 
 from .yield_product import YieldProduct
+from app.__version__ import __version__ as app_version
 
 
 class ResponseStatus(str, Enum):
@@ -118,7 +119,7 @@ class HealthResponse(BaseResponse):
     """Відповідь про стан сервісу."""
     
     service: str = Field(default="yield-data-service", description="Назва сервісу")
-    version: str = Field(default="1.0.0", description="Версія сервісу")
+    version: str = Field(default=app_version, description="Версія сервісу")
     uptime: Optional[float] = Field(default=None, description="Час роботи в секундах")
     database_status: Optional[str] = Field(default=None, description="Статус бази даних")
     cache_status: Optional[str] = Field(default=None, description="Статус кешу")
@@ -277,13 +278,15 @@ class TopByProviderResponse(BaseResponse):
 
 def create_health_response(
     service: str = "yield-data-service",
-    version: str = "1.0.0",
+    version: str = None,
     uptime: float = None,
     database_status: str = None,
     cache_status: str = None,
     api_status: Dict[str, str] = None
 ) -> HealthResponse:
     """Створює відповідь про стан сервісу."""
+    if version is None:
+        version = app_version
     return HealthResponse(
         success=True,
         service=service,
