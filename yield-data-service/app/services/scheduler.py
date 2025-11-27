@@ -620,10 +620,10 @@ class DataScheduler:
         Запускає scheduler з усіма задачами.
         
         Задачі:
-        - update_cache_job: кожну годину
-        - update_database_job: кожну годину (зміщено на 15 хв)
-        - health_check_job: кожні 15 хвилин
-        - update_popular_symbols_job: кожні 30 хвилин
+        - update_cache_job: кожні 12 годин
+        - update_database_job: кожні 12 годин
+        - health_check_job: кожні 8 годин
+        - update_popular_symbols_job: кожні 6 годин
         - update_coingecko_job: раз на добу (о 00:00 UTC)
         """
         try:
@@ -638,49 +638,49 @@ class DataScheduler:
                 EVENT_JOB_EXECUTED | EVENT_JOB_ERROR
             )
             
-            # Задача 1: Оновлення кешу кожну годину
+            # Задача 1: Оновлення кешу кожні 12 годин
             self.scheduler.add_job(
                 self.update_cache_job,
-                trigger=IntervalTrigger(hours=1),
+                trigger=IntervalTrigger(hours=12),
                 id="update_cache",
                 name="Оновлення кешу",
                 replace_existing=True,
                 max_instances=1  # Тільки одна задача одночасно
             )
-            logger.info("✅ Додано задачу: Оновлення кешу (кожну годину)")
+            logger.info("✅ Додано задачу: Оновлення кешу (кожні 12 годин)")
             
-            # Задача 2: Оновлення БД кожну годину (зміщено на 15 хв)
+            # Задача 2: Оновлення БД кожні 12 годин
             self.scheduler.add_job(
                 self.update_database_job,
-                trigger=IntervalTrigger(hours=1),
+                trigger=IntervalTrigger(hours=12),
                 id="update_database",
                 name="Синхронізація БД",
                 replace_existing=True,
                 max_instances=1
             )
-            logger.info("✅ Додано задачу: Синхронізація БД (кожну годину)")
+            logger.info("✅ Додано задачу: Синхронізація БД (кожні 12 годин)")
             
-            # Задача 3: Health check кожні 15 хвилин
+            # Задача 3: Health check кожні 8 годин
             self.scheduler.add_job(
                 self.health_check_job,
-                trigger=IntervalTrigger(minutes=15),
+                trigger=IntervalTrigger(hours=8),
                 id="health_check",
                 name="Health Check API",
                 replace_existing=True,
                 max_instances=1
             )
-            logger.info("✅ Додано задачу: Health Check (кожні 15 хв)")
+            logger.info("✅ Додано задачу: Health Check (кожні 8 годин)")
             
-            # Задача 4: Прогрів популярних символів кожні 30 хвилин
+            # Задача 4: Прогрів популярних символів кожні 6 годин
             self.scheduler.add_job(
                 self.update_popular_symbols_job,
-                trigger=IntervalTrigger(minutes=30),
+                trigger=IntervalTrigger(hours=6),
                 id="warmup_cache",
                 name="Прогрів кешу популярних монет",
                 replace_existing=True,
                 max_instances=1
             )
-            logger.info("✅ Додано задачу: Прогрів кешу (кожні 30 хв)")
+            logger.info("✅ Додано задачу: Прогрів кешу (кожні 6 годин)")
             
             # Задача 5: Оновлення CoinGecko рейтингу раз на добу (о 00:00 UTC)
             self.scheduler.add_job(
