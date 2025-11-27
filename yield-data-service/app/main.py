@@ -29,6 +29,7 @@ from app.middleware.rate_limiter import RateLimiterMiddleware
 from app.services.scheduler import start_scheduler_async, stop_scheduler, data_scheduler
 from app.services.exchanges import exchange_registry
 from app.config import settings
+from app.__version__ import __version__
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -91,7 +92,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="EarnAggregator Data Service",
     description="API для отримання даних про Earn продукти з криптобірж",
-    version="1.0.0",
+    version=__version__,
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan
@@ -131,7 +132,7 @@ async def root():
     return {
         "message": "EarnAggregator Data Service",
         "status": "running",
-        "version": "1.0.0"
+        "version": __version__
     }
 
 @app.get("/health")
@@ -197,7 +198,7 @@ async def api_health_check():
     return {
         "status": overall_status,
         "service": "yield-data-service",
-        "version": "1.0.0",
+        "version": __version__,
         "api_version": "v1",
         "database": db_health,
         "cache": cache_health,
