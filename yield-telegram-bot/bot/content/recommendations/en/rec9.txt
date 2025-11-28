@@ -1,10 +1,49 @@
-<b>🔍 Як перевіряти надійність біржі перед інвестуванням</b>
+🔍 <b>How to Check an Exchange’s Reliability Before Investing</b>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-<b>📋 Критерії надійності біржі:</b>
+<b>📋 Key Criteria for Exchange Reliability:</b>
 
-━━━━━━━━━━━━━━
+<b>1. 📊 Proof-of-Reserves (PoR)</b>
+• Check whether the exchange publishes reserve audits: are reports and cryptographic proofs available?
+• Example: Kraken provides access to a Merkle tree, allowing users to verify whether their balance was included.
+• Reserves should exceed liabilities — this is a strong indicator of safety.
+⚠️ However: even PoR does not guarantee complete security — always check additional factors.
 
-⚠️ <b>Note:</b> This is a placeholder. Full English translation coming soon.
-Please refer to Ukrainian or Russian version for complete information.
+<b>2. 🔐 Account Security</b>
+An exchange should provide:
+• KYC/identity verification — minimum level of accountability
+• 2FA (two-factor authentication) — essential
+• Whitelisted withdrawal addresses — significantly reduces the risk of unauthorized withdrawals
+• Anti-phishing code — protects against phishing attempts
+Skipping these features is a major red flag.
+
+<b>3. 💬 Reputation</b>
+Check:
+• Ratings on CoinMarketCap or similar platforms
+• User reviews on forums (e.g., r/CryptoCurrency on Reddit) — users often report issues with withdrawals, support, or security
+• History of hacks or incidents — any withdrawal freeze or major loss is a serious warning sign
+• Exchange age — platforms operating for more than 3 years usually have more stable operations and a longer track record
+
+<b>4. 🏦 Insurance Fund (SAFU or equivalent)</b>
+• For example, Binance has the SAFU fund to protect users.
+• Check whether the exchange has a reserve or insurance fund for emergencies.
+• Absence of such a fund increases risk.
+
+<b>5. 📜 Licensing & Regulation</b>
+• Check whether the exchange is registered in a reputable jurisdiction and has licenses for storing/handling digital assets.
+• Compliance with regulations: KYC/AML processes, regular financial reporting
+• Lack of regulation does not always mean the exchange is unsafe, but it does increase risk.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>⚠️ Red Flags:</b>
+• Frequent freezes or delays in withdrawals
+• Lack of transparency in reserves: insufficient public data
+• Poor customer support: long response times or no response at all
+• Anonymous team: no public information about founders or leadership
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>💡 Tip:</b>
+Avoid platforms without insurance or with a history of recurring issues. Always check the exchange rating on CoinMarketCap and review authentic user feedback. Choose exchanges that provide public Proof-of-Reserves, strong account security, a clean reputation, and clear regulatory oversight.
