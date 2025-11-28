@@ -79,15 +79,44 @@ class PriorityProductsService:
                     )
                     
                     # Отримуємо всі flexible продукти для символу та біржі
+                    logger.info(
+                        f"🔍 Пошук продуктів для {exchange}/{symbol} "
+                        f"з provider={provider}"
+                    )
                     products = await YieldProductCRUD.get_products_by_symbol_and_provider(
                         db, symbol, provider
                     )
+                    
+                    logger.info(
+                        f"📊 {exchange}/{symbol}: знайдено {len(products)} продуктів "
+                        f"з provider={provider}"
+                    )
+                    
+                    # Логуємо перші продукти для дебагу
+                    if products:
+                        for p in products[:3]:
+                            logger.info(
+                                f"  - {p.symbol} {p.provider} APY={p.apy}% "
+                                f"lock={p.lock_period_days} active={p.is_active}"
+                            )
                     
                     # Фільтруємо тільки flexible продукти (lock_period_days=0)
                     flexible_products = [
                         p for p in products 
                         if p.lock_period_days == 0 and p.is_active
                     ]
+                    
+                    logger.info(
+                        f"⚡ {exchange}/{symbol}: після фільтрації flexible: {len(flexible_products)} продуктів"
+                    )
+                    
+                    # Логуємо flexible продукти
+                    if flexible_products:
+                        for p in flexible_products[:3]:
+                            logger.info(
+                                f"  Flexible: {p.symbol} APY={p.apy}% "
+                                f"product_id={p.id}"
+                            )
                     
                     if flexible_products:
                         # Знаходимо найкращий продукт (найвищий APY)
