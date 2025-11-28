@@ -224,10 +224,16 @@ async def prometheus_metrics():
 
 if __name__ == "__main__":
     logger.info("Запуск EarnAggregator Data Service...")
+    
+    # Railway надає PORT через змінну середовища
+    port = int(os.getenv("PORT", 8000))
+    host = os.getenv("HOST", "0.0.0.0")
+    reload = os.getenv("ENVIRONMENT", "production") != "production"
+    
     uvicorn.run(
         "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
+        host=host,
+        port=port,
+        reload=reload,
         log_level="info"
     )
