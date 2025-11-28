@@ -146,6 +146,7 @@ async def root():
         "status": "running",
         "docs": "/docs",
         "health": "/api/v1/health"
+        "version": __version__
     }
 
 
