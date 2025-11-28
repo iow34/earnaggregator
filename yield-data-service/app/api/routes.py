@@ -1162,25 +1162,131 @@ async def sync_kucoin_products(symbol: Optional[str] = Query(None, description="
 # EXCHANGES ENDPOINTS - РОЗДІЛ 3.1: дані з конкретної біржі
 # =============================================================================
 
-@router.get("/exchanges", response_model=YieldResponse)
+@router.get("/exchanges")
 async def get_exchange_data(
-    exchange: str = Query(..., description="Назва біржі (binance, bybit)"),
+    exchange: Optional[str] = Query(None, description="Назва біржі (binance, bybit). Якщо не вказано, повертає список доступних бірж"),
     symbol: Optional[str] = Query(None, description="Символ монети для фільтрації"),
     limit: int = Query(default=500, ge=1, le=1000, description="Кількість продуктів (макс 1000)"),
     db: AsyncSession = Depends(get_database_session)
-) -> YieldResponse:
+):
     """
-    Отримати дані з конкретної біржі з використанням сервісу агрегації (РОЗДІЛ 3.2).
+    Отримати дані з конкретної біржі або список доступних бірж.
+    
+    Якщо параметр `exchange` не вказано, повертає список доступних бірж.
+    Якщо `exchange` вказано, повертає дані з конкретної біржі з використанням сервісу агрегації (РОЗДІЛ 3.2).
     
     Args:
-        exchange: Назва біржі (binance, bybit)
+        exchange: Назва біржі (binance, bybit, okx, mexc, bitmart, gate, bitget, kraken, kucoin, htx). Опціонально.
         symbol: Опціональний символ для фільтрації
         limit: Кількість продуктів для повернення
         db: Сесія бази даних
         
     Returns:
-        YieldResponse: Дані з конкретної біржі з агрегації
+        Якщо exchange не вказано: dict зі списком доступних бірж
+        Якщо exchange вказано: YieldResponse з даними з конкретної біржі
     """
+    # Якщо exchange не вказано, повертаємо список доступних бірж
+    if exchange is None:
+        try:
+            # Перевіряємо стан кожної біржі
+            exchanges_status = {}
+            
+            # Binance
+            try:
+                binance_service = exchange_registry.get_exchange_service("binance")
+                binance_health = await binance_service.get_health_status()
+                exchanges_status["binance"] = {
+                    "name": "Binance",
+                    "status": "healthy" if binance_health.get("status") == "healthy" else "degraded",
+                    "description": "Криптобіржа Binance - найбільша у світі",
+                    "endpoints": [
+                        "/api/v1/exchanges?exchange=binance",
+                        "/api/v1/binance/products",
+                        "/api/v1/binance/test"
+                    ]
+                }
+            except Exception as e:
+                exchanges_status["binance"] = {
+                    "name": "Binance", 
+                    "status": "unhealthy",
+                    "error": str(e)
+                }
+            
+            # Bybit
+            try:
+                bybit_service = exchange_registry.get_exchange_service("bybit")
+                bybit_health = await bybit_service.get_health_status()
+                exchanges_status["bybit"] = {
+                    "name": "Bybit",
+                    "status": "healthy" if bybit_health.get("status") == "healthy" else "degraded",
+                    "description": "Криптобіржа Bybit - деривативи та спот торгівля",
+                    "endpoints": [
+                        "/api/v1/exchanges?exchange=bybit",
+                        "/api/v1/bybit/products",
+                        "/api/v1/bybit/test"
+                    ]
+                }
+            except Exception as e:
+                exchanges_status["bybit"] = {
+                    "name": "Bybit",
+                    "status": "unhealthy",
+                    "error": str(e)
+                }
+
+            # OKX
+            try:
+                okx_service = exchange_registry.get_exchange_service("okx")
+                okx_health = await okx_service.get_health_status()
+                exchanges_status["okx"] = {
+                    "name": "OKX",
+                    "status": "healthy" if okx_health.get("status") == "healthy" else "degraded",
+                    "description": "Криптобіржа OKX - On-chain та Simple Earn продукти",
+                    "endpoints": [
+                        "/api/v1/exchanges?exchange=okx",
+                        "/api/v1/okx/products",
+                        "/api/v1/okx/test"
+                    ]
+                }
+            except Exception as e:
+                exchanges_status["okx"] = {
+                    "name": "OKX",
+                    "status": "unhealthy",
+                    "error": str(e)
+                }
+
+            # KuCoin
+            try:
+                kucoin_service = exchange_registry.get_exchange_service("kucoin")
+                kucoin_health = await kucoin_service.get_health_status()
+                exchanges_status["kucoin"] = {
+                    "name": "KuCoin",
+                    "status": "healthy" if kucoin_health.get("status") == "healthy" else "degraded",
+                    "description": "Криптобіржа KuCoin - Flexible та Fixed Savings",
+                    "endpoints": [
+                        "/api/v1/exchanges?exchange=kucoin",
+                        "/api/v1/kucoin/products",
+                        "/api/v1/kucoin/test"
+                    ]
+                }
+            except Exception as e:
+                exchanges_status["kucoin"] = {
+                    "name": "KuCoin",
+                    "status": "unhealthy",
+                    "error": str(e)
+                }
+
+            return {
+                "success": True,
+                "exchanges": exchanges_status,
+                "total_exchanges": len(exchanges_status),
+                "message": "Список доступних бірж отримано"
+            }
+        except Exception as e:
+            logger.error(f"❌ Помилка отримання списку бірж: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Внутрішня помилка сервера: {str(e)}"
+            )
     try:
         # Валідація назви біржі
         exchange_lower = exchange.lower().strip()
