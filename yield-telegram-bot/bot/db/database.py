@@ -20,9 +20,23 @@ class DatabaseManager:
     """Менеджер бази даних для бота."""
 
     def __init__(self, db_url: Optional[str] = None):
-        self._db_url = db_url or settings.DATABASE_URL
+        # Railway надає DATABASE_URL в форматі postgresql://, але потрібен postgresql+asyncpg://
+        raw_url = db_url or settings.DATABASE_URL
+        self._db_url = self._normalize_database_url(raw_url)
         self.engine: Optional[AsyncEngine] = None
         self.session_factory: Optional[async_sessionmaker[AsyncSession]] = None
+
+    def _normalize_database_url(self, url: str) -> str:
+        """
+        Нормалізує DATABASE_URL для підтримки Railway формату.
+        
+        Railway надає: postgresql://user:pass@host:port/db
+        Потрібно: postgresql+asyncpg://user:pass@host:port/db
+        """
+        if url.startswith("postgresql://") and "+asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            logger.debug(f"🔄 Нормалізовано DATABASE_URL для asyncpg: {url[:50]}...")
+        return url
 
     async def initialize(self) -> bool:
         """Ініціалізація з'єднання з БД."""
