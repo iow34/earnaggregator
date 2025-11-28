@@ -16,6 +16,7 @@ from app.utils.logger import logger
 from app.db.database import startup_database, shutdown_database, get_database_health
 from app.api.routes import router as api_router
 from app.api.tracking_routes import router as tracking_router, redirect_router
+from app.api.migrations_routes import router as migrations_router
 from app.services.cache import cache_manager
 from app.middleware.metrics import PrometheusHTTPMetricsMiddleware
 from app.middleware.rate_limiter import RateLimiterMiddleware
@@ -183,6 +184,7 @@ async def health():
 app.include_router(api_router, tags=["api"])
 app.include_router(tracking_router, prefix="/tracking", tags=["tracking"])
 app.include_router(redirect_router, prefix="/ref", tags=["redirect"])
+app.include_router(migrations_router, tags=["migrations"])
 
 
 # API Health check endpoint (додатковий до основного /health)
