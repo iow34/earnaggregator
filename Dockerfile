@@ -51,10 +51,10 @@ WORKDIR /app
 
 # Копіюємо код проекту
 # Структура проекту:
-# - yield-data-service/app/ -> /app/app/
-# - yield-data-service/bot/ -> /app/bot/
+# - yield-data-service/app/ -> /app/app/ (для yield-api)
+# - yield-telegram-bot/bot/ -> /app/bot/ (для telegram-bot)
 COPY yield-data-service/app /app/app
-COPY yield-data-service/bot /app/bot
+COPY yield-telegram-bot/bot /app/bot
 
 # Створюємо директорії для логів та тестів
 RUN mkdir -p /app/logs /app/tests
