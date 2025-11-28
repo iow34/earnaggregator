@@ -294,6 +294,8 @@ curl http://localhost:8000/api/v1/health | python3 -m json.tool
 ### Гайди
 
 - [QUICK_START.md](QUICK_START.md) - Швидкий старт
+- [docs/PULL_REQUEST_GUIDE.md](docs/PULL_REQUEST_GUIDE.md) - Гайд по Pull Requests з прикладами
+- [docs/VERSIONING_GUIDE.md](docs/VERSIONING_GUIDE.md) - Керування версійністю проекту
 - [docs/PROMETHEUS_GRAFANA_GUIDE.md](docs/PROMETHEUS_GRAFANA_GUIDE.md) - Повний гайд моніторингу
 - [docs/MONITORING_QUICK_SETUP.md](docs/MONITORING_QUICK_SETUP.md) - Налаштування за 5 хв
 - [docs/DOCKER_ENDPOINT_ACCESS_GUIDE.md](docs/DOCKER_ENDPOINT_ACCESS_GUIDE.md) - Docker та endpoints
