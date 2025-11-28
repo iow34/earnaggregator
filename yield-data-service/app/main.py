@@ -22,7 +22,12 @@ from app.middleware.rate_limiter import RateLimiterMiddleware
 from app.services.scheduler import start_scheduler_async, stop_scheduler, data_scheduler
 from app.services.exchanges import exchange_registry
 from app.config import settings
-from app.__version__ import __version__
+
+# Безпечний імпорт версії
+try:
+    from app.__version__ import __version__
+except (ImportError, AttributeError):
+    __version__ = "1.0.0"
 
 
 @asynccontextmanager
@@ -140,13 +145,17 @@ async def root():
     """
     Root endpoint - інформація про API.
     """
+    try:
+        version = __version__
+    except (NameError, AttributeError):
+        version = "1.0.0"
+    
     return {
         "name": "EarnAggregator Data Service",
-        "version": __version__,
+        "version": version,
         "status": "running",
         "docs": "/docs",
         "health": "/api/v1/health"
-        "version": __version__
     }
 
 
@@ -157,9 +166,14 @@ async def health():
     Health check endpoint для моніторингу.
     """
     db_health = await get_database_health()
+    try:
+        version = __version__
+    except (NameError, AttributeError):
+        version = "1.0.0"
+    
     return {
         "status": "healthy" if db_health.get("connected") else "degraded",
-        "version": __version__,
+        "version": version,
         "database": db_health
     }
 
@@ -188,10 +202,15 @@ async def api_health_check():
     elif cache_health.get("status") == "unhealthy":
         overall_status = "degraded"
     
+    try:
+        version = __version__
+    except (NameError, AttributeError):
+        version = "1.0.0"
+    
     return {
         "status": overall_status,
         "service": "yield-data-service",
-        "version": __version__,
+        "version": version,
         "api_version": "v1",
         "database": db_health,
         "cache": cache_health,
