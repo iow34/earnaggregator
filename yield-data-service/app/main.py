@@ -1,14 +1,7 @@
 """
-Головний файл Data Service.
+EarnAggregator Data Service - FastAPI Application
 
-Цей файл:
-- Створює FastAPI додаток
-- Реєструє API маршрути
-- Запускає scheduler для автоматичного оновлення кешу
-- Налаштовує підключення до бази даних
-- Налаштовує логування
-
-Запуск: uvicorn app.main:app --reload
+Головний модуль FastAPI додатку для агрегації даних про Yield продукти.
 """
 
 from fastapi import FastAPI, Response
@@ -29,191 +22,154 @@ from app.middleware.rate_limiter import RateLimiterMiddleware
 from app.services.scheduler import start_scheduler_async, stop_scheduler, data_scheduler
 from app.services.exchanges import exchange_registry
 from app.config import settings
+from app.__version__ import __version__
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Lifespan events для FastAPI додатку.
+    Lifespan контекст для FastAPI - управління життєвим циклом додатку.
     
-    Керує життєвим циклом додатку:
-    - Startup: ініціалізація БД, scheduler
-    - Shutdown: закриття з'єднань
+    При старті:
+    - Ініціалізує підключення до БД
+    - Ініціалізує кеш
+    - Запускає scheduler
+    
+    При завершенні:
+    - Зупиняє scheduler
+    - Закриває підключення до БД
     """
     # Startup
-    logger.info("🚀 Запуск EarnAggregator Data Service...")
-    
-    # Спробуємо ініціалізувати БД, але не блокуємо запуск якщо недоступна
     try:
-        await startup_database()
-        logger.info("✅ База даних підключена")
+        logger.info("🚀 Запуск EarnAggregator Data Service...")
+        logger.info(f"📦 Версія: {__version__}")
+        
+        # Ініціалізуємо БД
+        db_success = await startup_database()
+        if not db_success:
+            logger.error("❌ Не вдалося ініціалізувати підключення до БД")
+            # Не зупиняємо додаток, але логуємо помилку
+        
+        # Ініціалізуємо кеш
+        try:
+            await cache_manager.initialize()
+            logger.info("✅ Redis кеш ініціалізовано")
+        except Exception as e:
+            logger.warning(f"⚠️ Не вдалося ініціалізувати Redis кеш: {e}")
+            logger.warning("⚠️ Продовжуємо роботу без кешу")
+        
+        # Запускаємо scheduler
+        try:
+            await start_scheduler_async()
+            logger.info("✅ Scheduler запущено")
+        except Exception as e:
+            logger.error(f"❌ Помилка запуску scheduler: {e}")
+        
+        logger.info("✅ EarnAggregator Data Service запущено успішно")
+        
     except Exception as e:
-        logger.warning(f"⚠️ Не вдалося підключитися до БД: {e}")
-        logger.info("🔄 Сервіс запускається без БД, спробуємо пізніше")
-    
-    # Ініціалізуємо кеш
-    cache_ready = await cache_manager.initialize()
-    if cache_ready:
-        logger.info("✅ Redis кеш підключено")
-    else:
-        logger.warning("⚠️ Redis недоступний, використовується fallback кеш")
-
-    # Ініціалізуємо реєстр бірж
-    await exchange_registry.initialize()
-    logger.info("✅ Реєстр бірж ініціалізовано")
-    
-    # Запускаємо scheduler - РОЗДІЛ 3.3
-    try:
-        await start_scheduler_async()
-        logger.info("✅ Scheduler запущено успішно")
-    except Exception as e:
-        logger.warning(f"⚠️ Помилка запуску scheduler: {e}")
-        logger.info("🔄 Сервіс працює без scheduler")
-    
-    logger.info("✅ Сервіс готовий до роботи")
+        logger.error(f"❌ Критична помилка при старті: {e}")
+        # Не зупиняємо додаток, але логуємо помилку
     
     yield
     
     # Shutdown
-    logger.info("🛑 Зупинка EarnAggregator Data Service...")
-    
-    # Зупиняємо scheduler
     try:
-        stop_scheduler()
-        logger.info("✅ Scheduler зупинено")
+        logger.info("🛑 Зупинка EarnAggregator Data Service...")
+        
+        # Зупиняємо scheduler
+        try:
+            stop_scheduler()
+            logger.info("✅ Scheduler зупинено")
+        except Exception as e:
+            logger.error(f"❌ Помилка зупинки scheduler: {e}")
+        
+        # Закриваємо підключення до БД
+        try:
+            await shutdown_database()
+            logger.info("✅ Підключення до БД закрито")
+        except Exception as e:
+            logger.error(f"❌ Помилка закриття підключення до БД: {e}")
+        
+        # Закриваємо кеш
+        try:
+            await cache_manager.close()
+            logger.info("✅ Redis кеш закрито")
+        except Exception as e:
+            logger.warning(f"⚠️ Помилка закриття Redis кешу: {e}")
+        
+        logger.info("✅ EarnAggregator Data Service зупинено")
+        
     except Exception as e:
-        logger.warning(f"⚠️ Помилка зупинки scheduler: {e}")
-    
-    await cache_manager.close()
-    await shutdown_database()
-    logger.info("✅ Сервіс зупинено")
+        logger.error(f"❌ Помилка при зупинці: {e}")
+
 
 # Створюємо FastAPI додаток
 app = FastAPI(
     title="EarnAggregator Data Service",
-    description="API для отримання даних про Earn продукти з криптобірж",
-    version="1.0.0",
+    description="API для агрегації даних про Yield продукти з криптовалютних бірж",
+    version=__version__,
+    lifespan=lifespan,
     docs_url="/docs",
-    redoc_url="/redoc",
-    lifespan=lifespan
+    redoc_url="/redoc"
 )
 
-# Налаштування CORS
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # В продакшні обмежити конкретними доменами
+    allow_origins=["*"],  # В production обмежити до конкретних доменів
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# HTTP metrics middleware
+# Prometheus metrics middleware
 app.add_middleware(PrometheusHTTPMetricsMiddleware)
 
-# Rate limiting middleware для захисту redirect endpoint
-app.add_middleware(
-    RateLimiterMiddleware,
-    redis_url=settings.redis_url,
-    rate_limit=10,  # 10 requests
-    time_window=60,  # per minute
-    endpoints=['/ref']  # Тільки для redirect endpoint
-)
+# Rate limiter middleware
+app.add_middleware(RateLimiterMiddleware)
 
-# Prometheus метрики: повертаємо базові метрики процесу/інтерпретатора
 
-# Реєструємо API роутери
-app.include_router(api_router)
-app.include_router(tracking_router)  # Tracking endpoints
-app.include_router(redirect_router)  # Redirect server (без prefix)
-
+# Root endpoint
 @app.get("/")
 async def root():
-    """Кореневий endpoint для перевірки роботи сервісу."""
-    return {
-        "message": "EarnAggregator Data Service",
-        "status": "running",
-        "version": "1.0.0"
-    }
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint для Docker health checks."""
-    # Перевіряємо стан бази даних
-    db_health = await get_database_health()
-    
-    # Перевіряємо стан кешу
-    cache_health = await cache_manager.health_check()
-    
-    # Визначаємо загальний статус
-    overall_status = "healthy"
-    if db_health["status"] != "healthy":
-        overall_status = "unhealthy"
-    elif cache_health["status"] == "unhealthy":
-        overall_status = "degraded"
-    
-    return {
-        "status": overall_status,
-        "service": "yield-data-service",
-        "database": db_health,
-        "cache": cache_health
-    }
-
-@app.get("/api/v1/status")
-async def api_status():
-    """Статус API endpoints."""
-    return {
-        "api_version": "v1",
-        "status": "active",
-        "endpoints": [
-            "/api/v1/yield/{symbol}",
-            "/api/v1/top", 
-            "/api/v1/exchanges",
-            "/api/v1/exchanges/list",
-            "/api/v1/health",
-            "/api/v1/recommendations/{user_id}",
-            "/api/v1/stats",
-            "/api/v1/cache/stats",
-            "/api/v1/cache/health",
-            "/api/v1/binance/test",
-            "/api/v1/bybit/test"
-        ]
-    }
-
-@app.get("/api/v1/health")
-async def api_health_check():
-    """Health check endpoint для API (РОЗДІЛ 3.1)."""
-    # Перевіряємо стан бази даних
-    db_health = await get_database_health()
-    
-    # Перевіряємо стан кешу
-    cache_health = await cache_manager.health_check()
-    
-    # Визначаємо загальний статус
-    overall_status = "healthy"
-    if db_health["status"] != "healthy":
-        overall_status = "unhealthy"
-    elif cache_health["status"] == "unhealthy":
-        overall_status = "degraded"
-    
-    return {
-        "status": overall_status,
-        "service": "yield-data-service",
-        "version": "1.0.0",
-        "api_version": "v1",
-        "database": db_health,
-        "cache": cache_health,
-        "endpoints_available": [
-            "/api/v1/yield/{symbol}",
-            "/api/v1/top",
-            "/api/v1/exchanges",
-            "/api/v1/exchanges/list",
-            "/api/v1/stats"
-        ]
-    }
-
-@app.get("/metrics")
-async def prometheus_metrics():
     """
-    Prometheus метрики (native формат). Використовується Prometheus для scraping.
+    Root endpoint - інформація про API.
+    """
+    return {
+        "name": "EarnAggregator Data Service",
+        "version": __version__,
+        "status": "running",
+        "docs": "/docs",
+        "health": "/api/v1/health"
+    }
+
+
+# Health check endpoint
+@app.get("/health")
+async def health():
+    """
+    Health check endpoint для моніторингу.
+    """
+    db_health = await get_database_health()
+    return {
+        "status": "healthy" if db_health["connected"] else "degraded",
+        "version": __version__,
+        "database": db_health
+    }
+
+
+# Підключаємо роутери
+app.include_router(api_router, prefix="/api/v1", tags=["api"])
+app.include_router(tracking_router, prefix="/tracking", tags=["tracking"])
+app.include_router(redirect_router, prefix="/ref", tags=["redirect"])
+
+
+# Prometheus metrics endpoint
+@app.get("/metrics")
+async def metrics():
+    """
+    Prometheus metrics endpoint.
     """
     try:
         return Response(content=generate_latest(), media_type="text/plain; charset=utf-8")
@@ -223,10 +179,16 @@ async def prometheus_metrics():
 
 if __name__ == "__main__":
     logger.info("Запуск EarnAggregator Data Service...")
+    
+    # Railway надає PORT через змінну середовища
+    port = int(os.getenv("PORT", 8000))
+    host = os.getenv("HOST", "0.0.0.0")
+    reload = os.getenv("ENVIRONMENT", "production") != "production"
+    
     uvicorn.run(
         "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
+        host=host,
+        port=port,
+        reload=reload,
         log_level="info"
     )
