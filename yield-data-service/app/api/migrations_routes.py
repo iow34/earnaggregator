@@ -3,12 +3,10 @@ API endpoints для виконання міграцій бази даних.
 Використовується для ручного запуску міграцій через HTTP запит.
 """
 
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from pathlib import Path
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import text
 
-from app.db.database import get_database_session
+from app.db.database import db_manager
 from app.utils.logger import logger
 
 router = APIRouter(prefix="/api/v1/migrations", tags=["migrations"])
@@ -132,7 +130,7 @@ CREATE INDEX IF NOT EXISTS idx_priority_updated_at ON priority_products(updated_
 
 
 @router.post("/run")
-async def run_migrations(db: AsyncSession = Depends(get_database_session)):
+async def run_migrations():
     """
     Виконати всі SQL міграції бази даних.
     
@@ -149,54 +147,55 @@ async def run_migrations(db: AsyncSession = Depends(get_database_session)):
         successful = 0
         failed = 0
         
-        for migration_file, sql_content in migrations:
-            logger.info(f"📄 Виконуємо міграцію: {migration_file}")
-            
-            try:
-                # Розділяємо SQL на окремі команди
-                commands = [
-                    cmd.strip() 
-                    for cmd in sql_content.split(';') 
-                    if cmd.strip() and not cmd.strip().startswith('--')
-                ]
+        async with db_manager.get_session() as db:
+            for migration_file, sql_content in migrations:
+                logger.info(f"📄 Виконуємо міграцію: {migration_file}")
                 
-                executed = 0
-                skipped = 0
-                
-                for command in commands:
-                    if command:
-                        try:
-                            await db.execute(text(command))
-                            executed += 1
-                        except Exception as e:
-                            error_str = str(e).lower()
-                            if "already exists" in error_str or "duplicate" in error_str or "already defined" in error_str:
-                                skipped += 1
-                                logger.debug(f"ℹ️ Пропущено (вже існує): {command[:50]}...")
-                            else:
-                                logger.warning(f"⚠️ Помилка виконання команди: {e}")
-                                logger.warning(f"Команда: {command[:100]}")
-                                # Продовжуємо виконання інших команд
-                
-                await db.commit()
-                
-                logger.info(f"✅ Міграція {migration_file} виконано успішно")
-                results.append({
-                    "file": migration_file,
-                    "status": "success",
-                    "executed_commands": executed,
-                    "skipped_commands": skipped
-                })
-                successful += 1
-                
-            except Exception as e:
-                logger.error(f"❌ Помилка виконання міграції {migration_file}: {e}", exc_info=True)
-                results.append({
-                    "file": migration_file,
-                    "status": "error",
-                    "message": str(e)
-                })
-                failed += 1
+                try:
+                    # Розділяємо SQL на окремі команди
+                    commands = [
+                        cmd.strip() 
+                        for cmd in sql_content.split(';') 
+                        if cmd.strip() and not cmd.strip().startswith('--')
+                    ]
+                    
+                    executed = 0
+                    skipped = 0
+                    
+                    for command in commands:
+                        if command:
+                            try:
+                                await db.execute(text(command))
+                                executed += 1
+                            except Exception as e:
+                                error_str = str(e).lower()
+                                if "already exists" in error_str or "duplicate" in error_str or "already defined" in error_str:
+                                    skipped += 1
+                                    logger.debug(f"ℹ️ Пропущено (вже існує): {command[:50]}...")
+                                else:
+                                    logger.warning(f"⚠️ Помилка виконання команди: {e}")
+                                    logger.warning(f"Команда: {command[:100]}")
+                                    # Продовжуємо виконання інших команд
+                    
+                    await db.commit()
+                    
+                    logger.info(f"✅ Міграція {migration_file} виконано успішно")
+                    results.append({
+                        "file": migration_file,
+                        "status": "success",
+                        "executed_commands": executed,
+                        "skipped_commands": skipped
+                    })
+                    successful += 1
+                    
+                except Exception as e:
+                    logger.error(f"❌ Помилка виконання міграції {migration_file}: {e}", exc_info=True)
+                    results.append({
+                        "file": migration_file,
+                        "status": "error",
+                        "message": str(e)
+                    })
+                    failed += 1
         
         return {
             "status": "completed",
