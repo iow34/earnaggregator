@@ -58,6 +58,10 @@ async def lifespan(app: FastAPI):
             logger.warning(f"⚠️ Не вдалося ініціалізувати Redis кеш: {e}")
             logger.warning("⚠️ Продовжуємо роботу без кешу")
         
+        # Ініціалізуємо реєстр бірж
+        await exchange_registry.initialize()
+        logger.info("✅ Реєстр бірж ініціалізовано")
+        
         # Запускаємо scheduler
         try:
             await start_scheduler_async()
@@ -153,16 +157,51 @@ async def health():
     """
     db_health = await get_database_health()
     return {
-        "status": "healthy" if db_health["connected"] else "degraded",
+        "status": "healthy" if db_health.get("connected") else "degraded",
         "version": __version__,
         "database": db_health
     }
 
 
 # Підключаємо роутери
-app.include_router(api_router, prefix="/api/v1", tags=["api"])
+# Примітка: api_router вже має prefix="/api/v1" в routes.py, тому не додаємо prefix тут
+app.include_router(api_router, tags=["api"])
 app.include_router(tracking_router, prefix="/tracking", tags=["tracking"])
 app.include_router(redirect_router, prefix="/ref", tags=["redirect"])
+
+
+# API Health check endpoint (додатковий до основного /health)
+@app.get("/api/v1/health")
+async def api_health_check():
+    """Health check endpoint для API (РОЗДІЛ 3.1)."""
+    # Перевіряємо стан бази даних
+    db_health = await get_database_health()
+    
+    # Перевіряємо стан кешу
+    cache_health = await cache_manager.health_check()
+    
+    # Визначаємо загальний статус
+    overall_status = "healthy"
+    if db_health.get("status") != "healthy" or not db_health.get("connected"):
+        overall_status = "unhealthy"
+    elif cache_health.get("status") == "unhealthy":
+        overall_status = "degraded"
+    
+    return {
+        "status": overall_status,
+        "service": "yield-data-service",
+        "version": __version__,
+        "api_version": "v1",
+        "database": db_health,
+        "cache": cache_health,
+        "endpoints_available": [
+            "/api/v1/yield/{symbol}",
+            "/api/v1/top",
+            "/api/v1/exchanges",
+            "/api/v1/exchanges/list",
+            "/api/v1/stats"
+        ]
+    }
 
 
 # Prometheus metrics endpoint
