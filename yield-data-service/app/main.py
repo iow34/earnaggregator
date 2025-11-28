@@ -136,8 +136,11 @@ app.add_middleware(
 # Prometheus metrics middleware
 app.add_middleware(PrometheusHTTPMetricsMiddleware)
 
-# Rate limiter middleware
-app.add_middleware(RateLimiterMiddleware)
+# Rate limiter middleware (тільки якщо REDIS_URL налаштовано)
+if settings.redis_url:
+    app.add_middleware(RateLimiterMiddleware, redis_url=settings.redis_url)
+else:
+    logger.warning("⚠️ REDIS_URL не налаштовано, rate limiting вимкнено")
 
 
 # Root endpoint
