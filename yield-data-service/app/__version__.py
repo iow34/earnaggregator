@@ -7,8 +7,13 @@
 from pathlib import Path
 
 # Шлях до кореневого VERSION файлу
+# Спробуємо кілька можливих шляхів для підтримки різних середовищ
 _ROOT_DIR = Path(__file__).parent.parent.parent
 _VERSION_FILE = _ROOT_DIR / "VERSION"
+
+# Якщо файл не знайдено, спробуємо шлях відносно /app (для Docker)
+if not _VERSION_FILE.exists():
+    _VERSION_FILE = Path("/app/VERSION")
 
 
 def get_version() -> str:
