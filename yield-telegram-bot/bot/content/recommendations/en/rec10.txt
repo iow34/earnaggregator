@@ -1,10 +1,70 @@
-🎯 <b>Як планувати портфель на основі цілей</b>
+🎯 <b>How to Plan Your Portfolio Based on Your Goals</b>
 
-<b>📋 Алгоритм SMART-цілей:</b>
+<b>📋 SMART Goal Algorithm:</b>
 
-<b>🎯 1. Короткострокові цілі
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-━━━━━━━━━━━━━━
+<b>🎯 1. Short-Term Goals
+Strategy: Flexible Stablecoins</b>
 
-⚠️ <b>Note:</b> This is a placeholder. Full English translation coming soon.
-Please refer to Ukrainian or Russian version for complete information.
+• USDT/USDC Flexible — high liquidity
+• APY ≈ 3–5%
+• Example: save $1,000 for a purchase or an upcoming payment.
+
+📌 <i>Calculation:</i>
+If you currently have $950 and deposit it into a product with APY = 4% annual (0.04) for 1 month (= 1/12 year):
+Profit ≈ $950 × 0.04 × (1/12) = $950 × 0.00333 ≈ **$3.17 per month**.
+Thus: after one month you will have ≈ **$953.17**.
+You can enable auto-reinvestment to grow your principal faster and reach your goal sooner.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>🪙 2. Medium-Term Goals (up to 6 months)
+Strategy: Locked BTC/ETH</b>
+
+• Example: BTC Locked for 60–90 days
+• APY ≈ 6–8%
+• Example goal: accumulate 0.1 BTC in 6 months.
+
+📌 <i>Calculation:</i>
+Assume 1 BTC = $30,000 → 0.1 BTC = $3,000.
+You invest $3,000 into a Locked product with APY = 7% (0.07) for 6 months (0.5 year).
+
+Profit ≈ $3,000 × 0.07 × 0.5 = $3,000 × 0.035 = **$105**.
+
+Therefore, after 6 months you will have ≈ **$3,105** (not accounting for BTC price changes).
+
+🔍 If BTC rises — the effect increases; if it drops — the risk increases.
+But the yield from a Locked product still provides a stable boost to your deposit.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>🚀 3. Long-Term Goals (6+ months)
+Strategy: High-APY DeFi Products</b>
+
+• Altcoin staking, participation in DeFi programs
+• APY ≈ 10–20%+
+• Example: doubling capital in one year (depending on chosen projects).
+
+📌 <i>Calculation:</i>
+Assume you invest $5,000 into a DeFi program with APY = 15% (0.15) for 1 year:
+Profit ≈ $5,000 × 0.15 = **$750** → final balance ≈ **$5,750**.
+
+To double capital ($5,000 → $10,000) in one year, you would need APY ~100% or additional deposits/conditions.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>💼 4. Example of a Balanced Portfolio:</b>
+
+• 40% — USDT Flexible (liquidity)
+• 35% — BTC Locked 60 days (stability)
+• 25% — Altcoins Locked 90 days (growth)
+
+📌 <i>Calculation of expected average APY:</i>
+• USDT at APY ≈ 4% → 40% × 4% = 1.6%
+• BTC at APY ≈ 7% → 35% × 7% = 2.45%
+• Altcoins at APY ≈ 15% → 25% × 15% = 3.75%
+
+Total: **~1.6% + 2.45% + 3.75% = ~7.8% average portfolio APY**.
+
+🔍 With a capital of $10,000 → expected profit ≈ **$780/year** (not accounting for volatility and price changes).
