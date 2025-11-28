@@ -43,7 +43,20 @@ class DatabaseManager:
         self._connection_retries = 3
         self._retry_delay = 1.0
         self._max_retry_delay = 30.0
-        self._db_url = settings.database_url
+        # Railway надає DATABASE_URL в форматі postgresql://, але потрібен postgresql+asyncpg://
+        self._db_url = self._normalize_database_url(settings.database_url)
+    
+    def _normalize_database_url(self, url: str) -> str:
+        """
+        Нормалізує DATABASE_URL для підтримки Railway формату.
+        
+        Railway надає: postgresql://user:pass@host:port/db
+        Потрібно: postgresql+asyncpg://user:pass@host:port/db
+        """
+        if url.startswith("postgresql://") and "+asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            logger.debug(f"🔄 Нормалізовано DATABASE_URL для asyncpg: {url[:50]}...")
+        return url
         
     async def _create_engine(self, url: str) -> AsyncEngine:
         return create_async_engine(

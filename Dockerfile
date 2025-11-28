@@ -1,12 +1,16 @@
 # =============================================================================
-# EarnAggregator Universal Dockerfile
+# EarnAggregator Universal Dockerfile (Multi-Stage Build)
 # =============================================================================
-# Єдиний образ для всіх сервісів з усіма залежностями
+# Оптимізований Dockerfile з multi-stage builds та кешуванням залежностей
 # Вибір сервісу відбувається через змінну середовища SERVICE_NAME
+# =============================================================================
 
-FROM python:3.11-slim
+# =============================================================================
+# Stage 1: Builder - встановлення залежностей
+# =============================================================================
+FROM python:3.11-slim as builder
 
-# Встановлюємо системні залежності
+# Встановлюємо системні залежності для компіляції
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
@@ -17,24 +21,57 @@ RUN apt-get update && apt-get install -y \
 # Встановлюємо робочу директорію
 WORKDIR /app
 
-# Копіюємо та встановлюємо всі Python залежності
+# Копіюємо requirements.txt окремо для кешування
+# Docker кешує цей шар, якщо requirements.txt не змінився
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Створюємо директорії для всіх сервісів
-RUN mkdir -p /app/logs /app/app /app/tests /app/bot
+# Встановлюємо Python залежності в окремий каталог для копіювання
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+# =============================================================================
+# Stage 2: Runtime - фінальний образ
+# =============================================================================
+FROM python:3.11-slim as runtime
+
+# Встановлюємо тільки runtime залежності (без компіляторів)
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Копіюємо встановлені залежності з builder stage
+COPY --from=builder /root/.local /root/.local
+
+# Додаємо /root/.local/bin до PATH для доступу до встановлених пакетів
+ENV PATH=/root/.local/bin:$PATH
+
+# Встановлюємо робочу директорію
+WORKDIR /app
+
+# Копіюємо код проекту
+# Структура проекту:
+# - yield-data-service/app/ -> /app/app/
+# - yield-data-service/bot/ -> /app/bot/
+COPY yield-data-service/app /app/app
+COPY yield-data-service/bot /app/bot
+
+# Створюємо директорії для логів та тестів
+RUN mkdir -p /app/logs /app/tests
 
 # Встановлюємо змінні середовища
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
-# Відкриваємо порт (за замовчуванням 8000, але telegram-bot може використовувати інший)
+# Відкриваємо порт (Railway надає PORT через змінну середовища)
 EXPOSE 8000
 
 # Команда запуску залежно від SERVICE_NAME
 CMD if [ "$SERVICE_NAME" = "yield-api" ]; then \
         echo "🚀 Запуск yield-api сервісу..." && \
-        python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload; \
+        PORT=${PORT:-8000} && \
+        python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT; \
     elif [ "$SERVICE_NAME" = "telegram-bot" ]; then \
         echo "🤖 Запуск telegram-bot сервісу..." && \
         python -m bot.main; \
