@@ -1,3 +1,4 @@
+
 """
 Сервіс для оновлення priority_products таблиці.
 
@@ -79,15 +80,44 @@ class PriorityProductsService:
                     )
                     
                     # Отримуємо всі flexible продукти для символу та біржі
+                    logger.info(
+                        f"🔍 Пошук продуктів для {exchange}/{symbol} "
+                        f"з provider={provider}"
+                    )
                     products = await YieldProductCRUD.get_products_by_symbol_and_provider(
                         db, symbol, provider
                     )
+                    
+                    logger.info(
+                        f"📊 {exchange}/{symbol}: знайдено {len(products)} продуктів "
+                        f"з provider={provider}"
+                    )
+                    
+                    # Логуємо перші продукти для дебагу
+                    if products:
+                        for p in products[:3]:
+                            logger.info(
+                                f"  - {p.symbol} {p.provider} APY={p.apy}% "
+                                f"lock={p.lock_period_days} active={p.is_active}"
+                            )
                     
                     # Фільтруємо тільки flexible продукти (lock_period_days=0)
                     flexible_products = [
                         p for p in products 
                         if p.lock_period_days == 0 and p.is_active
                     ]
+                    
+                    logger.info(
+                        f"⚡ {exchange}/{symbol}: після фільтрації flexible: {len(flexible_products)} продуктів"
+                    )
+                    
+                    # Логуємо flexible продукти
+                    if flexible_products:
+                        for p in flexible_products[:3]:
+                            logger.info(
+                                f"  Flexible: {p.symbol} APY={p.apy}% "
+                                f"product_id={p.id}"
+                            )
                     
                     if flexible_products:
                         # Знаходимо найкращий продукт (найвищий APY)
@@ -104,7 +134,7 @@ class PriorityProductsService:
                             lock_period_days=0
                         )
                         updated_count += 1
-                        logger.debug(
+                        logger.info(
                             f"✅ {exchange}/{symbol}: APY={best_product.apy}% "
                             f"(product_id={best_product.id})"
                         )
@@ -120,10 +150,10 @@ class PriorityProductsService:
                             lock_period_days=0
                         )
                         updated_count += 1
-                        logger.debug(f"⚠️ {exchange}/{symbol}: продукт не знайдено, APY=0.0%")
+                        logger.warning(f"⚠️ {exchange}/{symbol}: продукт не знайдено, APY=0.0%")
                         
                 except Exception as e:
-                    logger.error(f"❌ Помилка оновлення {exchange}/{symbol}: {e}")
+                    logger.error(f"❌ Помилка оновлення {exchange}/{symbol}: {e}", exc_info=True)
                     # Створюємо запис з APY=0.0 при помилці
                     try:
                         await PriorityProductCRUD.upsert_priority_product(
@@ -143,7 +173,7 @@ class PriorityProductsService:
             return updated_count
             
         except Exception as e:
-            logger.error(f"❌ Критична помилка оновлення priority_products для {exchange}: {e}")
+            logger.error(f"❌ Критична помилка оновлення priority_products для {exchange}: {e}", exc_info=True)
             return updated_count
     
     @staticmethod
@@ -171,7 +201,7 @@ class PriorityProductsService:
                     stats[exchange] = count
                     total_updated += count
                 except Exception as e:
-                    logger.error(f"❌ Помилка оновлення {exchange}: {e}")
+                    logger.error(f"❌ Помилка оновлення {exchange}: {e}", exc_info=True)
                     stats[exchange] = 0
             
             logger.info(
@@ -183,10 +213,9 @@ class PriorityProductsService:
             return stats
             
         except Exception as e:
-            logger.error(f"❌ Критична помилка оновлення всіх бірж: {e}")
+            logger.error(f"❌ Критична помилка оновлення всіх бірж: {e}", exc_info=True)
             return stats
 
 
 # Глобальний екземпляр сервісу
 priority_products_service = PriorityProductsService()
-
