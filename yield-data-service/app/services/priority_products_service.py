@@ -44,7 +44,7 @@ class PriorityProductsService:
         "bitget": "bitget",
         "kraken": "Kraken",
         "kucoin": "KuCoin",
-        "htx": "htx"
+        "htx": "HTX"
     }
     
     @staticmethod
