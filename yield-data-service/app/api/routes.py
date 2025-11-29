@@ -974,6 +974,61 @@ async def get_bybit_health():
 
 
 # =============================================================================
+# BITMART API ENDPOINTS
+# =============================================================================
+
+@router.post("/bitmart/sync")
+async def sync_bitmart_products(
+    symbol: Optional[str] = Query(None, description="Синхронізувати тільки конкретний символ")
+):
+    """Синхронізувати продукти BitMart з API в базу даних."""
+    try:
+        bitmart_service = exchange_registry.get_exchange_service("bitmart")
+        result = await bitmart_service.sync_products_to_db(symbol)
+        
+        if result.get("status") == "success":
+            return {
+                "success": True,
+                "status": "success",
+                "message": f"Синхронізація BitMart завершена: {result['sync_stats']['created']} створено, {result['sync_stats']['updated']} оновлено",
+                "data": result
+            }
+        else:
+            return create_error_response(
+                error=result.get("message", "Помилка синхронізації"),
+                details=str(result)
+            )
+        
+    except Exception as e:
+        logger.error(f"❌ Помилка синхронізації BitMart: {e}")
+        return create_error_response(
+            error="Помилка синхронізації BitMart",
+            details=str(e)
+        )
+
+
+@router.get("/bitmart/health")
+async def get_bitmart_health():
+    """Перевірити стан BitMart сервісу."""
+    try:
+        bitmart_service = exchange_registry.get_exchange_service("bitmart")
+        health_info = await bitmart_service.get_health_status()
+        return {
+            "success": True,
+            "status": "success",
+            "message": "Стан BitMart сервісу перевірено",
+            "data": health_info
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Помилка перевірки BitMart сервісу: {e}")
+        return create_error_response(
+            error="Помилка перевірки BitMart сервісу",
+            details=str(e)
+        )
+
+
+# =============================================================================
 # OKX API ENDPOINTS
 # =============================================================================
 
