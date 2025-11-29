@@ -479,6 +479,11 @@ async def _format_single_exchange_preview(
         
         priority_products = priority_data.get("data", [])
         
+        # Логування для дебагу
+        logger.info(f"📊 {exchange}: отримано {len(priority_products)} priority продуктів з API")
+        if priority_products:
+            logger.debug(f"📊 {exchange}: перший продукт: {priority_products[0]}")
+        
         # Гарантуємо, що є всі 4 продукти в правильному порядку
         if len(priority_products) < 4:
             # Доповнюємо відсутні продукти з APY=0.0
@@ -517,6 +522,20 @@ async def _format_single_exchange_preview(
         for product in priority_products[:4]:  # Гарантуємо тільки 4 продукти
             symbol = product.get("symbol", "UNK")
             apy = product.get("apy", 0.0)
+            
+            # Логування для дебагу
+            logger.debug(f"🔍 {exchange}/{symbol}: apy={apy}, type={type(apy)}, product={product}")
+            
+            # Переконуємося що apy є числом
+            if isinstance(apy, str):
+                try:
+                    apy = float(apy)
+                except (ValueError, TypeError):
+                    logger.warning(f"⚠️ Невдалося конвертувати APY для {exchange}/{symbol}: {apy}")
+                    apy = 0.0
+            elif not isinstance(apy, (int, float)):
+                logger.warning(f"⚠️ Неправильний тип APY для {exchange}/{symbol}: {type(apy)}")
+                apy = 0.0
             
             # Форматування APY
             if apy >= 1:

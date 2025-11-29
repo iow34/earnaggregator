@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     BROADCAST_SCHEDULER_BATCH_SIZE: int = Field(100)
 
     # Конфігурації кешування
-    MAIN_MENU_TTL: int = 300  # 5 хвилин для головної сторінки
+    MAIN_MENU_TTL: int = 60  # 1 хвилина для головної сторінки (частіше оновлення APY)
     TOP10_TTL: int = 300      # 5 хвилин для топ-10 продуктів
     EXCHANGES_TTL: int = 600  # 10 хвилин для огляду бірж
     TRENDING_TTL: int = 900   # 15 хвилин для trending даних

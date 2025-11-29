@@ -335,7 +335,7 @@ class APIClient:
         """
         return await self._get("/api/v1/coingecko/trending-stats")
 
-    @ttl_cache(ttl_seconds=300)  # 5 хвилин кешування для priority products
+    @ttl_cache(ttl_seconds=60)  # 1 хвилина кешування для priority products (частіше оновлення)
     async def get_priority_products(self, exchange: str) -> Dict[str, Any]:
         """
         Отримати основні продукти (BTC, ETH, SOL, USDT) для біржі.
