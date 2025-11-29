@@ -1,3 +1,4 @@
+
 """
 Сервіс для оновлення priority_products таблиці.
 
@@ -133,7 +134,7 @@ class PriorityProductsService:
                             lock_period_days=0
                         )
                         updated_count += 1
-                        logger.debug(
+                        logger.info(
                             f"✅ {exchange}/{symbol}: APY={best_product.apy}% "
                             f"(product_id={best_product.id})"
                         )
@@ -149,10 +150,10 @@ class PriorityProductsService:
                             lock_period_days=0
                         )
                         updated_count += 1
-                        logger.debug(f"⚠️ {exchange}/{symbol}: продукт не знайдено, APY=0.0%")
+                        logger.warning(f"⚠️ {exchange}/{symbol}: продукт не знайдено, APY=0.0%")
                         
                 except Exception as e:
-                    logger.error(f"❌ Помилка оновлення {exchange}/{symbol}: {e}")
+                    logger.error(f"❌ Помилка оновлення {exchange}/{symbol}: {e}", exc_info=True)
                     # Створюємо запис з APY=0.0 при помилці
                     try:
                         await PriorityProductCRUD.upsert_priority_product(
@@ -172,7 +173,7 @@ class PriorityProductsService:
             return updated_count
             
         except Exception as e:
-            logger.error(f"❌ Критична помилка оновлення priority_products для {exchange}: {e}")
+            logger.error(f"❌ Критична помилка оновлення priority_products для {exchange}: {e}", exc_info=True)
             return updated_count
     
     @staticmethod
@@ -200,7 +201,7 @@ class PriorityProductsService:
                     stats[exchange] = count
                     total_updated += count
                 except Exception as e:
-                    logger.error(f"❌ Помилка оновлення {exchange}: {e}")
+                    logger.error(f"❌ Помилка оновлення {exchange}: {e}", exc_info=True)
                     stats[exchange] = 0
             
             logger.info(
@@ -212,10 +213,9 @@ class PriorityProductsService:
             return stats
             
         except Exception as e:
-            logger.error(f"❌ Критична помилка оновлення всіх бірж: {e}")
+            logger.error(f"❌ Критична помилка оновлення всіх бірж: {e}", exc_info=True)
             return stats
 
 
 # Глобальний екземпляр сервісу
 priority_products_service = PriorityProductsService()
-

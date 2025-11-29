@@ -242,4 +242,7 @@ REFERRAL_BYBIT=https://www.bybit.com/invite?ref=YOUR_REF
 ---
 
 **Останнє оновлення:** 2025-11-28
+<<<<<<< HEAD
 
+=======
+>>>>>>> 838651ea112ede6673d9ce4f82e973a4b448a2f6

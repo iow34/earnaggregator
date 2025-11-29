@@ -147,6 +147,38 @@ class YieldProductCRUD:
         except Exception as e:
             logger.error(f"Помилка отримання продуктів по провайдеру {provider}: {e}")
             return []
+    """
+CRUD операції для роботи з базою даних.
+
+Цей модуль містить функції для Create, Read, Update, Delete
+операцій з усіма таблицями бази даних.
+"""
+
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, update, delete, func, and_, or_, desc, asc
+from sqlalchemy.orm import selectinload
+from typing import List, Optional, Dict, Any, Tuple
+from datetime import datetime, timedelta, UTC
+import json
+
+from app.db.models import (
+    YieldProductDB, ExchangeDataDB, CacheMetadataDB,
+    UserAnalyticsDB, SystemMetricsDB, APILogsDB, CoinsPopularityDB,
+    PriorityProductDB
+)
+from app.db.database import get_database_session
+from sqlalchemy import case
+from sqlalchemy.sql import func
+from app.models.yield_product import YieldProduct, YieldProductCreate, YieldProductUpdate, YieldProductFilter
+from app.utils.logger import logger
+
+
+# =============================================================================
+# YIELD PRODUCTS CRUD OPERATIONS
+# =============================================================================
+
+class YieldProductCRUD:
+    """CRUD операції для Yield продуктів."""
     
     @staticmethod
     async def get_products_by_symbol_and_provider(
