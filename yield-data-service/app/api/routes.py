@@ -1029,6 +1029,61 @@ async def get_bitmart_health():
 
 
 # =============================================================================
+# HTX API ENDPOINTS
+# =============================================================================
+
+@router.post("/htx/sync")
+async def sync_htx_products(
+    symbol: Optional[str] = Query(None, description="Синхронізувати тільки конкретний символ")
+):
+    """Синхронізувати продукти HTX з API в базу даних."""
+    try:
+        htx_service = exchange_registry.get_exchange_service("htx")
+        result = await htx_service.sync_products_to_db(symbol)
+        
+        if result.get("status") == "success":
+            return {
+                "success": True,
+                "status": "success",
+                "message": f"Синхронізація HTX завершена: {result['sync_stats']['created']} створено, {result['sync_stats']['updated']} оновлено",
+                "data": result
+            }
+        else:
+            return create_error_response(
+                error=result.get("message", "Помилка синхронізації"),
+                details=str(result)
+            )
+        
+    except Exception as e:
+        logger.error(f"❌ Помилка синхронізації HTX: {e}")
+        return create_error_response(
+            error="Помилка синхронізації HTX",
+            details=str(e)
+        )
+
+
+@router.get("/htx/health")
+async def get_htx_health():
+    """Перевірити стан HTX сервісу."""
+    try:
+        htx_service = exchange_registry.get_exchange_service("htx")
+        health_info = await htx_service.get_health_status()
+        return {
+            "success": True,
+            "status": "success",
+            "message": "Стан HTX сервісу перевірено",
+            "data": health_info
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Помилка перевірки HTX сервісу: {e}")
+        return create_error_response(
+            error="Помилка перевірки HTX сервісу",
+            details=str(e)
+        )
+
+
+# =============================================================================
 # OKX API ENDPOINTS
 # =============================================================================
 
