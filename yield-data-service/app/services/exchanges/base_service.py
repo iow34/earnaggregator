@@ -297,6 +297,7 @@ class BaseExchangeService(ABC):
                             exchange_data_record.request_timestamp = datetime.now(UTC).replace(tzinfo=None)
                             exchange_data_record.response_status = 200
                             await db.commit()
+<<<<<<< HEAD
                             await db.refresh(exchange_data_record)
                         else:
                             # Створюємо новий запис
@@ -326,6 +327,63 @@ class BaseExchangeService(ABC):
                             logger.warning(
                                 f"⚠️ Помилка збереження exchange data для {product_data['id']}: {exchange_data_error}"
                             )
+=======
+                            await db.refresh(db_product)
+                            stats["created"] += 1
+
+                        # Зберігаємо raw дані (оновлюємо якщо існує)
+                        # ВАЖЛИВО: Спочатку перевіряємо чи продукт збережено
+                        try:
+                            # Використовуємо UPSERT для exchange_data
+                            from sqlalchemy import select
+                            from app.db.models import ExchangeDataDB
+                            
+                            # Перевіряємо чи існує запис
+                            existing_exchange_data = await db.execute(
+                                select(ExchangeDataDB).where(
+                                    ExchangeDataDB.product_id == product_data["id"],
+                                    ExchangeDataDB.exchange == self.exchange_name
+                                )
+                            )
+                            exchange_data_record = existing_exchange_data.scalar_one_or_none()
+                            
+                            if exchange_data_record:
+                                # Оновлюємо існуючий запис
+                                exchange_data_record.raw_data = product_data.get("raw_data", {})
+                                exchange_data_record.api_endpoint = f"/v1/{self.exchange_name}/"
+                                exchange_data_record.request_timestamp = datetime.now(UTC).replace(tzinfo=None)
+                                exchange_data_record.response_status = 200
+                                await db.commit()
+                                await db.refresh(exchange_data_record)
+                            else:
+                                # Створюємо новий запис
+                                await ExchangeDataCRUD.create_exchange_data(
+                                    db,
+                                    product_id=product_data["id"],
+                                    exchange=self.exchange_name,
+                                    raw_data=product_data.get("raw_data", {}),
+                                    api_endpoint=f"/v1/{self.exchange_name}/",
+                                    request_timestamp=datetime.now(UTC).replace(tzinfo=None)
+                                )
+                        except Exception as exchange_data_error:
+                            # Детальне логування помилки
+                            error_str = str(exchange_data_error).lower()
+                            if "foreign key" in error_str or "yield_products" in error_str:
+                                logger.error(
+                                    f"❌ Foreign Key помилка для {product_data['id']}: "
+                                    f"Продукт не існує в yield_products. "
+                                    f"Помилка: {exchange_data_error}"
+                                )
+                                # Не додаємо до errors, бо це проблема з продуктом, а не з exchange_data
+                            elif "unique_product_exchange" in error_str or "duplicate key" in error_str:
+                                logger.debug(
+                                    f"ℹ️ Exchange data вже існує для {product_data['id']} на {self.exchange_name}"
+                                )
+                            else:
+                                logger.warning(
+                                    f"⚠️ Помилка збереження exchange data для {product_data['id']}: {exchange_data_error}"
+                                )
+>>>>>>> origin/main
 
                 except Exception as e:
                     logger.error(f"❌ Помилка збереження продукту {product_data.get('id', 'unknown')}: {e}")
