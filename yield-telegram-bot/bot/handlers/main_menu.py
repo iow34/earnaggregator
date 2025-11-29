@@ -482,7 +482,10 @@ async def _format_single_exchange_preview(
         # Логування для дебагу
         logger.info(f"📊 {exchange}: отримано {len(priority_products)} priority продуктів з API")
         if priority_products:
-            logger.debug(f"📊 {exchange}: перший продукт: {priority_products[0]}")
+            logger.info(f"📊 {exchange}: перший продукт: {priority_products[0]}")
+            # Логуємо APY для всіх продуктів
+            for p in priority_products:
+                logger.info(f"  - {p.get('symbol')}: apy={p.get('apy')}, type={type(p.get('apy'))}, is_active={p.get('is_active')}")
         
         # Гарантуємо, що є всі 4 продукти в правильному порядку
         if len(priority_products) < 4:
@@ -524,7 +527,7 @@ async def _format_single_exchange_preview(
             apy = product.get("apy", 0.0)
             
             # Логування для дебагу
-            logger.debug(f"🔍 {exchange}/{symbol}: apy={apy}, type={type(apy)}, product={product}")
+            logger.info(f"🔍 {exchange}/{symbol}: apy={apy}, type={type(apy)}, before_format={apy}")
             
             # Переконуємося що apy є числом
             if isinstance(apy, str):
