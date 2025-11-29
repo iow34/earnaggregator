@@ -3027,6 +3027,55 @@ async def get_priority_products(
         )
 
 
+@router.post("/priority-products/update")
+async def update_priority_products(
+    exchange: Optional[str] = Query(None, description="Оновити тільки для конкретної біржі (якщо не вказано - для всіх)")
+):
+    """
+    Оновити priority_products з даних yield_products.
+    
+    Для кожної біржі та символу (BTC, ETH, SOL, USDT):
+    - Знаходить найкращий flexible продукт (найвищий APY, lock_period_days=0)
+    - Оновлює або створює запис в priority_products з актуальним APY
+    
+    Args:
+        exchange: Опціональна назва біржі (binance, bybit, etc.)
+        
+    Returns:
+        dict: Статистика оновлення
+    """
+    try:
+        from app.services.priority_products_service import priority_products_service
+        from app.db.database import db_manager
+        
+        async with db_manager.get_session() as db:
+            if exchange:
+                # Оновлюємо тільки для конкретної біржі
+                count = await priority_products_service.update_priority_products_for_exchange(
+                    db, exchange.lower()
+                )
+                stats = {exchange.lower(): count, "total": count}
+            else:
+                # Оновлюємо для всіх бірж
+                stats = await priority_products_service.update_all_exchanges(db)
+            
+            logger.info(f"✅ Priority products оновлено: {stats}")
+            
+            return {
+                "success": True,
+                "status": "success",
+                "message": f"Priority products оновлено: {stats.get('total', 0)} продуктів",
+                "data": stats
+            }
+            
+    except Exception as e:
+        logger.error(f"❌ Помилка оновлення priority_products: {e}", exc_info=True)
+        return create_error_response(
+            error="Помилка оновлення priority_products",
+            details=str(e)
+        )
+
+
 # =============================================================================
 # ПОКРАЩЕНА ВАЛІДАЦІЯ - оновлено існуючі endpoints
 # =============================================================================
