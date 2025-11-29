@@ -37,4 +37,7 @@ def get_version() -> str:
 
 # Версія для імпорту
 __version__ = get_version()
+<<<<<<< HEAD
 
+=======
+>>>>>>> 838651ea112ede6673d9ce4f82e973a4b448a2f6

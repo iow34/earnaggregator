@@ -3,12 +3,10 @@ API endpoints для виконання міграцій бази даних.
 Використовується для ручного запуску міграцій через HTTP запит.
 """
 
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from pathlib import Path
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import text
 
-from app.db.database import get_database_session
+from app.db.database import db_manager
 from app.utils.logger import logger
 
 router = APIRouter(prefix="/api/v1/migrations", tags=["migrations"])
@@ -220,7 +218,6 @@ CREATE INDEX IF NOT EXISTS idx_coins_popularity_symbol ON coins_popularity(symbo
 CREATE INDEX IF NOT EXISTS idx_coins_popularity_updated ON coins_popularity(updated_at);
 """
 
-
 @router.post("/run")
 async def run_migrations():
     """
@@ -228,8 +225,6 @@ async def run_migrations():
     
     ВАЖЛИВО: Цей endpoint має бути захищений в production!
     """
-    from app.db.database import db_manager
-    
     try:
         migrations = [
             ("001_create_tracking_tables.sql", MIGRATION_001),

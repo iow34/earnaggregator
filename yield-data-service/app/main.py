@@ -26,6 +26,13 @@ from app.config import settings
 from app.__version__ import __version__
 
 
+# Безпечний імпорт версії
+try:
+    from app.__version__ import __version__
+except (ImportError, AttributeError):
+    __version__ = "1.0.0"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """

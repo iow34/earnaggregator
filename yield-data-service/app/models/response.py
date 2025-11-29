@@ -278,13 +278,15 @@ class TopByProviderResponse(BaseResponse):
 
 def create_health_response(
     service: str = "yield-data-service",
-    version: str = "1.0.0",
+    version: str = None,
     uptime: float = None,
     database_status: str = None,
     cache_status: str = None,
     api_status: Dict[str, str] = None
 ) -> HealthResponse:
     """Створює відповідь про стан сервісу."""
+    if version is None:
+        version = app_version
     return HealthResponse(
         success=True,
         service=service,
