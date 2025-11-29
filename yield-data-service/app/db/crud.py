@@ -147,9 +147,6 @@ class YieldProductCRUD:
         except Exception as e:
             logger.error(f"Помилка отримання продуктів по провайдеру {provider}: {e}")
             return []
-
-class YieldProductCRUD:
-    """CRUD операції для Yield продуктів."""
     
     @staticmethod
     async def get_products_by_symbol_and_provider(
