@@ -313,3 +313,7 @@ ENVFILE
           echo "❌ Deployment failed!"
           echo "Check logs on staging server for details"
           exit 1
+<<<<<<< HEAD
+
+=======
+>>>>>>> 838651ea112ede6673d9ce4f82e973a4b448a2f6

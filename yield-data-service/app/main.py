@@ -23,6 +23,8 @@ from app.middleware.rate_limiter import RateLimiterMiddleware
 from app.services.scheduler import start_scheduler_async, stop_scheduler, data_scheduler
 from app.services.exchanges import exchange_registry
 from app.config import settings
+from app.__version__ import __version__
+
 
 # Безпечний імпорт версії
 try:

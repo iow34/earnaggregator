@@ -184,3 +184,7 @@ git tag -a v1.1.0 -m "Release version 1.1.0"
 git push origin feature/new-feature
 git push origin v1.1.0
 ```
+<<<<<<< HEAD
+
+=======
+>>>>>>> 838651ea112ede6673d9ce4f82e973a4b448a2f6
