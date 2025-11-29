@@ -42,6 +42,17 @@ class BaseExchangeService(ABC):
         self.api_key = getattr(settings, f"{exchange_name}_api_key", "")
         self.api_secret = getattr(settings, f"{exchange_name}_api_secret", "")
 
+        # Логування для діагностики (тільки перші 10 символів для безпеки)
+        if self.api_key:
+            logger.info(f"🔑 {exchange_name} API Key: {self.api_key[:10]}... (довжина: {len(self.api_key)})")
+        else:
+            logger.warning(f"⚠️ {exchange_name} API Key: не встановлено")
+        
+        if self.api_secret:
+            logger.info(f"🔑 {exchange_name} API Secret: {'*' * 10}... (довжина: {len(self.api_secret)})")
+        else:
+            logger.warning(f"⚠️ {exchange_name} API Secret: не встановлено")
+
         # Ініціалізуємо API клієнт
         self.api_client = None
         self.cache_ttl = 1800  # 30 хвилин
@@ -54,12 +65,41 @@ class BaseExchangeService(ABC):
 
         if self.is_configured:
             self.api_client = api_class(self.api_key, self.api_secret)
+            logger.info(f"✅ {exchange_name} сервіс ініціалізовано з API ключами")
         else:
-            logger.warning(f"⚠️ API ключі для {exchange_name} не налаштовані")
+            # Для Bybit дозволяємо роботу без ключів (публічний API)
+            if exchange_name == "bybit":
+                logger.info(f"ℹ️ {exchange_name} працює без API ключів (публічний API)")
+                self.api_client = api_class("", "")
+            else:
+                logger.warning(f"⚠️ API ключі для {exchange_name} не налаштовані")
 
     def _check_configuration(self) -> bool:
-        """Перевіряє чи налаштовані API ключі."""
-        return bool(self.api_key and self.api_secret)
+        """
+        Перевіряє чи налаштовані API ключі.
+        
+        Для Bybit дозволяє роботу без ключів (публічний API).
+        Для інших бірж перевіряє чи ключі не порожні та не є default значеннями.
+        """
+        # Для Bybit дозволяємо роботу без ключів (публічний API)
+        if self.exchange_name == "bybit":
+            return True  # Bybit працює без ключів
+        
+        # Перевіряємо чи ключі не порожні та не є default значеннями
+        default_values = [
+            "your_binance_api_key_here",
+            "your_bybit_api_key_here",
+            "your_okx_api_key_here",
+            "your_binance_api_secret_here",
+            "your_bybit_api_secret_here",
+            "your_okx_api_secret_here",
+            ""
+        ]
+        
+        api_key_valid = self.api_key and self.api_key not in default_values
+        api_secret_valid = self.api_secret and self.api_secret not in default_values
+        
+        return api_key_valid and api_secret_valid
 
     @abstractmethod
     async def test_connection(self) -> Dict[str, Any]:
@@ -88,6 +128,46 @@ class BaseExchangeService(ABC):
         """
         try:
             logger.info(f"🔄 Початок синхронізації {self.exchange_name} продуктів для {symbol or 'всіх'}")
+            
+            # Перевіряємо чи існують необхідні таблиці
+            async with get_database_session() as db:
+                from sqlalchemy import text
+                try:
+                    # Перевіряємо чи існує таблиця yield_products
+                    result = await db.execute(text("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'yield_products'
+                        );
+                    """))
+                    yield_products_exists = result.scalar()
+                    
+                    # Перевіряємо чи існує таблиця exchange_data
+                    result = await db.execute(text("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'exchange_data'
+                        );
+                    """))
+                    exchange_data_exists = result.scalar()
+                    
+                    if not yield_products_exists:
+                        logger.error("❌ Таблиця yield_products не існує! Виконайте міграції спочатку.")
+                        return {
+                            "status": "error",
+                            "message": "Таблиця yield_products не існує. Виконайте /api/v1/migrations/run",
+                            "products_count": 0,
+                            "sync_stats": {"created": 0, "updated": 0, "errors": 0}
+                        }
+                    
+                    if not exchange_data_exists:
+                        logger.warning("⚠️ Таблиця exchange_data не існує! Виконайте міграції спочатку.")
+                        logger.warning("⚠️ Продовжуємо синхронізацію, але exchange_data не буде збережено.")
+                except Exception as e:
+                    logger.warning(f"⚠️ Не вдалося перевірити існування таблиць: {e}")
+                    # Продовжуємо синхронізацію, але логуємо попередження
 
             # Отримуємо продукти
             products = await self.get_products_with_cache(symbol)
@@ -192,21 +272,57 @@ class BaseExchangeService(ABC):
                             stats["created"] += 1
 
                         # Зберігаємо raw дані (оновлюємо якщо існує)
+                        # ВАЖЛИВО: Спочатку перевіряємо чи продукт збережено
                         try:
-                            await ExchangeDataCRUD.create_exchange_data(
-                                db,
-                                product_id=product_data["id"],
-                                exchange=self.exchange_name,
-                                raw_data=product_data.get("raw_data", {}),
-                                api_endpoint=f"/v1/{self.exchange_name}/",
-                                request_timestamp=datetime.now(UTC).replace(tzinfo=None)
+                            # Використовуємо UPSERT для exchange_data
+                            from sqlalchemy import select
+                            from app.db.models import ExchangeDataDB
+                            
+                            # Перевіряємо чи існує запис
+                            existing_exchange_data = await db.execute(
+                                select(ExchangeDataDB).where(
+                                    ExchangeDataDB.product_id == product_data["id"],
+                                    ExchangeDataDB.exchange == self.exchange_name
+                                )
                             )
-                        except Exception as exchange_data_error:
-                            # Якщо duplicate key - ігноруємо, це нормально при оновленні
-                            if "unique_product_exchange" in str(exchange_data_error) or "duplicate key" in str(exchange_data_error).lower():
-                                logger.debug(f"ℹ️ Exchange data вже існує для {product_data['id']} на {self.exchange_name}, пропускаємо")
+                            exchange_data_record = existing_exchange_data.scalar_one_or_none()
+                            
+                            if exchange_data_record:
+                                # Оновлюємо існуючий запис
+                                exchange_data_record.raw_data = product_data.get("raw_data", {})
+                                exchange_data_record.api_endpoint = f"/v1/{self.exchange_name}/"
+                                exchange_data_record.request_timestamp = datetime.now(UTC).replace(tzinfo=None)
+                                exchange_data_record.response_status = 200
+                                await db.commit()
+                                await db.refresh(exchange_data_record)
                             else:
-                                logger.warning(f"⚠️ Помилка збереження exchange data для {product_data['id']}: {exchange_data_error}")
+                                # Створюємо новий запис
+                                await ExchangeDataCRUD.create_exchange_data(
+                                    db,
+                                    product_id=product_data["id"],
+                                    exchange=self.exchange_name,
+                                    raw_data=product_data.get("raw_data", {}),
+                                    api_endpoint=f"/v1/{self.exchange_name}/",
+                                    request_timestamp=datetime.now(UTC).replace(tzinfo=None)
+                                )
+                        except Exception as exchange_data_error:
+                            # Детальне логування помилки
+                            error_str = str(exchange_data_error).lower()
+                            if "foreign key" in error_str or "yield_products" in error_str:
+                                logger.error(
+                                    f"❌ Foreign Key помилка для {product_data['id']}: "
+                                    f"Продукт не існує в yield_products. "
+                                    f"Помилка: {exchange_data_error}"
+                                )
+                                # Не додаємо до errors, бо це проблема з продуктом, а не з exchange_data
+                            elif "unique_product_exchange" in error_str or "duplicate key" in error_str:
+                                logger.debug(
+                                    f"ℹ️ Exchange data вже існує для {product_data['id']} на {self.exchange_name}"
+                                )
+                            else:
+                                logger.warning(
+                                    f"⚠️ Помилка збереження exchange data для {product_data['id']}: {exchange_data_error}"
+                                )
 
                     except Exception as e:
                         logger.error(f"❌ Помилка збереження продукту {product_data.get('id', 'unknown')}: {e}")
