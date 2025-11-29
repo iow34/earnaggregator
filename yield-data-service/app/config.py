@@ -187,11 +187,19 @@ class Settings(BaseSettings):
     referral_nexo: str = Field(default="https://nexo.com/ref/YOUR_REF", alias="REFERRAL_NEXO")
     
     model_config = ConfigDict(
-        env_file=Path(__file__).parent.parent.parent / ".env",
+        # Перевіряємо чи існує .env файл перед тим як встановлювати env_file
+        # На Railway .env файлу немає, тому використовуємо тільки змінні середовища
+        env_file=(
+            Path(__file__).parent.parent.parent / ".env"
+            if (Path(__file__).parent.parent.parent / ".env").exists()
+            else None
+        ),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",  # Ігнорувати додаткові поля з .env
-        populate_by_name=True  # Дозволити використання alias
+        populate_by_name=True,  # Дозволити використання alias
+        # Важливо: Pydantic завжди читає змінні середовища, навіть якщо env_file встановлено
+        # Змінні середовища мають пріоритет над env_file
     )
 
 
