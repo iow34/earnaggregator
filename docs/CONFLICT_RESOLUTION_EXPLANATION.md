@@ -388,3 +388,7 @@ git commit
 - [Git Merge Conflicts](https://git-scm.com/docs/git-merge#_how_conflicts_are_presented)
 - [Resolving Merge Conflicts](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/addressing-merge-conflicts)
 - [Git Conflict Resolution](https://www.atlassian.com/git/tutorials/using-branches/merge-conflicts)
+<<<<<<< HEAD
+
+=======
+>>>>>>> 838651ea112ede6673d9ce4f82e973a4b448a2f6
