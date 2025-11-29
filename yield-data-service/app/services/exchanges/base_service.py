@@ -204,6 +204,9 @@ class BaseExchangeService(ABC):
     async def _save_products_to_db(self, products: List[Dict[str, Any]]) -> Dict[str, int]:
         """
         Зберігає продукти в базу даних.
+        
+        Використовує окремі транзакції для кожного продукту,
+        щоб помилка одного не впливала на інші.
 
         Args:
             products: Список нормалізованих продуктів
@@ -213,61 +216,118 @@ class BaseExchangeService(ABC):
         """
         stats = {"created": 0, "updated": 0, "errors": 0}
 
-        async with get_database_session() as db:
-            try:
-                for product_data in products:
+        # Обробляємо кожен продукт в окремій транзакції
+        for product_data in products:
+            async with get_database_session() as db:
+                try:
+                    # Перевіряємо чи продукт існує
+                    existing_product = await YieldProductCRUD.get_product_by_id(db, product_data["id"])
+
+                    if existing_product:
+                        # Оновлюємо існуючий
+                        update_data = YieldProductUpdate(
+                            name=product_data["name"],
+                            apy=product_data["apy"],
+                            is_cefi=product_data["is_cefi"],
+                            min_amount=product_data["min_amount"],
+                            max_amount=product_data.get("max_amount"),
+                            lock_period_days=product_data["lock_period_days"],
+                            max_apy=product_data["max_apy"],
+                            risk_level=product_data["risk_level"],
+                            is_active=product_data["is_active"],
+                            website_url=product_data.get("website_url"),
+                            description=product_data.get("description"),
+                            product_type=product_data.get("product_type"),
+                            raw_data=product_data.get("raw_data")
+                        )
+                        updated = await YieldProductCRUD.update_product(
+                            db, product_data["id"], update_data
+                        )
+                        if updated:
+                            stats["updated"] += 1
+                    else:
+                        # Створюємо новий
+                        # Обрізаємо символ до 20 символів якщо він занадто довгий
+                        symbol = product_data["symbol"][:20] if len(product_data["symbol"]) > 20 else product_data["symbol"]
+                        
+                        db_product = YieldProductDB(
+                            id=product_data["id"],
+                            symbol=symbol,
+                            name=product_data["name"],
+                            provider=product_data["provider"],
+                            apy=product_data["apy"],
+                            is_cefi=product_data["is_cefi"],
+                            min_amount=product_data["min_amount"],
+                            max_amount=product_data.get("max_amount"),
+                            lock_period_days=product_data["lock_period_days"],
+                            max_apy=product_data["max_apy"],
+                            risk_level=product_data["risk_level"],
+                            is_active=product_data["is_active"],
+                            website_url=product_data.get("website_url"),
+                            description=product_data.get("description"),
+                            product_type=product_data.get("product_type"),
+                            raw_data=product_data.get("raw_data")
+                        )
+
+                        db.add(db_product)
+                        await db.commit()
+                        await db.refresh(db_product)
+                        stats["created"] += 1
+
+                    # Зберігаємо raw дані (оновлюємо якщо існує)
+                    # ВАЖЛИВО: Спочатку перевіряємо чи продукт збережено
                     try:
-                        # Перевіряємо чи продукт існує
-                        existing_product = await YieldProductCRUD.get_product_by_id(db, product_data["id"])
-
-                        if existing_product:
-                            # Оновлюємо існуючий
-                            update_data = YieldProductUpdate(
-                                name=product_data["name"],
-                                apy=product_data["apy"],
-                                is_cefi=product_data["is_cefi"],
-                                min_amount=product_data["min_amount"],
-                                max_amount=product_data.get("max_amount"),
-                                lock_period_days=product_data["lock_period_days"],
-                                max_apy=product_data["max_apy"],
-                                risk_level=product_data["risk_level"],
-                                is_active=product_data["is_active"],
-                                website_url=product_data.get("website_url"),
-                                description=product_data.get("description"),
-                                product_type=product_data.get("product_type"),
-                                raw_data=product_data.get("raw_data")
+                        # Використовуємо UPSERT для exchange_data
+                        from sqlalchemy import select
+                        from app.db.models import ExchangeDataDB
+                        
+                        # Перевіряємо чи існує запис
+                        existing_exchange_data = await db.execute(
+                            select(ExchangeDataDB).where(
+                                ExchangeDataDB.product_id == product_data["id"],
+                                ExchangeDataDB.exchange == self.exchange_name
                             )
-                            updated = await YieldProductCRUD.update_product(
-                                db, product_data["id"], update_data
-                            )
-                            if updated:
-                                stats["updated"] += 1
-                        else:
-                            # Створюємо новий
-                            # Обрізаємо символ до 20 символів якщо він занадто довгий
-                            symbol = product_data["symbol"][:20] if len(product_data["symbol"]) > 20 else product_data["symbol"]
-                            
-                            db_product = YieldProductDB(
-                                id=product_data["id"],
-                                symbol=symbol,
-                                name=product_data["name"],
-                                provider=product_data["provider"],
-                                apy=product_data["apy"],
-                                is_cefi=product_data["is_cefi"],
-                                min_amount=product_data["min_amount"],
-                                max_amount=product_data.get("max_amount"),
-                                lock_period_days=product_data["lock_period_days"],
-                                max_apy=product_data["max_apy"],
-                                risk_level=product_data["risk_level"],
-                                is_active=product_data["is_active"],
-                                website_url=product_data.get("website_url"),
-                                description=product_data.get("description"),
-                                product_type=product_data.get("product_type"),
-                                raw_data=product_data.get("raw_data")
-                            )
-
-                            db.add(db_product)
+                        )
+                        exchange_data_record = existing_exchange_data.scalar_one_or_none()
+                        
+                        if exchange_data_record:
+                            # Оновлюємо існуючий запис
+                            exchange_data_record.raw_data = product_data.get("raw_data", {})
+                            exchange_data_record.api_endpoint = f"/v1/{self.exchange_name}/"
+                            exchange_data_record.request_timestamp = datetime.now(UTC).replace(tzinfo=None)
+                            exchange_data_record.response_status = 200
                             await db.commit()
+<<<<<<< HEAD
+                            await db.refresh(exchange_data_record)
+                        else:
+                            # Створюємо новий запис
+                            await ExchangeDataCRUD.create_exchange_data(
+                                db,
+                                product_id=product_data["id"],
+                                exchange=self.exchange_name,
+                                raw_data=product_data.get("raw_data", {}),
+                                api_endpoint=f"/v1/{self.exchange_name}/",
+                                request_timestamp=datetime.now(UTC).replace(tzinfo=None)
+                            )
+                    except Exception as exchange_data_error:
+                        # Детальне логування помилки
+                        error_str = str(exchange_data_error).lower()
+                        if "foreign key" in error_str or "yield_products" in error_str:
+                            logger.error(
+                                f"❌ Foreign Key помилка для {product_data['id']}: "
+                                f"Продукт не існує в yield_products. "
+                                f"Помилка: {exchange_data_error}"
+                            )
+                            # Не додаємо до errors, бо це проблема з продуктом, а не з exchange_data
+                        elif "unique_product_exchange" in error_str or "duplicate key" in error_str:
+                            logger.debug(
+                                f"ℹ️ Exchange data вже існує для {product_data['id']} на {self.exchange_name}"
+                            )
+                        else:
+                            logger.warning(
+                                f"⚠️ Помилка збереження exchange data для {product_data['id']}: {exchange_data_error}"
+                            )
+=======
                             await db.refresh(db_product)
                             stats["created"] += 1
 
@@ -323,18 +383,15 @@ class BaseExchangeService(ABC):
                                 logger.warning(
                                     f"⚠️ Помилка збереження exchange data для {product_data['id']}: {exchange_data_error}"
                                 )
+>>>>>>> origin/main
 
-                    except Exception as e:
-                        logger.error(f"❌ Помилка збереження продукту {product_data.get('id', 'unknown')}: {e}")
-                        stats["errors"] += 1
-                        continue
+                except Exception as e:
+                    logger.error(f"❌ Помилка збереження продукту {product_data.get('id', 'unknown')}: {e}")
+                    stats["errors"] += 1
+                    # Rollback вже виконується автоматично в get_database_session
+                    continue
 
-                logger.info(f"✅ {self.exchange_name.title()} продукти збережено: {stats['created']} створено, {stats['updated']} оновлено, {stats['errors']} помилок")
-
-            except Exception as e:
-                logger.error(f"❌ Помилка збереження продуктів {self.exchange_name}: {e}")
-                stats["errors"] += len(products)
-
+        logger.info(f"✅ {self.exchange_name.title()} продукти збережено: {stats['created']} створено, {stats['updated']} оновлено, {stats['errors']} помилок")
         return stats
 
     async def get_health_status(self) -> Dict[str, Any]:
