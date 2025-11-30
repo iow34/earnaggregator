@@ -295,7 +295,7 @@ class YieldProductCRUD:
                         sym_upper = sym.upper()
                         if sym_upper in symbols:
                             rank = popularity_map.get(sym_upper, 9999)
-                            logger.info(f"  {sym}: rank={rank} (в БД: {sym_upper in [s.upper() for s in symbols]})")
+                            logger.info(f"  {sym}: rank={rank}")
                 
                 # Сортуємо продукти в Python за популярністю
                 def get_popularity_rank(product: YieldProductDB) -> int:
@@ -310,7 +310,8 @@ class YieldProductCRUD:
                     rank = get_popularity_rank(p)
                     products_with_rank.append((p, rank))
                 
-                # Сортуємо: спочатку за rank (менший = популярніший), потім за APY (більший = кращий)
+                # ВАЖЛИВО: Сортуємо правильно - спочатку за rank (менший = популярніший), потім за APY (більший = кращий)
+                # Використовуємо стабільне сортування з id для уникнення невизначеності
                 sorted_products_with_rank = sorted(
                     products_with_rank,
                     key=lambda x: (x[1], -x[0].apy, x[0].id)
@@ -329,10 +330,10 @@ class YieldProductCRUD:
                 end_idx = start_idx + limit if limit is not None else len(sorted_products)
                 products = sorted_products[start_idx:end_idx]
                 
-                logger.info(f"✅ Відсортовано {len(products)} продуктів. Перші символи: {[p.symbol for p in products[:5]]}")
+                logger.info(f"✅ Відсортовано {len(products)} продуктів після пагінації. Перші символи: {[p.symbol for p in products[:5]]}")
                 if products:
                     first_rank = get_popularity_rank(products[0])
-                    logger.info(f"🔍 Перший продукт: {products[0].symbol} (rank={first_rank}, apy={products[0].apy})")
+                    logger.info(f"🔍 Перший продукт після пагінації: {products[0].symbol} (rank={first_rank}, apy={products[0].apy})")
                 
                 # Перевірка: логуємо перші 5 продуктів для дебагу сортування
                 if products and len(products) >= 5:
