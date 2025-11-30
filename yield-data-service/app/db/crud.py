@@ -308,13 +308,15 @@ class YieldProductCRUD:
                     rank = get_popularity_rank(p)
                     products_with_rank.append((p, rank))
                 
+                # Перевіряємо чи правильно отримано популярність для перших продуктів
+                if products_with_rank:
+                    sample_products = products_with_rank[:10]
+                    logger.info(f"🔍 Приклад продуктів перед сортуванням:")
+                    for p, rank in sample_products:
+                        logger.info(f"  {p.symbol} ({p.provider}): rank={rank}, apy={p.apy}, symbol_in_map={p.symbol.upper() in popularity_map}")
+                
                 # ВАЖЛИВО: Сортуємо правильно - спочатку за rank (менший = популярніший), потім за APY (більший = кращий)
                 # Використовуємо стабільне сортування з id для уникнення невизначеності
-                # Перевіряємо чи є продукти з rank перед сортуванням
-                if products_with_rank:
-                    sample_ranks = [r for _, r in products_with_rank[:10]]
-                    logger.info(f"🔍 Приклад rank перед сортуванням: {sample_ranks[:5]}")
-                
                 sorted_products_with_rank = sorted(
                     products_with_rank,
                     key=lambda x: (x[1], -x[0].apy, x[0].id)
@@ -323,7 +325,8 @@ class YieldProductCRUD:
                 # Перевіряємо чи правильно відсортувалось
                 if sorted_products_with_rank:
                     first_rank = sorted_products_with_rank[0][1]
-                    logger.info(f"🔍 Перший rank після сортування: {first_rank} (має бути найменший)")
+                    first_symbol = sorted_products_with_rank[0][0].symbol
+                    logger.info(f"🔍 Перший продукт після сортування: {first_symbol} (rank={first_rank}, має бути найменший)")
                 
                 # Витягуємо продукти з кортежів
                 sorted_products = [p for p, _ in sorted_products_with_rank]
