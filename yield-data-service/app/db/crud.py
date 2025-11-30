@@ -19,7 +19,6 @@ from app.db.models import (
 )
 from app.db.database import get_database_session
 from sqlalchemy import case
-from sqlalchemy.sql import func
 from app.models.yield_product import YieldProduct, YieldProductCreate, YieldProductUpdate, YieldProductFilter
 from app.utils.logger import logger
 
