@@ -238,92 +238,72 @@ class YieldProductCRUD:
             try:
                 logger.info(f"🔍 Отримання продуктів з сортуванням за популярністю: limit={limit}, offset={offset}")
                 
-                # ВАЖЛИВО: Використовуємо raw SQL для правильного сортування за популярністю
-                # SQLAlchemy може неправильно обробляти ORDER BY з func.coalesce() в JOIN
-                from sqlalchemy import text
+                # ВАЖЛИВО: Використовуємо сортування в Python після отримання з БД
+                # Це найнадійніший підхід, бо гарантує правильний порядок
                 
-                # ВАЖЛИВО: Використовуємо CTE (Common Table Expression) для правильного сортування
-                # Спочатку отримуємо всі продукти з rank, потім сортуємо та застосовуємо пагінацію
-                from sqlalchemy import text
+                # Спочатку отримуємо всі продукти з фільтрами (без сортування за популярністю)
+                query = select(YieldProductDB).where(YieldProductDB.is_active == True)
                 
-                # Будуємо CTE запит
-                cte_query = """
-                    WITH ranked_products AS (
-                        SELECT 
-                            yp.id,
-                            COALESCE(cp.market_cap_rank, 9999) as rank,
-                            yp.apy
-                        FROM yield_products yp
-                        LEFT JOIN coins_popularity cp ON UPPER(yp.symbol) = UPPER(cp.symbol)
-                        WHERE yp.is_active = true
-                """
-                
-                # Додаємо фільтри
-                filter_params = {}
+                # Застосовуємо фільтри якщо є
                 if filters:
                     if filters.symbol:
-                        cte_query += " AND UPPER(yp.symbol) = UPPER(:symbol)"
-                        filter_params["symbol"] = filters.symbol
+                        query = query.where(YieldProductDB.symbol == filters.symbol.upper())
                     if filters.provider:
-                        cte_query += " AND yp.provider = :provider"
-                        filter_params["provider"] = filters.provider
+                        query = query.where(YieldProductDB.provider == filters.provider)
                     if filters.min_apy is not None:
-                        cte_query += " AND yp.apy >= :min_apy"
-                        filter_params["min_apy"] = filters.min_apy
+                        query = query.where(YieldProductDB.apy >= filters.min_apy)
                     if filters.max_apy is not None:
-                        cte_query += " AND yp.apy <= :max_apy"
-                        filter_params["max_apy"] = filters.max_apy
+                        query = query.where(YieldProductDB.apy <= filters.max_apy)
                     if filters.lock_period_days is not None:
-                        cte_query += " AND yp.lock_period_days = :lock_period_days"
-                        filter_params["lock_period_days"] = filters.lock_period_days
+                        query = query.where(YieldProductDB.lock_period_days == filters.lock_period_days)
                 
-                # Сортуємо та застосовуємо пагінацію в CTE
-                cte_query += """
-                        ORDER BY COALESCE(cp.market_cap_rank, 9999) ASC, yp.apy DESC, yp.id ASC
-                """
+                # Отримуємо всі продукти (без пагінації, бо потрібно сортувати в Python)
+                result = await db.execute(query)
+                all_products = result.scalars().all()
                 
-                if limit is not None:
-                    cte_query += f" LIMIT {limit}"
-                if offset > 0:
-                    cte_query += f" OFFSET {offset}"
-                
-                # Отримуємо продукти за ID з CTE
-                cte_query += """
-                    )
-                    SELECT yp.*
-                    FROM yield_products yp
-                    INNER JOIN ranked_products rp ON yp.id = rp.id
-                    ORDER BY rp.rank ASC, rp.apy DESC, rp.id ASC
-                """
-                
-                logger.debug(f"🔍 CTE запит для сортування за популярністю: {cte_query[:200]}...")
-                
-                # Виконуємо CTE запит
-                result = await db.execute(text(cte_query), filter_params)
-                rows = result.fetchall()
-                
-                # Отримуємо ID продуктів з результатів
-                product_ids = [row.id for row in rows]
-                
-                if not product_ids:
-                    logger.warning("⚠️ CTE запит не повернув жодних продуктів")
+                if not all_products:
+                    logger.warning("⚠️ Не знайдено продуктів з заданими фільтрами")
                     return []
                 
-                logger.info(f"🔍 Отримано {len(product_ids)} ID продуктів з CTE. Перші 5: {product_ids[:5]}")
+                logger.info(f"🔍 Отримано {len(all_products)} продуктів для сортування за популярністю")
                 
-                # Отримуємо продукти за ID зі збереженням порядку
-                order_case = case(
-                    {product_id: index for index, product_id in enumerate(product_ids)},
-                    value=YieldProductDB.id
+                # Отримуємо популярність для всіх символів одночасно
+                symbols = list(set(p.symbol.upper() for p in all_products))
+                popularity_map = {}
+                
+                if symbols:
+                    popularity_query = select(CoinsPopularityDB).where(
+                        func.upper(CoinsPopularityDB.symbol).in_([s.upper() for s in symbols])
+                    )
+                    popularity_result = await db.execute(popularity_query)
+                    popularity_records = popularity_result.scalars().all()
+                    
+                    for record in popularity_records:
+                        popularity_map[record.symbol.upper()] = record.market_cap_rank
+                    
+                    logger.info(f"📊 Отримано популярність для {len(popularity_map)} символів з {len(symbols)} унікальних")
+                
+                # Сортуємо продукти в Python за популярністю
+                def get_popularity_rank(product: YieldProductDB) -> int:
+                    """Отримує rank популярності для продукту"""
+                    symbol_upper = product.symbol.upper()
+                    return popularity_map.get(symbol_upper, 9999)
+                
+                # Сортуємо: спочатку за rank (менший = популярніший), потім за APY (більший = кращий)
+                sorted_products = sorted(
+                    all_products,
+                    key=lambda p: (get_popularity_rank(p), -p.apy, p.id)
                 )
                 
-                query = select(YieldProductDB).where(YieldProductDB.id.in_(product_ids))
-                query = query.order_by(order_case)
+                # Застосовуємо пагінацію після сортування
+                start_idx = offset
+                end_idx = start_idx + limit if limit is not None else len(sorted_products)
+                products = sorted_products[start_idx:end_idx]
                 
-                result = await db.execute(query)
-                products = result.scalars().all()
-                
-                logger.info(f"✅ Отримано {len(products)} продуктів. Перші символи: {[p.symbol for p in products[:5]]}")
+                logger.info(f"✅ Відсортовано {len(products)} продуктів. Перші символи: {[p.symbol for p in products[:5]]}")
+                if products:
+                    first_rank = get_popularity_rank(products[0])
+                    logger.info(f"🔍 Перший продукт: {products[0].symbol} (rank={first_rank}, apy={products[0].apy})")
                 
                 # Перевірка: логуємо перші 5 продуктів для дебагу сортування
                 if products and len(products) >= 5:
