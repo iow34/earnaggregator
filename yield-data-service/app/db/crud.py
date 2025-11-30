@@ -276,9 +276,20 @@ class YieldProductCRUD:
                     query = query.offset(offset)
                 
                 result = await db.execute(query)
+                # Використовуємо unique() для видалення дублікатів через JOIN
+                # Але спочатку перевіряємо чи є результати
                 products = result.scalars().unique().all()
                 
-                logger.info(f"✅ Знайдено {len(products)} продуктів з сортуванням за популярністю")
+                # Додаткова перевірка: логуємо перші 5 продуктів для дебагу
+                if products:
+                    logger.info(f"✅ Знайдено {len(products)} продуктів з сортуванням за популярністю")
+                    # Перевіряємо чи є дані про популярність у перших продуктах
+                    if len(products) > 0:
+                        first_product = products[0]
+                        logger.debug(f"🔍 Перший продукт після сортування: {first_product.symbol} ({first_product.provider}), APY: {first_product.apy}")
+                else:
+                    logger.warning("⚠️ JOIN не повернув жодних продуктів")
+                
                 return products
                 
             except Exception as e:
