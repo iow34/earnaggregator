@@ -373,8 +373,8 @@ async def get_all_products(
         YieldResponse: Список yield продуктів
     """
     try:
-        logger.info(f"📋 Запит всіх продуктів з фільтрами")
-        
+        logger.info(f"📋 Запит всіх продуктів з фільтрами: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}, sort_by={sort_by}")
+
         # Створюємо фільтри
         filters = YieldProductFilter(
             symbol=symbol,
@@ -383,6 +383,7 @@ async def get_all_products(
             max_apy=max_apy,
             lock_period_days=lock_period_days
         )
+        logger.info(f"📋 Створено фільтри: {filters.dict(exclude_none=True)}")
         
         # Отримуємо продукти з фільтрацією та сортуванням
         if sort_by == "popularity":
@@ -437,11 +438,13 @@ async def get_all_products(
                 logger.error(f"❌ Помилка в тестовому SQL запиті: {e}", exc_info=True)
                 products = await YieldProductCRUD.get_all_products(limit, offset)
         elif any([symbol, provider, min_apy, max_apy, lock_period_days is not None]):
-            logger.info(f"📋 Фільтрація продуктів: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}")
+            logger.info(f"📋 Фільтрація продуктів через filter_products: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}")
             products = await YieldProductCRUD.filter_products(filters)
+            logger.info(f"📋 filter_products повернув {len(products) if products else 0} продуктів")
         else:
-            logger.info(f"📋 Отримання всіх продуктів: limit={limit}, offset={offset}")
+            logger.info(f"📋 Отримання всіх продуктів через get_all_products: limit={limit}, offset={offset}")
             products = await YieldProductCRUD.get_all_products(limit, offset)
+            logger.info(f"📋 get_all_products повернув {len(products) if products else 0} продуктів")
         
         logger.info(f"📋 Знайдено {len(products) if products else 0} продуктів в БД")
         
