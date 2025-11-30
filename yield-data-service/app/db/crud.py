@@ -238,56 +238,58 @@ class YieldProductCRUD:
             try:
                 logger.info(f"🔍 Отримання продуктів з сортуванням за популярністю: limit={limit}, offset={offset}")
                 
-                # Створюємо JOIN запит
-                # ВАЖЛИВО: Використовуємо func.upper() для порівняння символів, бо в БД можуть бути різні регістри
-                query = (
-                    select(YieldProductDB)
-                    .outerjoin(
-                        CoinsPopularityDB,
-                        func.upper(YieldProductDB.symbol) == func.upper(CoinsPopularityDB.symbol)
-                    )
-                    .where(YieldProductDB.is_active == True)
-                )
+                # ВАЖЛИВО: Використовуємо raw SQL для правильного сортування за популярністю
+                # SQLAlchemy може неправильно обробляти ORDER BY з func.coalesce() в JOIN
+                from sqlalchemy import text
                 
-                # Застосовуємо фільтри якщо є
+                # Будуємо SQL запит вручну для правильного сортування
+                sql_query = """
+                    SELECT DISTINCT ON (yp.id) yp.*
+                    FROM yield_products yp
+                    LEFT JOIN coins_popularity cp ON UPPER(yp.symbol) = UPPER(cp.symbol)
+                    WHERE yp.is_active = true
+                """
+                
+                # Додаємо фільтри
+                filter_params = {}
                 if filters:
                     if filters.symbol:
-                        query = query.where(YieldProductDB.symbol == filters.symbol.upper())
+                        sql_query += " AND UPPER(yp.symbol) = UPPER(:symbol)"
+                        filter_params["symbol"] = filters.symbol
                     if filters.provider:
-                        query = query.where(YieldProductDB.provider == filters.provider)
+                        sql_query += " AND yp.provider = :provider"
+                        filter_params["provider"] = filters.provider
                     if filters.min_apy is not None:
-                        query = query.where(YieldProductDB.apy >= filters.min_apy)
+                        sql_query += " AND yp.apy >= :min_apy"
+                        filter_params["min_apy"] = filters.min_apy
                     if filters.max_apy is not None:
-                        query = query.where(YieldProductDB.apy <= filters.max_apy)
+                        sql_query += " AND yp.apy <= :max_apy"
+                        filter_params["max_apy"] = filters.max_apy
                     if filters.lock_period_days is not None:
-                        query = query.where(YieldProductDB.lock_period_days == filters.lock_period_days)
+                        sql_query += " AND yp.lock_period_days = :lock_period_days"
+                        filter_params["lock_period_days"] = filters.lock_period_days
                 
-                # Сортуємо за популярністю (менший rank = популярніший)
-                # ВАЖЛИВО: Використовуємо явний SQL для сортування, бо SQLAlchemy може неправильно обробляти func.coalesce() в JOIN
-                # Використовуємо COALESCE для монет без рейтингу (9999 = в кінець)
-                from sqlalchemy import text
-                query = query.order_by(
-                    text("COALESCE(coins_popularity.market_cap_rank, 9999) ASC"),
-                    YieldProductDB.apy.desc()  # Вторинне сортування за APY
-                )
+                # Сортуємо за популярністю
+                sql_query += " ORDER BY COALESCE(cp.market_cap_rank, 9999) ASC, yp.apy DESC"
                 
-                # Застосовуємо пагінацію
+                # Додаємо пагінацію
                 if limit is not None:
-                    query = query.limit(limit).offset(offset)
-                else:
-                    query = query.offset(offset)
+                    sql_query += f" LIMIT {limit}"
+                if offset > 0:
+                    sql_query += f" OFFSET {offset}"
                 
-                result = await db.execute(query)
-                # ВАЖЛИВО: unique() може порушити порядок сортування при JOIN
-                # Спочатку отримуємо всі результати, потім видаляємо дублікати вручну зі збереженням порядку
-                all_results = result.scalars().all()
+                logger.debug(f"🔍 SQL запит для сортування за популярністю: {sql_query}")
                 
-                # Видаляємо дублікати зі збереженням порядку (за product_id)
-                seen_ids = set()
+                # Виконуємо raw SQL запит
+                result = await db.execute(text(sql_query), filter_params)
+                rows = result.fetchall()
+                
+                # Конвертуємо результати в YieldProductDB об'єкти
                 products = []
-                for product in all_results:
-                    if product.id not in seen_ids:
-                        seen_ids.add(product.id)
+                for row in rows:
+                    # Отримуємо продукт за ID
+                    product = await db.get(YieldProductDB, row.id)
+                    if product:
                         products.append(product)
                 
                 # Перевірка: логуємо перші 5 продуктів для дебагу сортування
