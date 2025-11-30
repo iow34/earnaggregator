@@ -222,9 +222,9 @@ class YieldProductCRUD:
         filters: Optional[YieldProductFilter] = None
     ) -> List[YieldProductDB]:
         """
-        Отримує продукти відсортовані за популярністю з CoinGecko через оптимізований JOIN.
+        Отримує продукти відсортовані за популярністю з CoinGecko через SQL JOIN.
         
-        Використовує LEFT JOIN до coins_popularity для ефективного сортування.
+        Використовує LEFT JOIN до coins_popularity для ефективного сортування на рівні БД.
         
         Args:
             limit: Ліміт записів
@@ -238,16 +238,20 @@ class YieldProductCRUD:
             try:
                 logger.info(f"🔍 Отримання продуктів з сортуванням за популярністю: limit={limit}, offset={offset}")
                 
-                # ВАЖЛИВО: Використовуємо сортування в Python після отримання з БД
-                # Це найнадійніший підхід, бо гарантує правильний порядок
-                
-                # Спочатку отримуємо всі продукти з фільтрами (без сортування за популярністю)
-                query = select(YieldProductDB).where(YieldProductDB.is_active == True)
+                # Використовуємо SQL JOIN для ефективного сортування на рівні БД
+                query = (
+                    select(YieldProductDB)
+                    .outerjoin(
+                        CoinsPopularityDB,
+                        func.upper(YieldProductDB.symbol) == func.upper(CoinsPopularityDB.symbol)
+                    )
+                    .where(YieldProductDB.is_active == True)
+                )
                 
                 # Застосовуємо фільтри якщо є
                 if filters:
                     if filters.symbol:
-                        query = query.where(YieldProductDB.symbol == filters.symbol.upper())
+                        query = query.where(func.upper(YieldProductDB.symbol) == filters.symbol.upper())
                     if filters.provider:
                         query = query.where(YieldProductDB.provider == filters.provider)
                     if filters.min_apy is not None:
@@ -257,194 +261,27 @@ class YieldProductCRUD:
                     if filters.lock_period_days is not None:
                         query = query.where(YieldProductDB.lock_period_days == filters.lock_period_days)
                 
-                # ВАЖЛИВО: Отримуємо всі продукти для правильного сортування
-                # Не обмежуємо кількість, бо потрібно сортувати всі продукти за популярністю
-                # Обмеження застосовується після сортування через пагінацію
-                # ВАЖЛИВО: НЕ додаємо сортування за id, бо це може порушити порядок після сортування за популярністю
-                # Отримуємо продукти в порядку, який повертає БД (може бути будь-який)
-                
-                result = await db.execute(query)
-                all_products = list(result.scalars().all())  # Конвертуємо в list для гарантії послідовності
-                
-                if not all_products:
-                    logger.warning("⚠️ Не знайдено продуктів з заданими фільтрами")
-                    return []
-                
-                logger.info(f"🔍 Отримано {len(all_products)} продуктів для сортування за популярністю")
-                
-                # КРИТИЧНА ПЕРЕВІРКА: перевіряємо чи є BTC в продуктах
-                btc_count = sum(1 for p in all_products if p.symbol.upper() == 'BTC')
-                usd1_count = sum(1 for p in all_products if p.symbol.upper() == 'USD1')
-                kaito_count = sum(1 for p in all_products if p.symbol.upper() == 'KAITO')
-                logger.info(f"🔍 Кількість продуктів: BTC={btc_count}, USD1={usd1_count}, KAITO={kaito_count}")
-                
-                # Отримуємо популярність для всіх символів одночасно
-                symbols = list(set(p.symbol.upper() for p in all_products))
-                popularity_map = {}
-                
-                if symbols:
-                    # Використовуємо правильний запит для отримання популярності
-                    # ВАЖЛИВО: Використовуємо func.upper() для правильного порівняння
-                    # ВАЖЛИВО: Використовуємо список символів без дублікатів
-                    unique_symbols = list(set(s.upper() for s in symbols))
-                    popularity_query = select(CoinsPopularityDB).where(
-                        func.upper(CoinsPopularityDB.symbol).in_(unique_symbols)
-                    )
-                    popularity_result = await db.execute(popularity_query)
-                    popularity_records = popularity_result.scalars().all()
-                    
-                    logger.info(f"🔍 Запит популярності для {len(unique_symbols)} унікальних символів, отримано {len(popularity_records)} записів")
-                    
-                    for record in popularity_records:
-                        # Зберігаємо в верхньому регістрі для правильного порівняння
-                        symbol_key = record.symbol.upper()
-                        popularity_map[symbol_key] = record.market_cap_rank
-                        logger.debug(f"  Додано до мапи: {symbol_key} -> rank={record.market_cap_rank}")
-                    
-                    logger.info(f"📊 Отримано популярність для {len(popularity_map)} символів з {len(symbols)} унікальних")
-                    # Логуємо популярність для ключових символів для дебагу
-                    key_symbols = ['BTC', 'ETH', 'SOL', 'USDT', 'USD1', 'KAITO', 'MORPHO', 'BERA', 'LAYER']
-                    for sym in key_symbols:
-                        sym_upper = sym.upper()
-                        if sym_upper in symbols:
-                            rank = popularity_map.get(sym_upper, 9999)
-                            logger.info(f"  {sym}: rank={rank} (в мапі: {sym_upper in popularity_map})")
-                    
-                    # Перевіряємо чи правильно отримано популярність для BTC
-                    btc_rank = popularity_map.get('BTC', None)
-                    if btc_rank is None:
-                        logger.error("❌ КРИТИЧНО: BTC не знайдено в popularity_map!")
-                    else:
-                        logger.info(f"✅ BTC знайдено в popularity_map з rank={btc_rank}")
-                
-                # Сортуємо продукти в Python за популярністю
-                def get_popularity_rank(product: YieldProductDB) -> int:
-                    """Отримує rank популярності для продукту"""
-                    symbol_upper = product.symbol.upper()
-                    rank = popularity_map.get(symbol_upper, 9999)
-                    return rank
-                
-                # Додаємо rank до кожного продукту для дебагу
-                products_with_rank = []
-                for p in all_products:
-                    rank = get_popularity_rank(p)
-                    products_with_rank.append((p, rank))
-                
-                # КРИТИЧНА ПЕРЕВІРКА: перевіряємо чи правильно отримано популярність для ключових продуктів
-                btc_products_with_rank = [(p, r) for p, r in products_with_rank if p.symbol.upper() == 'BTC']
-                usd1_products_with_rank = [(p, r) for p, r in products_with_rank if p.symbol.upper() == 'USD1']
-                kaito_products_with_rank = [(p, r) for p, r in products_with_rank if p.symbol.upper() == 'KAITO']
-                
-                if btc_products_with_rank:
-                    btc_rank = btc_products_with_rank[0][1]
-                    logger.info(f"🔍 BTC: знайдено {len(btc_products_with_rank)} продуктів, rank={btc_rank}, в мапі={'BTC' in popularity_map}")
-                else:
-                    logger.error("❌ КРИТИЧНО: BTC не знайдено в продуктах!")
-                
-                if usd1_products_with_rank:
-                    usd1_rank = usd1_products_with_rank[0][1]
-                    logger.info(f"🔍 USD1: знайдено {len(usd1_products_with_rank)} продуктів, rank={usd1_rank}, в мапі={'USD1' in popularity_map}")
-                
-                if kaito_products_with_rank:
-                    kaito_rank = kaito_products_with_rank[0][1]
-                    logger.info(f"🔍 KAITO: знайдено {len(kaito_products_with_rank)} продуктів, rank={kaito_rank}, в мапі={'KAITO' in popularity_map}")
-                
-                # Перевіряємо чи правильно отримано популярність для перших продуктів
-                if products_with_rank:
-                    sample_products = products_with_rank[:10]
-                    logger.info(f"🔍 Приклад продуктів перед сортуванням:")
-                    for p, rank in sample_products:
-                        logger.info(f"  {p.symbol} ({p.provider}): rank={rank}, apy={p.apy}, symbol_in_map={p.symbol.upper() in popularity_map}")
-                
-                # ВАЖЛИВО: Сортуємо правильно - спочатку за rank (менший = популярніший), потім за APY (більший = кращий)
-                # Використовуємо стабільне сортування з id для уникнення невизначеності
-                # ВАЖЛИВО: Використовуємо tuple для сортування, де:
-                # - x[1] = rank (сортуємо за зростанням - менший rank = популярніший)
-                # - -x[0].apy = APY (сортуємо за спаданням - більший APY = кращий, тому мінус)
-                # - x[0].id = id (для стабільності сортування, НЕ конвертуємо в str, бо id може бути рядком)
-                
-                # КРИТИЧНА ПЕРЕВІРКА: перевіряємо чи правильно працює lambda функція
-                if products_with_rank:
-                    test_product = products_with_rank[0]
-                    test_key = (test_product[1], -test_product[0].apy if test_product[0].apy is not None else 0, test_product[0].id)
-                    logger.debug(f"🔍 Тест сортування: продукт {test_product[0].symbol}, key={test_key}")
-                
-                sorted_products_with_rank = sorted(
-                    products_with_rank,
-                    key=lambda x: (
-                        x[1],  # rank (менший = популярніший)
-                        -x[0].apy if x[0].apy is not None else 0,  # APY (більший = кращий)
-                        x[0].id  # id для стабільності (залишаємо як є, не конвертуємо в str)
-                    )
+                # Сортуємо за популярністю (менший rank = популярніший), потім за APY (більший = кращий)
+                query = query.order_by(
+                    func.coalesce(CoinsPopularityDB.market_cap_rank, 9999).asc(),
+                    YieldProductDB.apy.desc(),
+                    YieldProductDB.id.asc()
                 )
                 
-                # ДОДАТКОВА ПЕРЕВІРКА: перевіряємо чи правильно відсортувалось
-                if sorted_products_with_rank and len(sorted_products_with_rank) > 0:
-                    first_product = sorted_products_with_rank[0]
-                    first_rank = first_product[1]
-                    first_symbol = first_product[0].symbol
-                    logger.info(f"🔍 ПЕРЕВІРКА: Перший продукт після сортування: {first_symbol} (rank={first_rank})")
-                    
-                    # Перевіряємо чи є продукти з rank=1
-                    rank_1_products = [p for p, r in sorted_products_with_rank if r == 1]
-                    if rank_1_products:
-                        logger.info(f"✅ Знайдено {len(rank_1_products)} продуктів з rank=1")
-                        if first_rank != 1:
-                            logger.error(f"❌ ПОМИЛКА: Перший продукт має rank={first_rank}, але є {len(rank_1_products)} продуктів з rank=1!")
-                            # Логуємо перші 5 продуктів з rank=1
-                            logger.error(f"❌ Перші 5 продуктів з rank=1: {[(p.symbol, p.provider, p.apy) for p, r in sorted_products_with_rank[:20] if r == 1][:5]}")
-                    else:
-                        logger.warning(f"⚠️ Не знайдено продуктів з rank=1")
+                # Застосовуємо пагінацію
+                if limit is not None:
+                    query = query.limit(limit)
+                if offset > 0:
+                    query = query.offset(offset)
                 
-                # Витягуємо продукти з кортежів
-                sorted_products = [p for p, _ in sorted_products_with_rank]
+                result = await db.execute(query)
+                products = result.scalars().unique().all()
                 
-                # Логуємо перші 10 продуктів після сортування для дебагу
-                logger.info(f"🔍 Перші 10 продуктів після сортування:")
-                for i, (p, rank) in enumerate(sorted_products_with_rank[:10]):
-                    logger.info(f"  {i+1}. {p.symbol} ({p.provider}): rank={rank}, apy={p.apy}")
-                
-                # Застосовуємо пагінацію після сортування
-                start_idx = offset
-                end_idx = start_idx + limit if limit is not None else len(sorted_products)
-                products = sorted_products[start_idx:end_idx]
-                
-                logger.info(f"✅ Відсортовано {len(products)} продуктів після пагінації. Перші символи: {[p.symbol for p in products[:5]]}")
+                logger.info(f"✅ Отримано {len(products)} продуктів з сортуванням за популярністю")
                 if products:
-                    first_rank = get_popularity_rank(products[0])
-                    first_symbol = products[0].symbol
-                    logger.info(f"🔍 Перший продукт після пагінації: {first_symbol} (rank={first_rank}, apy={products[0].apy})")
-                    
-                    # КРИТИЧНА ПЕРЕВІРКА: чи перший продукт має найменший rank?
-                    if first_rank != 1 and first_symbol.upper() != 'BTC':
-                        logger.error(f"❌ КРИТИЧНО: Перший продукт {first_symbol} має rank={first_rank}, але має бути BTC з rank=1!")
-                        # Перевіряємо чи є BTC в відсортованих продуктах
-                        btc_products = [p for p in sorted_products[:20] if p.symbol.upper() == 'BTC']
-                        if btc_products:
-                            btc_rank = get_popularity_rank(btc_products[0])
-                            btc_position = sorted_products.index(btc_products[0])
-                            logger.error(f"❌ BTC знайдено на позиції {btc_position} з rank={btc_rank}, але не перший!")
-                            # Логуємо перші 10 продуктів для дебагу
-                            logger.error(f"❌ Перші 10 продуктів: {[(p.symbol, get_popularity_rank(p), p.apy) for p in sorted_products[:10]]}")
-                        else:
-                            logger.error(f"❌ BTC не знайдено в перших 20 продуктах!")
-                            # Перевіряємо чи є BTC взагалі
-                            all_btc = [p for p in sorted_products if p.symbol.upper() == 'BTC']
-                            if all_btc:
-                                logger.error(f"❌ BTC знайдено на позиції {sorted_products.index(all_btc[0])} з rank={get_popularity_rank(all_btc[0])}")
-                            else:
-                                logger.error(f"❌ BTC не знайдено взагалі в {len(sorted_products)} продуктах!")
+                    logger.info(f"🔍 Перші 5 продуктів: {[(p.symbol, p.provider, p.apy) for p in products[:5]]}")
                 
-                # Перевірка: логуємо перші 5 продуктів для дебагу сортування
-                if products and len(products) >= 5:
-                    logger.info(f"🔍 Перші 5 продуктів після сортування: {[(p.symbol, p.provider, p.apy) for p in products[:5]]}")
-                
-                # Додаткова перевірка: логуємо перші 5 продуктів для дебагу
-                if products:
-                    logger.info(f"✅ Знайдено {len(products)} продуктів з сортуванням за популярністю")
-                    # Перевіряємо чи є дані про популярність у перших продуктах
-                    if len(products) > 0:
-                        first_product = products[0]
+                return list(products)
                         logger.debug(f"🔍 Перший продукт після сортування: {first_product.symbol} ({first_product.provider}), APY: {first_product.apy}")
                 else:
                     logger.warning("⚠️ JOIN не повернув жодних продуктів")

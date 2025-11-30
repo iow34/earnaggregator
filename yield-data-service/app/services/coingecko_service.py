@@ -187,12 +187,12 @@ class CoinGeckoService:
         try:
             logger.info("[CoinGecko] 🔄 Початок оновлення рейтингу популярності монет")
 
-            # Отримуємо дані з CoinGecko (максимум 250 монет за раз)
+            # Отримуємо дані з CoinGecko (максимум 500 монет за раз)
             # Отримуємо кілька сторінок для покриття більшої кількості монет
             all_coins_data = []
-            for page in range(1, 3):  # Отримуємо перші 2 сторінки (до 500 монет)
+            for page in range(1, 3):  # Отримуємо перші 2 сторінки (до 1000 монет)
                 try:
-                    page_data = await self.get_top_coins_markets(per_page=250, page=page)
+                    page_data = await self.get_top_coins_markets(per_page=500, page=page)
                     if page_data:
                         all_coins_data.extend(page_data)
                         logger.info(f"[CoinGecko] Отримано {len(page_data)} монет зі сторінки {page}")
