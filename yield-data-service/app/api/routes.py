@@ -24,6 +24,7 @@ from datetime import datetime, UTC
 
 from app.db.database import get_database_session, get_db_transaction
 from app.db.crud import YieldProductCRUD, ExchangeDataCRUD, CacheMetadataCRUD, PriorityProductCRUD, get_database_stats
+from app.db.models import YieldProductDB, CoinsPopularityDB
 from app.models.yield_product import YieldProduct, YieldProductFilter, YieldProductCreate
 from app.models.response import (
     YieldResponse, TopByProviderResponse, ErrorResponse, create_success_response,
