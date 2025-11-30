@@ -602,8 +602,10 @@ class DataAggregationService:
                 if provider and provider.lower() not in [exchange_name, "all"]:
                     return []
                 try:
+                    logger.info(f"🔄 Агрегація: отримання даних з {exchange_name} для symbol={symbol}")
                     service = exchange_registry.get_exchange_service(exchange_name)
                     data = await service.get_products_with_cache(symbol)
+                    logger.info(f"✅ Агрегація: отримано {len(data)} продуктів з {exchange_name}")
                     api_calls += 1
                     if exchange_name == "binance":
                         sources_used.append(DataSource.API_BINANCE)
@@ -617,12 +619,13 @@ class DataAggregationService:
                     elif exchange_name == "mexc":
                         sources_used.append(DataSource.API_MEXC)
                         EXTERNAL_API_CALLS.labels(exchange="mexc", status="success").inc()
+                        logger.info(f"📊 MEXC: додано в джерела, отримано {len(data)} продуктів")
                     elif exchange_name == "kucoin":
                         sources_used.append(DataSource.API_KUCOIN)
                         EXTERNAL_API_CALLS.labels(exchange="kucoin", status="success").inc()
                     return data
                 except Exception as e:
-                    logger.warning(f"⚠️ Помилка отримання даних {exchange_name}: {e}")
+                    logger.error(f"❌ Агрегація: помилка отримання даних {exchange_name}: {e}", exc_info=True)
                     EXTERNAL_API_CALLS.labels(exchange=exchange_name, status="error").inc()
                     return []
 
@@ -650,7 +653,8 @@ class DataAggregationService:
                     
         except Exception as e:
             logger.error(f"❌ Критична помилка live API: {e}")
-        
+
+        logger.info(f"🎯 Live API: загалом отримано {len(api_products)} продуктів з джерел: {sources_used}")
         return api_products, sources_used, api_calls
     
     async def _get_exchange_data(
