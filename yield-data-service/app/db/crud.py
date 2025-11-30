@@ -239,11 +239,12 @@ class YieldProductCRUD:
                 logger.info(f"🔍 Отримання продуктів з сортуванням за популярністю: limit={limit}, offset={offset}")
                 
                 # Створюємо JOIN запит
+                # ВАЖЛИВО: Використовуємо func.upper() для порівняння символів, бо в БД можуть бути різні регістри
                 query = (
                     select(YieldProductDB)
                     .outerjoin(
                         CoinsPopularityDB,
-                        YieldProductDB.symbol == CoinsPopularityDB.symbol
+                        func.upper(YieldProductDB.symbol) == func.upper(CoinsPopularityDB.symbol)
                     )
                     .where(YieldProductDB.is_active == True)
                 )
@@ -373,7 +374,7 @@ class YieldProductCRUD:
                 select(YieldProductDB)
                 .outerjoin(
                     CoinsPopularityDB,
-                    YieldProductDB.symbol == CoinsPopularityDB.symbol
+                    func.upper(YieldProductDB.symbol) == func.upper(CoinsPopularityDB.symbol)
                 )
                 .where(YieldProductDB.is_active == True)
                 .order_by(
@@ -422,7 +423,7 @@ class YieldProductCRUD:
                 select(YieldProductDB)
                 .outerjoin(
                     CoinsPopularityDB,
-                    YieldProductDB.symbol == CoinsPopularityDB.symbol
+                    func.upper(YieldProductDB.symbol) == func.upper(CoinsPopularityDB.symbol)
                 )
                 .where(YieldProductDB.is_active == True)
                 .where(YieldProductDB.provider == provider)

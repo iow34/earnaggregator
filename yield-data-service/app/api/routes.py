@@ -387,17 +387,28 @@ async def get_all_products(
             # Використовуємо оптимізований метод з JOIN
             logger.info(f"📋 Отримання продуктів з сортуванням за популярністю (оптимізований JOIN)")
             try:
-                products = await YieldProductCRUD.get_all_products_sorted_by_popularity(
-                    limit=limit,
-                    offset=offset,
-                    filters=filters if any([symbol, provider, min_apy, max_apy, lock_period_days is not None]) else None
-                )
-                # Якщо JOIN не повернув результатів, використовуємо fallback
-                if not products or len(products) == 0:
-                    logger.warning("⚠️ JOIN до coins_popularity не повернув результатів, використовуємо fallback")
+                # Перевіряємо чи є дані в coins_popularity
+                async with get_database_session() as check_db:
+                    from app.db.models import CoinsPopularityDB
+                    popularity_check = await check_db.execute(select(func.count(CoinsPopularityDB.id)))
+                    popularity_count = popularity_check.scalar() or 0
+                    logger.info(f"📊 Кількість записів у coins_popularity: {popularity_count}")
+                
+                if popularity_count == 0:
+                    logger.warning("⚠️ Таблиця coins_popularity порожня, використовуємо fallback без сортування за популярністю")
                     products = await YieldProductCRUD.get_all_products(limit, offset)
+                else:
+                    products = await YieldProductCRUD.get_all_products_sorted_by_popularity(
+                        limit=limit,
+                        offset=offset,
+                        filters=filters if any([symbol, provider, min_apy, max_apy, lock_period_days is not None]) else None
+                    )
+                    # Якщо JOIN не повернув результатів, використовуємо fallback
+                    if not products or len(products) == 0:
+                        logger.warning("⚠️ JOIN до coins_popularity не повернув результатів, використовуємо fallback")
+                        products = await YieldProductCRUD.get_all_products(limit, offset)
             except Exception as e:
-                logger.error(f"❌ Помилка при отриманні продуктів за популярністю: {e}, використовуємо fallback")
+                logger.error(f"❌ Помилка при отриманні продуктів за популярністю: {e}, використовуємо fallback", exc_info=True)
                 products = await YieldProductCRUD.get_all_products(limit, offset)
         elif any([symbol, provider, min_apy, max_apy, lock_period_days is not None]):
             logger.info(f"📋 Фільтрація продуктів: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}")
