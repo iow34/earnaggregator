@@ -387,55 +387,12 @@ async def get_all_products(
         
         # Отримуємо продукти з фільтрацією та сортуванням
         if sort_by == "popularity":
-            # ТЕСТ: Прямий SQL запит для діагностики
-            logger.info(f"📋 ТЕСТ: Використовуємо прямий SQL запит для сортування за популярністю")
+            logger.info(f"📋 Сортування за популярністю через YieldProductCRUD.get_all_products_sorted_by_popularity")
             try:
-                # Використовуємо той самий запит що працює в PostgreSQL напряму
-                query = (
-                    select(YieldProductDB)
-                    .outerjoin(
-                        CoinsPopularityDB,
-                        func.upper(YieldProductDB.symbol) == func.upper(CoinsPopularityDB.symbol)
-                    )
-                    .where(YieldProductDB.is_active == True)
-                    .order_by(
-                        func.coalesce(CoinsPopularityDB.market_cap_rank, 9999).asc(),
-                        YieldProductDB.apy.desc()
-                    )
-                )
-
-                # Обмежуємо результат для тестування
-                test_limit = min(limit or 100, 20)  # Макс 20 для тестування
-                query = query.limit(test_limit)
-                if offset > 0:
-                    query = query.offset(offset)
-
-                logger.info(f"🔍 Виконуємо SQL запит з limit={test_limit}")
-                result = await db.execute(query)
-                products = result.scalars().all()
-
-                logger.info(f"📊 SQL запит повернув {len(products)} продуктів")
-                if products:
-                    symbols = [p.symbol for p in products[:5]]
-                    logger.info(f"📊 Перші 5 символів: {symbols}")
-
-                    # Перевіряємо чи BTC є в результатах
-                    btc_found = any(p.symbol.upper() == 'BTC' for p in products[:10])
-                    logger.info(f"📊 BTC знайдено в перших 10: {btc_found}")
-
-                # Видаляємо дублікати
-                seen = set()
-                unique_products = []
-                for product in products:
-                    if product.id not in seen:
-                        seen.add(product.id)
-                        unique_products.append(product)
-
-                products = unique_products
-                logger.info(f"📊 Після видалення дублікатів: {len(products)} продуктів")
-
+                products = await YieldProductCRUD.get_all_products_sorted_by_popularity(limit, offset)
+                logger.info(f"📊 get_all_products_sorted_by_popularity повернув {len(products) if products else 0} продуктів")
             except Exception as e:
-                logger.error(f"❌ Помилка в тестовому SQL запиті: {e}", exc_info=True)
+                logger.error(f"❌ Помилка сортування за популярністю: {e}", exc_info=True)
                 products = await YieldProductCRUD.get_all_products(limit, offset)
         elif any([symbol, provider, min_apy, max_apy, lock_period_days is not None]):
             logger.info(f"📋 Фільтрація продуктів через filter_products: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}")
