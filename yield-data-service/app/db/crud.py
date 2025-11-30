@@ -342,13 +342,20 @@ class YieldProductCRUD:
                 # ВАЖЛИВО: Використовуємо tuple для сортування, де:
                 # - x[1] = rank (сортуємо за зростанням - менший rank = популярніший)
                 # - -x[0].apy = APY (сортуємо за спаданням - більший APY = кращий, тому мінус)
-                # - str(x[0].id) = id як рядок (для стабільності сортування)
+                # - x[0].id = id (для стабільності сортування, НЕ конвертуємо в str, бо id може бути рядком)
+                
+                # КРИТИЧНА ПЕРЕВІРКА: перевіряємо чи правильно працює lambda функція
+                if products_with_rank:
+                    test_product = products_with_rank[0]
+                    test_key = (test_product[1], -test_product[0].apy if test_product[0].apy is not None else 0, test_product[0].id)
+                    logger.debug(f"🔍 Тест сортування: продукт {test_product[0].symbol}, key={test_key}")
+                
                 sorted_products_with_rank = sorted(
                     products_with_rank,
                     key=lambda x: (
                         x[1],  # rank (менший = популярніший)
                         -x[0].apy if x[0].apy is not None else 0,  # APY (більший = кращий)
-                        str(x[0].id)  # id для стабільності
+                        x[0].id  # id для стабільності (залишаємо як є, не конвертуємо в str)
                     )
                 )
                 
