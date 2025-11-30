@@ -390,9 +390,18 @@ class YieldProductCRUD:
                         btc_products = [p for p in sorted_products[:20] if p.symbol.upper() == 'BTC']
                         if btc_products:
                             btc_rank = get_popularity_rank(btc_products[0])
-                            logger.error(f"❌ BTC знайдено на позиції {sorted_products.index(btc_products[0])} з rank={btc_rank}, але не перший!")
+                            btc_position = sorted_products.index(btc_products[0])
+                            logger.error(f"❌ BTC знайдено на позиції {btc_position} з rank={btc_rank}, але не перший!")
+                            # Логуємо перші 10 продуктів для дебагу
+                            logger.error(f"❌ Перші 10 продуктів: {[(p.symbol, get_popularity_rank(p), p.apy) for p in sorted_products[:10]]}")
                         else:
                             logger.error(f"❌ BTC не знайдено в перших 20 продуктах!")
+                            # Перевіряємо чи є BTC взагалі
+                            all_btc = [p for p in sorted_products if p.symbol.upper() == 'BTC']
+                            if all_btc:
+                                logger.error(f"❌ BTC знайдено на позиції {sorted_products.index(all_btc[0])} з rank={get_popularity_rank(all_btc[0])}")
+                            else:
+                                logger.error(f"❌ BTC не знайдено взагалі в {len(sorted_products)} продуктах!")
                 
                 # Перевірка: логуємо перші 5 продуктів для дебагу сортування
                 if products and len(products) >= 5:
