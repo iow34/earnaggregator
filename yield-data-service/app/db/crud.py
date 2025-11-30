@@ -263,9 +263,11 @@ class YieldProductCRUD:
                         query = query.where(YieldProductDB.lock_period_days == filters.lock_period_days)
                 
                 # Сортуємо за популярністю (менший rank = популярніший)
+                # ВАЖЛИВО: Використовуємо явний SQL для сортування, бо SQLAlchemy може неправильно обробляти func.coalesce() в JOIN
                 # Використовуємо COALESCE для монет без рейтингу (9999 = в кінець)
+                from sqlalchemy import text
                 query = query.order_by(
-                    func.coalesce(CoinsPopularityDB.market_cap_rank, 9999).asc(),
+                    text("COALESCE(coins_popularity.market_cap_rank, 9999) ASC"),
                     YieldProductDB.apy.desc()  # Вторинне сортування за APY
                 )
                 
