@@ -277,8 +277,12 @@ class YieldProductCRUD:
                 
                 result = await db.execute(query)
                 # Використовуємо unique() для видалення дублікатів через JOIN
-                # Але спочатку перевіряємо чи є результати
+                # unique() зберігає порядок сортування
                 products = result.scalars().unique().all()
+                
+                # Перевірка: логуємо перші 5 продуктів для дебагу сортування
+                if products and len(products) >= 5:
+                    logger.debug(f"🔍 Перші 5 продуктів після сортування: {[(p.symbol, p.provider, p.apy) for p in products[:5]]}")
                 
                 # Додаткова перевірка: логуємо перші 5 продуктів для дебагу
                 if products:
