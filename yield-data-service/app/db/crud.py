@@ -257,19 +257,17 @@ class YieldProductCRUD:
                     if filters.lock_period_days is not None:
                         query = query.where(YieldProductDB.lock_period_days == filters.lock_period_days)
                 
-                # ВАЖЛИВО: Обмежуємо кількість продуктів для сортування (максимум 10000)
-                # Це запобігає проблемам з пам'яттю при великій кількості продуктів
-                max_products_for_sorting = 10000
-                query_with_limit = query.limit(max_products_for_sorting)
-                
-                result = await db.execute(query_with_limit)
+                # ВАЖЛИВО: Отримуємо всі продукти для правильного сортування
+                # Не обмежуємо кількість, бо потрібно сортувати всі продукти за популярністю
+                # Обмеження застосовується після сортування через пагінацію
+                result = await db.execute(query)
                 all_products = result.scalars().all()
                 
                 if not all_products:
                     logger.warning("⚠️ Не знайдено продуктів з заданими фільтрами")
                     return []
                 
-                logger.info(f"🔍 Отримано {len(all_products)} продуктів для сортування за популярністю (макс {max_products_for_sorting})")
+                logger.info(f"🔍 Отримано {len(all_products)} продуктів для сортування за популярністю")
                 
                 # Отримуємо популярність для всіх символів одночасно
                 symbols = list(set(p.symbol.upper() for p in all_products))
