@@ -272,6 +272,7 @@ class YieldProductCRUD:
                 popularity_map = {}
                 
                 if symbols:
+                    # Використовуємо правильний запит для отримання популярності
                     popularity_query = select(CoinsPopularityDB).where(
                         func.upper(CoinsPopularityDB.symbol).in_([s.upper() for s in symbols])
                     )
@@ -282,18 +283,38 @@ class YieldProductCRUD:
                         popularity_map[record.symbol.upper()] = record.market_cap_rank
                     
                     logger.info(f"📊 Отримано популярність для {len(popularity_map)} символів з {len(symbols)} унікальних")
+                    # Логуємо популярність для перших 10 символів для дебагу
+                    sample_symbols = list(symbols)[:10]
+                    for sym in sample_symbols:
+                        rank = popularity_map.get(sym, 9999)
+                        logger.debug(f"  {sym}: rank={rank}")
                 
                 # Сортуємо продукти в Python за популярністю
                 def get_popularity_rank(product: YieldProductDB) -> int:
                     """Отримує rank популярності для продукту"""
                     symbol_upper = product.symbol.upper()
-                    return popularity_map.get(symbol_upper, 9999)
+                    rank = popularity_map.get(symbol_upper, 9999)
+                    return rank
+                
+                # Додаємо rank до кожного продукту для дебагу
+                products_with_rank = []
+                for p in all_products:
+                    rank = get_popularity_rank(p)
+                    products_with_rank.append((p, rank))
                 
                 # Сортуємо: спочатку за rank (менший = популярніший), потім за APY (більший = кращий)
-                sorted_products = sorted(
-                    all_products,
-                    key=lambda p: (get_popularity_rank(p), -p.apy, p.id)
+                sorted_products_with_rank = sorted(
+                    products_with_rank,
+                    key=lambda x: (x[1], -x[0].apy, x[0].id)
                 )
+                
+                # Витягуємо продукти з кортежів
+                sorted_products = [p for p, _ in sorted_products_with_rank]
+                
+                # Логуємо перші 10 продуктів після сортування для дебагу
+                logger.info(f"🔍 Перші 10 продуктів після сортування:")
+                for i, (p, rank) in enumerate(sorted_products_with_rank[:10]):
+                    logger.info(f"  {i+1}. {p.symbol} ({p.provider}): rank={rank}, apy={p.apy}")
                 
                 # Застосовуємо пагінацію після сортування
                 start_idx = offset
