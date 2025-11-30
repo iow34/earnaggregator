@@ -310,10 +310,20 @@ class YieldProductCRUD:
                 
                 # ВАЖЛИВО: Сортуємо правильно - спочатку за rank (менший = популярніший), потім за APY (більший = кращий)
                 # Використовуємо стабільне сортування з id для уникнення невизначеності
+                # Перевіряємо чи є продукти з rank перед сортуванням
+                if products_with_rank:
+                    sample_ranks = [r for _, r in products_with_rank[:10]]
+                    logger.info(f"🔍 Приклад rank перед сортуванням: {sample_ranks[:5]}")
+                
                 sorted_products_with_rank = sorted(
                     products_with_rank,
                     key=lambda x: (x[1], -x[0].apy, x[0].id)
                 )
+                
+                # Перевіряємо чи правильно відсортувалось
+                if sorted_products_with_rank:
+                    first_rank = sorted_products_with_rank[0][1]
+                    logger.info(f"🔍 Перший rank після сортування: {first_rank} (має бути найменший)")
                 
                 # Витягуємо продукти з кортежів
                 sorted_products = [p for p, _ in sorted_products_with_rank]
