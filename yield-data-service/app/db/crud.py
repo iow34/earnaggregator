@@ -274,13 +274,21 @@ class YieldProductCRUD:
                     query = query.offset(offset)
                 
                 result = await db.execute(query)
-                products = result.scalars().unique().all()
+                products = result.scalars().all()
                 
-                logger.info(f"✅ Отримано {len(products)} продуктів з сортуванням за популярністю")
-                if products:
-                    logger.info(f"🔍 Перші 5 продуктів: {[(p.symbol, p.provider, p.apy) for p in products[:5]]}")
+                # Видаляємо дублікати зі збереженням порядку
+                seen = set()
+                unique_products = []
+                for product in products:
+                    if product.id not in seen:
+                        seen.add(product.id)
+                        unique_products.append(product)
                 
-                return list(products)
+                logger.info(f"✅ Отримано {len(unique_products)} продуктів з сортуванням за популярністю (було {len(products)} до видалення дублікатів)")
+                if unique_products:
+                    logger.info(f"🔍 Перші 5 продуктів: {[(p.symbol, p.provider, p.apy) for p in unique_products[:5]]}")
+                
+                return unique_products
                         logger.debug(f"🔍 Перший продукт після сортування: {first_product.symbol} ({first_product.provider}), APY: {first_product.apy}")
                 else:
                     logger.warning("⚠️ JOIN не повернув жодних продуктів")
