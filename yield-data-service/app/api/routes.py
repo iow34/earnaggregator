@@ -398,15 +398,33 @@ async def get_all_products(
                     logger.warning("⚠️ Таблиця coins_popularity порожня, використовуємо fallback без сортування за популярністю")
                     products = await YieldProductCRUD.get_all_products(limit, offset)
                 else:
-                    # ВАЖЛИВО: Якщо є фільтри, не передаємо їх у get_all_products_sorted_by_popularity
-                    # бо метод сам застосовує фільтри через JOIN
-                    # Передаємо тільки якщо потрібна фільтрація
-                    has_filters = any([symbol, provider, min_apy, max_apy, lock_period_days is not None])
+                    # Спрощена логіка: отримуємо всі продукти відсортовані за популярністю без фільтрів
+                    # Фільтри застосуємо після отримання результатів
                     products = await YieldProductCRUD.get_all_products_sorted_by_popularity(
                         limit=limit,
                         offset=offset,
-                        filters=filters if has_filters else None
+                        filters=None  # Спочатку без фільтрів, застосуємо пізніше
                     )
+
+                    # Застосовуємо фільтри в Python якщо потрібно
+                    has_filters = any([symbol, provider, min_apy, max_apy, lock_period_days is not None])
+                    if has_filters and products:
+                        logger.info(f"📋 Застосовуємо фільтри до {len(products)} продуктів")
+                        filtered_products = []
+                        for product in products:
+                            if symbol and not product.symbol.upper().startswith(symbol.upper()):
+                                continue
+                            if provider and product.provider != provider:
+                                continue
+                            if min_apy is not None and product.apy < min_apy:
+                                continue
+                            if max_apy is not None and product.apy > max_apy:
+                                continue
+                            if lock_period_days is not None and product.lock_period_days != lock_period_days:
+                                continue
+                            filtered_products.append(product)
+
+                        products = filtered_products[:limit] if limit else filtered_products  # Обмежуємо після фільтрації
 
                     # Додаткова перевірка: якщо отримали продукти, перевіряємо чи вони відсортовані правильно
                     if products and len(products) > 0:
