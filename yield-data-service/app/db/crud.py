@@ -330,6 +330,25 @@ class YieldProductCRUD:
                     rank = get_popularity_rank(p)
                     products_with_rank.append((p, rank))
                 
+                # КРИТИЧНА ПЕРЕВІРКА: перевіряємо чи правильно отримано популярність для ключових продуктів
+                btc_products_with_rank = [(p, r) for p, r in products_with_rank if p.symbol.upper() == 'BTC']
+                usd1_products_with_rank = [(p, r) for p, r in products_with_rank if p.symbol.upper() == 'USD1']
+                kaito_products_with_rank = [(p, r) for p, r in products_with_rank if p.symbol.upper() == 'KAITO']
+                
+                if btc_products_with_rank:
+                    btc_rank = btc_products_with_rank[0][1]
+                    logger.info(f"🔍 BTC: знайдено {len(btc_products_with_rank)} продуктів, rank={btc_rank}, в мапі={'BTC' in popularity_map}")
+                else:
+                    logger.error("❌ КРИТИЧНО: BTC не знайдено в продуктах!")
+                
+                if usd1_products_with_rank:
+                    usd1_rank = usd1_products_with_rank[0][1]
+                    logger.info(f"🔍 USD1: знайдено {len(usd1_products_with_rank)} продуктів, rank={usd1_rank}, в мапі={'USD1' in popularity_map}")
+                
+                if kaito_products_with_rank:
+                    kaito_rank = kaito_products_with_rank[0][1]
+                    logger.info(f"🔍 KAITO: знайдено {len(kaito_products_with_rank)} продуктів, rank={kaito_rank}, в мапі={'KAITO' in popularity_map}")
+                
                 # Перевіряємо чи правильно отримано популярність для перших продуктів
                 if products_with_rank:
                     sample_products = products_with_rank[:10]
