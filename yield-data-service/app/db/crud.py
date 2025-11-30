@@ -260,6 +260,9 @@ class YieldProductCRUD:
                 # ВАЖЛИВО: Отримуємо всі продукти для правильного сортування
                 # Не обмежуємо кількість, бо потрібно сортувати всі продукти за популярністю
                 # Обмеження застосовується після сортування через пагінацію
+                # Але додаємо сортування за id для стабільності
+                query = query.order_by(YieldProductDB.id.asc())
+                
                 result = await db.execute(query)
                 all_products = result.scalars().all()
                 
