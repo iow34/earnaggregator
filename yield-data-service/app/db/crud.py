@@ -287,13 +287,8 @@ class YieldProductCRUD:
                 logger.info(f"✅ Отримано {len(unique_products)} продуктів з сортуванням за популярністю (було {len(products)} до видалення дублікатів)")
                 if unique_products:
                     logger.info(f"🔍 Перші 5 продуктів: {[(p.symbol, p.provider, p.apy) for p in unique_products[:5]]}")
-                
+
                 return unique_products
-                        logger.debug(f"🔍 Перший продукт після сортування: {first_product.symbol} ({first_product.provider}), APY: {first_product.apy}")
-                else:
-                    logger.warning("⚠️ JOIN не повернув жодних продуктів")
-                
-                return products
                 
             except Exception as e:
                 logger.error(f"Помилка отримання продуктів за популярністю: {e}", exc_info=True)
