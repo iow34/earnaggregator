@@ -385,11 +385,10 @@ async def get_all_products(
         
         # Отримуємо продукти з фільтрацією та сортуванням
         if sort_by == "popularity":
-            # Використовуємо спрощену логіку сортування за популярністю
-            logger.info(f"📋 Отримання продуктів з сортуванням за популярністю (спрощена логіка)")
+            # ТЕСТ: Прямий SQL запит для діагностики
+            logger.info(f"📋 ТЕСТ: Використовуємо прямий SQL запит для сортування за популярністю")
             try:
-                # Використовуємо простий підхід - отримуємо всі продукти з JOIN до coins_popularity
-                # схожий на той що працює для окремих бірж
+                # Використовуємо той самий запит що працює в PostgreSQL напряму
                 query = (
                     select(YieldProductDB)
                     .outerjoin(
@@ -403,14 +402,24 @@ async def get_all_products(
                     )
                 )
 
-                # Застосовуємо пагінацію
-                if limit is not None:
-                    query = query.limit(limit)
+                # Обмежуємо результат для тестування
+                test_limit = min(limit or 100, 20)  # Макс 20 для тестування
+                query = query.limit(test_limit)
                 if offset > 0:
                     query = query.offset(offset)
 
+                logger.info(f"🔍 Виконуємо SQL запит з limit={test_limit}")
                 result = await db.execute(query)
                 products = result.scalars().all()
+
+                logger.info(f"📊 SQL запит повернув {len(products)} продуктів")
+                if products:
+                    symbols = [p.symbol for p in products[:5]]
+                    logger.info(f"📊 Перші 5 символів: {symbols}")
+
+                    # Перевіряємо чи BTC є в результатах
+                    btc_found = any(p.symbol.upper() == 'BTC' for p in products[:10])
+                    logger.info(f"📊 BTC знайдено в перших 10: {btc_found}")
 
                 # Видаляємо дублікати
                 seen = set()
@@ -421,18 +430,10 @@ async def get_all_products(
                         unique_products.append(product)
 
                 products = unique_products
-
-                logger.info(f"📊 Отримано {len(products) if products else 0} продуктів з прямим JOIN запитом")
-                if products and len(products) > 0:
-                    logger.info(f"📊 Перші символи: {[p.symbol for p in products[:5]]}")
-
-                # Якщо не отримали результатів, використовуємо fallback
-                if not products or len(products) == 0:
-                    logger.warning("⚠️ JOIN запит не повернув результатів, використовуємо fallback")
-                    products = await YieldProductCRUD.get_all_products(limit, offset)
+                logger.info(f"📊 Після видалення дублікатів: {len(products)} продуктів")
 
             except Exception as e:
-                logger.error(f"❌ Помилка при отриманні продуктів за популярністю: {e}, використовуємо fallback", exc_info=True)
+                logger.error(f"❌ Помилка в тестовому SQL запиті: {e}", exc_info=True)
                 products = await YieldProductCRUD.get_all_products(limit, offset)
         elif any([symbol, provider, min_apy, max_apy, lock_period_days is not None]):
             logger.info(f"📋 Фільтрація продуктів: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}")
