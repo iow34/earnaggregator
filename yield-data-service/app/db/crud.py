@@ -261,21 +261,21 @@ class YieldProductCRUD:
                         query = query.where(YieldProductDB.lock_period_days == filters.lock_period_days)
                 
                 # Сортуємо за популярністю (менший rank = популярніший), потім за APY (більший = кращий)
+                # Не додаємо сортування за ID щоб зберегти правильний порядок популярності
                 query = query.order_by(
                     func.coalesce(CoinsPopularityDB.market_cap_rank, 9999).asc(),
-                    YieldProductDB.apy.desc(),
-                    YieldProductDB.id.asc()
+                    YieldProductDB.apy.desc()
                 )
-                
+
                 # Застосовуємо пагінацію
                 if limit is not None:
                     query = query.limit(limit)
                 if offset > 0:
                     query = query.offset(offset)
-                
+
                 result = await db.execute(query)
                 products = result.scalars().all()
-                
+
                 # Видаляємо дублікати зі збереженням порядку
                 seen = set()
                 unique_products = []
@@ -283,6 +283,10 @@ class YieldProductCRUD:
                     if product.id not in seen:
                         seen.add(product.id)
                         unique_products.append(product)
+
+                # Додаємо стабільне сортування за ID для однакових значень популярності та APY
+                # Це потрібно щоб уникнути недетермінованого порядку при деплої
+                unique_products.sort(key=lambda p: p.id)
                 
                 logger.info(f"✅ Отримано {len(unique_products)} продуктів з сортуванням за популярністю (було {len(products)} до видалення дублікатів)")
                 if unique_products:
