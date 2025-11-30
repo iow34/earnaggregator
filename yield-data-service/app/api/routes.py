@@ -397,7 +397,9 @@ async def get_all_products(
                 if popularity_count == 0:
                     logger.warning("⚠️ Таблиця coins_popularity порожня, використовуємо fallback без сортування за популярністю")
                     products = await YieldProductCRUD.get_all_products(limit, offset)
+                    logger.info(f"📋 Fallback: отримано {len(products) if products else 0} продуктів")
                 else:
+                    logger.info("🔥 Використовуємо JOIN метод для сортування за популярністю")
                     # Спрощена логіка: отримуємо всі продукти відсортовані за популярністю без фільтрів
                     # Фільтри застосуємо після отримання результатів
                     products = await YieldProductCRUD.get_all_products_sorted_by_popularity(
@@ -405,6 +407,7 @@ async def get_all_products(
                         offset=offset,
                         filters=None  # Спочатку без фільтрів, застосуємо пізніше
                     )
+                    logger.info(f"🔥 JOIN: отримано {len(products) if products else 0} продуктів")
 
                     # Застосовуємо фільтри в Python якщо потрібно
                     has_filters = any([symbol, provider, min_apy, max_apy, lock_period_days is not None])
@@ -425,6 +428,7 @@ async def get_all_products(
                             filtered_products.append(product)
 
                         products = filtered_products[:limit] if limit else filtered_products  # Обмежуємо після фільтрації
+                        logger.info(f"📋 Після фільтрації: {len(products) if products else 0} продуктів")
 
                     # Додаткова перевірка: якщо отримали продукти, перевіряємо чи вони відсортовані правильно
                     if products and len(products) > 0:
@@ -435,9 +439,11 @@ async def get_all_products(
                     if not products or len(products) == 0:
                         logger.warning("⚠️ JOIN до coins_popularity не повернув результатів, використовуємо fallback")
                         products = await YieldProductCRUD.get_all_products(limit, offset)
+                        logger.info(f"📋 Fallback після JOIN: отримано {len(products) if products else 0} продуктів")
             except Exception as e:
                 logger.error(f"❌ Помилка при отриманні продуктів за популярністю: {e}, використовуємо fallback", exc_info=True)
                 products = await YieldProductCRUD.get_all_products(limit, offset)
+                logger.info(f"📋 Fallback через помилку: отримано {len(products) if products else 0} продуктів")
         elif any([symbol, provider, min_apy, max_apy, lock_period_days is not None]):
             logger.info(f"📋 Фільтрація продуктів: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}")
             products = await YieldProductCRUD.filter_products(filters)
