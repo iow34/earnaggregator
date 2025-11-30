@@ -333,16 +333,36 @@ class YieldProductCRUD:
                 
                 # ВАЖЛИВО: Сортуємо правильно - спочатку за rank (менший = популярніший), потім за APY (більший = кращий)
                 # Використовуємо стабільне сортування з id для уникнення невизначеності
+                # ВАЖЛИВО: Використовуємо tuple для сортування, де:
+                # - x[1] = rank (сортуємо за зростанням - менший rank = популярніший)
+                # - -x[0].apy = APY (сортуємо за спаданням - більший APY = кращий, тому мінус)
+                # - str(x[0].id) = id як рядок (для стабільності сортування)
                 sorted_products_with_rank = sorted(
                     products_with_rank,
-                    key=lambda x: (x[1], -x[0].apy, x[0].id)
+                    key=lambda x: (
+                        x[1],  # rank (менший = популярніший)
+                        -x[0].apy if x[0].apy is not None else 0,  # APY (більший = кращий)
+                        str(x[0].id)  # id для стабільності
+                    )
                 )
                 
-                # Перевіряємо чи правильно відсортувалось
-                if sorted_products_with_rank:
-                    first_rank = sorted_products_with_rank[0][1]
-                    first_symbol = sorted_products_with_rank[0][0].symbol
-                    logger.info(f"🔍 Перший продукт після сортування: {first_symbol} (rank={first_rank}, має бути найменший)")
+                # ДОДАТКОВА ПЕРЕВІРКА: перевіряємо чи правильно відсортувалось
+                if sorted_products_with_rank and len(sorted_products_with_rank) > 0:
+                    first_product = sorted_products_with_rank[0]
+                    first_rank = first_product[1]
+                    first_symbol = first_product[0].symbol
+                    logger.info(f"🔍 ПЕРЕВІРКА: Перший продукт після сортування: {first_symbol} (rank={first_rank})")
+                    
+                    # Перевіряємо чи є продукти з rank=1
+                    rank_1_products = [p for p, r in sorted_products_with_rank if r == 1]
+                    if rank_1_products:
+                        logger.info(f"✅ Знайдено {len(rank_1_products)} продуктів з rank=1")
+                        if first_rank != 1:
+                            logger.error(f"❌ ПОМИЛКА: Перший продукт має rank={first_rank}, але є {len(rank_1_products)} продуктів з rank=1!")
+                            # Логуємо перші 5 продуктів з rank=1
+                            logger.error(f"❌ Перші 5 продуктів з rank=1: {[(p.symbol, p.provider, p.apy) for p, r in sorted_products_with_rank[:20] if r == 1][:5]}")
+                    else:
+                        logger.warning(f"⚠️ Не знайдено продуктів з rank=1")
                 
                 # Витягуємо продукти з кортежів
                 sorted_products = [p for p, _ in sorted_products_with_rank]
