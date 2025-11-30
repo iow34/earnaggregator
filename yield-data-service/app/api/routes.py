@@ -385,65 +385,55 @@ async def get_all_products(
         
         # Отримуємо продукти з фільтрацією та сортуванням
         if sort_by == "popularity":
-            # Використовуємо оптимізований метод з JOIN
-            logger.info(f"📋 Отримання продуктів з сортуванням за популярністю (оптимізований JOIN)")
+            # Використовуємо спрощену логіку сортування за популярністю
+            logger.info(f"📋 Отримання продуктів з сортуванням за популярністю (спрощена логіка)")
             try:
-                # Перевіряємо чи є дані в coins_popularity використовуючи існуючу сесію db
-                from app.db.models import CoinsPopularityDB
-                popularity_check = await db.execute(select(func.count(CoinsPopularityDB.id)))
-                popularity_count = popularity_check.scalar() or 0
-                logger.info(f"📊 Кількість записів у coins_popularity: {popularity_count}")
-
-                if popularity_count == 0:
-                    logger.warning("⚠️ Таблиця coins_popularity порожня, використовуємо fallback без сортування за популярністю")
-                    products = await YieldProductCRUD.get_all_products(limit, offset)
-                    logger.info(f"📋 Fallback: отримано {len(products) if products else 0} продуктів")
-                else:
-                    logger.info("🔥 Використовуємо JOIN метод для сортування за популярністю")
-                    # Спрощена логіка: отримуємо всі продукти відсортовані за популярністю без фільтрів
-                    # Фільтри застосуємо після отримання результатів
-                    products = await YieldProductCRUD.get_all_products_sorted_by_popularity(
-                        limit=limit,
-                        offset=offset,
-                        filters=None  # Спочатку без фільтрів, застосуємо пізніше
+                # Використовуємо простий підхід - отримуємо всі продукти з JOIN до coins_popularity
+                # схожий на той що працює для окремих бірж
+                query = (
+                    select(YieldProductDB)
+                    .outerjoin(
+                        CoinsPopularityDB,
+                        func.upper(YieldProductDB.symbol) == func.upper(CoinsPopularityDB.symbol)
                     )
-                    logger.info(f"🔥 JOIN: отримано {len(products) if products else 0} продуктів")
+                    .where(YieldProductDB.is_active == True)
+                    .order_by(
+                        func.coalesce(CoinsPopularityDB.market_cap_rank, 9999).asc(),
+                        YieldProductDB.apy.desc()
+                    )
+                )
 
-                    # Застосовуємо фільтри в Python якщо потрібно
-                    has_filters = any([symbol, provider, min_apy, max_apy, lock_period_days is not None])
-                    if has_filters and products:
-                        logger.info(f"📋 Застосовуємо фільтри до {len(products)} продуктів")
-                        filtered_products = []
-                        for product in products:
-                            if symbol and not product.symbol.upper().startswith(symbol.upper()):
-                                continue
-                            if provider and product.provider != provider:
-                                continue
-                            if min_apy is not None and product.apy < min_apy:
-                                continue
-                            if max_apy is not None and product.apy > max_apy:
-                                continue
-                            if lock_period_days is not None and product.lock_period_days != lock_period_days:
-                                continue
-                            filtered_products.append(product)
+                # Застосовуємо пагінацію
+                if limit is not None:
+                    query = query.limit(limit)
+                if offset > 0:
+                    query = query.offset(offset)
 
-                        products = filtered_products[:limit] if limit else filtered_products  # Обмежуємо після фільтрації
-                        logger.info(f"📋 Після фільтрації: {len(products) if products else 0} продуктів")
+                result = await db.execute(query)
+                products = result.scalars().all()
 
-                    # Додаткова перевірка: якщо отримали продукти, перевіряємо чи вони відсортовані правильно
-                    if products and len(products) > 0:
-                        # Перевіряємо чи перші продукти мають низький rank
-                        logger.info(f"📊 Отримано {len(products)} продуктів. Перші символи: {[p.symbol for p in products[:5]]}")
+                # Видаляємо дублікати
+                seen = set()
+                unique_products = []
+                for product in products:
+                    if product.id not in seen:
+                        seen.add(product.id)
+                        unique_products.append(product)
 
-                    # Якщо JOIN не повернув результатів, використовуємо fallback
-                    if not products or len(products) == 0:
-                        logger.warning("⚠️ JOIN до coins_popularity не повернув результатів, використовуємо fallback")
-                        products = await YieldProductCRUD.get_all_products(limit, offset)
-                        logger.info(f"📋 Fallback після JOIN: отримано {len(products) if products else 0} продуктів")
+                products = unique_products
+
+                logger.info(f"📊 Отримано {len(products) if products else 0} продуктів з прямим JOIN запитом")
+                if products and len(products) > 0:
+                    logger.info(f"📊 Перші символи: {[p.symbol for p in products[:5]]}")
+
+                # Якщо не отримали результатів, використовуємо fallback
+                if not products or len(products) == 0:
+                    logger.warning("⚠️ JOIN запит не повернув результатів, використовуємо fallback")
+                    products = await YieldProductCRUD.get_all_products(limit, offset)
+
             except Exception as e:
                 logger.error(f"❌ Помилка при отриманні продуктів за популярністю: {e}, використовуємо fallback", exc_info=True)
                 products = await YieldProductCRUD.get_all_products(limit, offset)
-                logger.info(f"📋 Fallback через помилку: отримано {len(products) if products else 0} продуктів")
         elif any([symbol, provider, min_apy, max_apy, lock_period_days is not None]):
             logger.info(f"📋 Фільтрація продуктів: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}")
             products = await YieldProductCRUD.filter_products(filters)
