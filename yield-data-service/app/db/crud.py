@@ -277,6 +277,7 @@ class YieldProductCRUD:
                 
                 if symbols:
                     # Використовуємо правильний запит для отримання популярності
+                    # ВАЖЛИВО: Використовуємо func.upper() для правильного порівняння
                     popularity_query = select(CoinsPopularityDB).where(
                         func.upper(CoinsPopularityDB.symbol).in_([s.upper() for s in symbols])
                     )
@@ -284,15 +285,17 @@ class YieldProductCRUD:
                     popularity_records = popularity_result.scalars().all()
                     
                     for record in popularity_records:
+                        # Зберігаємо в верхньому регістрі для правильного порівняння
                         popularity_map[record.symbol.upper()] = record.market_cap_rank
                     
                     logger.info(f"📊 Отримано популярність для {len(popularity_map)} символів з {len(symbols)} унікальних")
                     # Логуємо популярність для ключових символів для дебагу
-                    key_symbols = ['BTC', 'ETH', 'SOL', 'USDT', 'USD1', 'KAITO', 'MORPHO', 'BERA']
+                    key_symbols = ['BTC', 'ETH', 'SOL', 'USDT', 'USD1', 'KAITO', 'MORPHO', 'BERA', 'LAYER']
                     for sym in key_symbols:
-                        if sym in symbols:
-                            rank = popularity_map.get(sym, 9999)
-                            logger.info(f"  {sym}: rank={rank}")
+                        sym_upper = sym.upper()
+                        if sym_upper in symbols:
+                            rank = popularity_map.get(sym_upper, 9999)
+                            logger.info(f"  {sym}: rank={rank} (в БД: {sym_upper in [s.upper() for s in symbols]})")
                 
                 # Сортуємо продукти в Python за популярністю
                 def get_popularity_rank(product: YieldProductDB) -> int:
