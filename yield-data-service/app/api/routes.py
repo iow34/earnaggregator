@@ -386,11 +386,19 @@ async def get_all_products(
         if sort_by == "popularity":
             # Використовуємо оптимізований метод з JOIN
             logger.info(f"📋 Отримання продуктів з сортуванням за популярністю (оптимізований JOIN)")
-            products = await YieldProductCRUD.get_all_products_sorted_by_popularity(
-                limit=limit,
-                offset=offset,
-                filters=filters if any([symbol, provider, min_apy, max_apy, lock_period_days is not None]) else None
-            )
+            try:
+                products = await YieldProductCRUD.get_all_products_sorted_by_popularity(
+                    limit=limit,
+                    offset=offset,
+                    filters=filters if any([symbol, provider, min_apy, max_apy, lock_period_days is not None]) else None
+                )
+                # Якщо JOIN не повернув результатів, використовуємо fallback
+                if not products or len(products) == 0:
+                    logger.warning("⚠️ JOIN до coins_popularity не повернув результатів, використовуємо fallback")
+                    products = await YieldProductCRUD.get_all_products(limit, offset)
+            except Exception as e:
+                logger.error(f"❌ Помилка при отриманні продуктів за популярністю: {e}, використовуємо fallback")
+                products = await YieldProductCRUD.get_all_products(limit, offset)
         elif any([symbol, provider, min_apy, max_apy, lock_period_days is not None]):
             logger.info(f"📋 Фільтрація продуктів: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}")
             products = await YieldProductCRUD.filter_products(filters)

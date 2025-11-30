@@ -162,11 +162,12 @@ async def _display_flexible_products(
             'gate': 'gate',
             'bitget': 'bitget',
             'kraken': 'Kraken',
-            'htx': 'htx'
+            'htx': 'HTX'  # Виправлено: HTX замість htx
         }
         provider_api = None
         if provider:
             provider_api = provider_mapping.get(provider.lower(), provider.title())
+            logger.info(f"🔍 Мапінг провайдера: {provider} -> {provider_api}")
 
         # Отримати всі продукти з фільтрами
         # Використовуємо оптимізований API endpoint з сортуванням за популярністю за замовчуванням
@@ -404,11 +405,12 @@ async def _display_locked_products(
             'gate': 'gate',
             'bitget': 'bitget',
             'kraken': 'Kraken',
-            'htx': 'htx'
+            'htx': 'HTX'  # Виправлено: HTX замість htx
         }
         provider_api = None
         if provider:
             provider_api = provider_mapping.get(provider.lower(), provider.title())
+            logger.info(f"🔍 Мапінг провайдера: {provider} -> {provider_api}")
 
         # Отримати всі продукти з фільтрами
         # Використовуємо оптимізований API endpoint з сортуванням за популярністю за замовчуванням
@@ -665,11 +667,12 @@ async def _display_all_products(
             'gate': 'gate',
             'bitget': 'bitget',
             'kraken': 'Kraken',
-            'htx': 'htx'
+            'htx': 'HTX'  # Виправлено: HTX замість htx
         }
         provider_api = None
         if provider:
             provider_api = provider_mapping.get(provider.lower(), provider.title())
+            logger.info(f"🔍 Мапінг провайдера: {provider} -> {provider_api}")
 
         # Для всіх продуктів отримуємо всі доступні відфільтровані продукти і пагінуємо локально
         items_per_page = 50
