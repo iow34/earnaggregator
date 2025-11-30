@@ -257,15 +257,19 @@ class YieldProductCRUD:
                     if filters.lock_period_days is not None:
                         query = query.where(YieldProductDB.lock_period_days == filters.lock_period_days)
                 
-                # Отримуємо всі продукти (без пагінації, бо потрібно сортувати в Python)
-                result = await db.execute(query)
+                # ВАЖЛИВО: Обмежуємо кількість продуктів для сортування (максимум 10000)
+                # Це запобігає проблемам з пам'яттю при великій кількості продуктів
+                max_products_for_sorting = 10000
+                query_with_limit = query.limit(max_products_for_sorting)
+                
+                result = await db.execute(query_with_limit)
                 all_products = result.scalars().all()
                 
                 if not all_products:
                     logger.warning("⚠️ Не знайдено продуктів з заданими фільтрами")
                     return []
                 
-                logger.info(f"🔍 Отримано {len(all_products)} продуктів для сортування за популярністю")
+                logger.info(f"🔍 Отримано {len(all_products)} продуктів для сортування за популярністю (макс {max_products_for_sorting})")
                 
                 # Отримуємо популярність для всіх символів одночасно
                 symbols = list(set(p.symbol.upper() for p in all_products))
@@ -283,11 +287,12 @@ class YieldProductCRUD:
                         popularity_map[record.symbol.upper()] = record.market_cap_rank
                     
                     logger.info(f"📊 Отримано популярність для {len(popularity_map)} символів з {len(symbols)} унікальних")
-                    # Логуємо популярність для перших 10 символів для дебагу
-                    sample_symbols = list(symbols)[:10]
-                    for sym in sample_symbols:
-                        rank = popularity_map.get(sym, 9999)
-                        logger.debug(f"  {sym}: rank={rank}")
+                    # Логуємо популярність для ключових символів для дебагу
+                    key_symbols = ['BTC', 'ETH', 'SOL', 'USDT', 'USD1', 'KAITO', 'MORPHO', 'BERA']
+                    for sym in key_symbols:
+                        if sym in symbols:
+                            rank = popularity_map.get(sym, 9999)
+                            logger.info(f"  {sym}: rank={rank}")
                 
                 # Сортуємо продукти в Python за популярністю
                 def get_popularity_rank(product: YieldProductDB) -> int:
