@@ -242,57 +242,76 @@ class YieldProductCRUD:
                 # SQLAlchemy може неправильно обробляти ORDER BY з func.coalesce() в JOIN
                 from sqlalchemy import text
                 
-                # ВАЖЛИВО: Використовуємо підзапит для правильного сортування
-                # Спочатку отримуємо ID продуктів відсортованих за популярністю
-                subquery = (
-                    select(
-                        YieldProductDB.id.label('product_id')
-                    )
-                    .outerjoin(
-                        CoinsPopularityDB,
-                        func.upper(YieldProductDB.symbol) == func.upper(CoinsPopularityDB.symbol)
-                    )
-                    .where(YieldProductDB.is_active == True)
-                )
+                # ВАЖЛИВО: Використовуємо CTE (Common Table Expression) для правильного сортування
+                # Спочатку отримуємо всі продукти з rank, потім сортуємо та застосовуємо пагінацію
+                from sqlalchemy import text
                 
-                # Додаємо фільтри до підзапиту
+                # Будуємо CTE запит
+                cte_query = """
+                    WITH ranked_products AS (
+                        SELECT 
+                            yp.id,
+                            COALESCE(cp.market_cap_rank, 9999) as rank,
+                            yp.apy
+                        FROM yield_products yp
+                        LEFT JOIN coins_popularity cp ON UPPER(yp.symbol) = UPPER(cp.symbol)
+                        WHERE yp.is_active = true
+                """
+                
+                # Додаємо фільтри
+                filter_params = {}
                 if filters:
                     if filters.symbol:
-                        subquery = subquery.where(YieldProductDB.symbol == filters.symbol.upper())
+                        cte_query += " AND UPPER(yp.symbol) = UPPER(:symbol)"
+                        filter_params["symbol"] = filters.symbol
                     if filters.provider:
-                        subquery = subquery.where(YieldProductDB.provider == filters.provider)
+                        cte_query += " AND yp.provider = :provider"
+                        filter_params["provider"] = filters.provider
                     if filters.min_apy is not None:
-                        subquery = subquery.where(YieldProductDB.apy >= filters.min_apy)
+                        cte_query += " AND yp.apy >= :min_apy"
+                        filter_params["min_apy"] = filters.min_apy
                     if filters.max_apy is not None:
-                        subquery = subquery.where(YieldProductDB.apy <= filters.max_apy)
+                        cte_query += " AND yp.apy <= :max_apy"
+                        filter_params["max_apy"] = filters.max_apy
                     if filters.lock_period_days is not None:
-                        subquery = subquery.where(YieldProductDB.lock_period_days == filters.lock_period_days)
+                        cte_query += " AND yp.lock_period_days = :lock_period_days"
+                        filter_params["lock_period_days"] = filters.lock_period_days
                 
-                # Сортуємо підзапит за популярністю
-                subquery = subquery.order_by(
-                    func.coalesce(CoinsPopularityDB.market_cap_rank, 9999).asc(),
-                    YieldProductDB.apy.desc(),
-                    YieldProductDB.id.asc()  # Додаємо id для стабільності сортування
-                )
+                # Сортуємо та застосовуємо пагінацію в CTE
+                cte_query += """
+                        ORDER BY COALESCE(cp.market_cap_rank, 9999) ASC, yp.apy DESC, yp.id ASC
+                """
                 
-                # Застосовуємо пагінацію до підзапиту
                 if limit is not None:
-                    subquery = subquery.limit(limit)
+                    cte_query += f" LIMIT {limit}"
                 if offset > 0:
-                    subquery = subquery.offset(offset)
+                    cte_query += f" OFFSET {offset}"
                 
-                # Отримуємо ID продуктів з підзапиту
-                subquery_result = await db.execute(subquery)
-                product_ids = [row.product_id for row in subquery_result.fetchall()]
+                # Отримуємо продукти за ID з CTE
+                cte_query += """
+                    )
+                    SELECT yp.*
+                    FROM yield_products yp
+                    INNER JOIN ranked_products rp ON yp.id = rp.id
+                    ORDER BY rp.rank ASC, rp.apy DESC, rp.id ASC
+                """
+                
+                logger.debug(f"🔍 CTE запит для сортування за популярністю: {cte_query[:200]}...")
+                
+                # Виконуємо CTE запит
+                result = await db.execute(text(cte_query), filter_params)
+                rows = result.fetchall()
+                
+                # Отримуємо ID продуктів з результатів
+                product_ids = [row.id for row in rows]
                 
                 if not product_ids:
-                    logger.warning("⚠️ Підзапит не повернув жодних ID продуктів")
+                    logger.warning("⚠️ CTE запит не повернув жодних продуктів")
                     return []
                 
-                logger.info(f"🔍 Отримано {len(product_ids)} ID продуктів з підзапиту. Перші 5: {product_ids[:5]}")
+                logger.info(f"🔍 Отримано {len(product_ids)} ID продуктів з CTE. Перші 5: {product_ids[:5]}")
                 
                 # Отримуємо продукти за ID зі збереженням порядку
-                # Використовуємо CASE для збереження порядку з підзапиту
                 order_case = case(
                     {product_id: index for index, product_id in enumerate(product_ids)},
                     value=YieldProductDB.id
