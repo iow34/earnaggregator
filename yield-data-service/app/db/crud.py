@@ -351,7 +351,19 @@ class YieldProductCRUD:
                 logger.info(f"✅ Відсортовано {len(products)} продуктів після пагінації. Перші символи: {[p.symbol for p in products[:5]]}")
                 if products:
                     first_rank = get_popularity_rank(products[0])
-                    logger.info(f"🔍 Перший продукт після пагінації: {products[0].symbol} (rank={first_rank}, apy={products[0].apy})")
+                    first_symbol = products[0].symbol
+                    logger.info(f"🔍 Перший продукт після пагінації: {first_symbol} (rank={first_rank}, apy={products[0].apy})")
+                    
+                    # КРИТИЧНА ПЕРЕВІРКА: чи перший продукт має найменший rank?
+                    if first_rank != 1 and first_symbol.upper() != 'BTC':
+                        logger.error(f"❌ КРИТИЧНО: Перший продукт {first_symbol} має rank={first_rank}, але має бути BTC з rank=1!")
+                        # Перевіряємо чи є BTC в відсортованих продуктах
+                        btc_products = [p for p in sorted_products[:20] if p.symbol.upper() == 'BTC']
+                        if btc_products:
+                            btc_rank = get_popularity_rank(btc_products[0])
+                            logger.error(f"❌ BTC знайдено на позиції {sorted_products.index(btc_products[0])} з rank={btc_rank}, але не перший!")
+                        else:
+                            logger.error(f"❌ BTC не знайдено в перших 20 продуктах!")
                 
                 # Перевірка: логуємо перші 5 продуктів для дебагу сортування
                 if products and len(products) >= 5:
