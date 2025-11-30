@@ -410,7 +410,15 @@ async def get_all_products(
                 logger.info("📋 Продукти відсортовані за APY (від меншого)")
 
         if not products:
-            logger.warning("⚠️ Продукти не знайдено в БД")
+            logger.warning(f"⚠️ Продукти не знайдено в БД. Фільтри: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}, sort_by={sort_by}")
+            # Перевіряємо чи взагалі є продукти в БД
+            try:
+                total_count = await db.execute(select(func.count(YieldProductDB.id)).where(YieldProductDB.is_active == True))
+                total = total_count.scalar() or 0
+                logger.info(f"📊 Загальна кількість активних продуктів в БД: {total}")
+            except Exception as e:
+                logger.error(f"❌ Помилка підрахунку продуктів: {e}")
+            
             return YieldResponse(
                 success=True,
                 data=[],
@@ -3060,21 +3068,6 @@ async def update_priority_products(
                 stats = await priority_products_service.update_all_exchanges(db)
             
             logger.info(f"✅ Priority products оновлено: {stats}")
-            
-            # Інвалідуємо кеш Telegram бота для оновлення відображення
-            try:
-                import httpx
-                async with httpx.AsyncClient(timeout=5.0) as client:
-                    # Спроба інвалідувати кеш через Telegram бот API (якщо доступний)
-                    # Це не критично, тому не логуємо помилки
-                    try:
-                        bot_url = settings.DATA_SERVICE_URL.replace("yield-api", "telegram-bot") if hasattr(settings, 'DATA_SERVICE_URL') else None
-                        if bot_url:
-                            await client.post(f"{bot_url}/api/v1/cache/invalidate", json={"pattern": "main_menu:*"}, timeout=2.0)
-                    except Exception:
-                        pass  # Ігноруємо помилки інвалідації кешу бота
-            except Exception:
-                pass  # Ігноруємо помилки якщо бот недоступний
             
             return {
                 "success": True,

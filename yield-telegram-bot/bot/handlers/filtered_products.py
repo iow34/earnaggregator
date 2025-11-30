@@ -715,6 +715,11 @@ async def _display_all_products(
 
         products = data.get("data", [])
         logger.info(f"📊 Отримано {len(products)} продуктів з API")
+        
+        # Детальне логування для дебагу
+        if len(products) == 0:
+            logger.warning(f"⚠️ API повернув порожній список продуктів. Параметри запиту: limit=5000, offset=0, symbol={symbol}, provider={provider_api}, sort_by={sort_by}")
+            logger.warning(f"⚠️ Повна відповідь API: success={data.get('success')}, count={data.get('count')}, message={data.get('message')}")
 
         # Застосувати локальні фільтри (якщо потрібно)
         products = _apply_local_filters(products, filters)
