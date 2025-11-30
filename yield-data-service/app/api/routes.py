@@ -387,13 +387,12 @@ async def get_all_products(
             # Використовуємо оптимізований метод з JOIN
             logger.info(f"📋 Отримання продуктів з сортуванням за популярністю (оптимізований JOIN)")
             try:
-                # Перевіряємо чи є дані в coins_popularity
-                async with get_database_session() as check_db:
-                    from app.db.models import CoinsPopularityDB
-                    popularity_check = await check_db.execute(select(func.count(CoinsPopularityDB.id)))
-                    popularity_count = popularity_check.scalar() or 0
-                    logger.info(f"📊 Кількість записів у coins_popularity: {popularity_count}")
-                
+                # Перевіряємо чи є дані в coins_popularity використовуючи існуючу сесію db
+                from app.db.models import CoinsPopularityDB
+                popularity_check = await db.execute(select(func.count(CoinsPopularityDB.id)))
+                popularity_count = popularity_check.scalar() or 0
+                logger.info(f"📊 Кількість записів у coins_popularity: {popularity_count}")
+
                 if popularity_count == 0:
                     logger.warning("⚠️ Таблиця coins_popularity порожня, використовуємо fallback без сортування за популярністю")
                     products = await YieldProductCRUD.get_all_products(limit, offset)
@@ -407,12 +406,12 @@ async def get_all_products(
                         offset=offset,
                         filters=filters if has_filters else None
                     )
-                    
+
                     # Додаткова перевірка: якщо отримали продукти, перевіряємо чи вони відсортовані правильно
                     if products and len(products) > 0:
                         # Перевіряємо чи перші продукти мають низький rank
                         logger.info(f"📊 Отримано {len(products)} продуктів. Перші символи: {[p.symbol for p in products[:5]]}")
-                    
+
                     # Якщо JOIN не повернув результатів, використовуємо fallback
                     if not products or len(products) == 0:
                         logger.warning("⚠️ JOIN до coins_popularity не повернув результатів, використовуємо fallback")
