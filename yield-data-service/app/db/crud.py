@@ -246,9 +246,7 @@ class YieldProductCRUD:
                 # Спочатку отримуємо ID продуктів відсортованих за популярністю
                 subquery = (
                     select(
-                        YieldProductDB.id,
-                        func.coalesce(CoinsPopularityDB.market_cap_rank, 9999).label('rank'),
-                        YieldProductDB.apy
+                        YieldProductDB.id.label('product_id')
                     )
                     .outerjoin(
                         CoinsPopularityDB,
@@ -273,7 +271,8 @@ class YieldProductCRUD:
                 # Сортуємо підзапит за популярністю
                 subquery = subquery.order_by(
                     func.coalesce(CoinsPopularityDB.market_cap_rank, 9999).asc(),
-                    YieldProductDB.apy.desc()
+                    YieldProductDB.apy.desc(),
+                    YieldProductDB.id.asc()  # Додаємо id для стабільності сортування
                 )
                 
                 # Застосовуємо пагінацію до підзапиту
@@ -284,11 +283,13 @@ class YieldProductCRUD:
                 
                 # Отримуємо ID продуктів з підзапиту
                 subquery_result = await db.execute(subquery)
-                product_ids = [row[0] for row in subquery_result.fetchall()]
+                product_ids = [row.product_id for row in subquery_result.fetchall()]
                 
                 if not product_ids:
                     logger.warning("⚠️ Підзапит не повернув жодних ID продуктів")
                     return []
+                
+                logger.info(f"🔍 Отримано {len(product_ids)} ID продуктів з підзапиту. Перші 5: {product_ids[:5]}")
                 
                 # Отримуємо продукти за ID зі збереженням порядку
                 # Використовуємо CASE для збереження порядку з підзапиту
@@ -302,6 +303,8 @@ class YieldProductCRUD:
                 
                 result = await db.execute(query)
                 products = result.scalars().all()
+                
+                logger.info(f"✅ Отримано {len(products)} продуктів. Перші символи: {[p.symbol for p in products[:5]]}")
                 
                 # Перевірка: логуємо перші 5 продуктів для дебагу сортування
                 if products and len(products) >= 5:
