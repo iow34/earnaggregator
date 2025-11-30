@@ -279,15 +279,21 @@ class YieldProductCRUD:
                 if symbols:
                     # Використовуємо правильний запит для отримання популярності
                     # ВАЖЛИВО: Використовуємо func.upper() для правильного порівняння
+                    # ВАЖЛИВО: Використовуємо список символів без дублікатів
+                    unique_symbols = list(set(s.upper() for s in symbols))
                     popularity_query = select(CoinsPopularityDB).where(
-                        func.upper(CoinsPopularityDB.symbol).in_([s.upper() for s in symbols])
+                        func.upper(CoinsPopularityDB.symbol).in_(unique_symbols)
                     )
                     popularity_result = await db.execute(popularity_query)
                     popularity_records = popularity_result.scalars().all()
                     
+                    logger.info(f"🔍 Запит популярності для {len(unique_symbols)} унікальних символів, отримано {len(popularity_records)} записів")
+                    
                     for record in popularity_records:
                         # Зберігаємо в верхньому регістрі для правильного порівняння
-                        popularity_map[record.symbol.upper()] = record.market_cap_rank
+                        symbol_key = record.symbol.upper()
+                        popularity_map[symbol_key] = record.market_cap_rank
+                        logger.debug(f"  Додано до мапи: {symbol_key} -> rank={record.market_cap_rank}")
                     
                     logger.info(f"📊 Отримано популярність для {len(popularity_map)} символів з {len(symbols)} унікальних")
                     # Логуємо популярність для ключових символів для дебагу
