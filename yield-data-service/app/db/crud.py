@@ -293,7 +293,14 @@ class YieldProductCRUD:
                         sym_upper = sym.upper()
                         if sym_upper in symbols:
                             rank = popularity_map.get(sym_upper, 9999)
-                            logger.info(f"  {sym}: rank={rank}")
+                            logger.info(f"  {sym}: rank={rank} (в мапі: {sym_upper in popularity_map})")
+                    
+                    # Перевіряємо чи правильно отримано популярність для BTC
+                    btc_rank = popularity_map.get('BTC', None)
+                    if btc_rank is None:
+                        logger.error("❌ КРИТИЧНО: BTC не знайдено в popularity_map!")
+                    else:
+                        logger.info(f"✅ BTC знайдено в popularity_map з rank={btc_rank}")
                 
                 # Сортуємо продукти в Python за популярністю
                 def get_popularity_rank(product: YieldProductDB) -> int:
