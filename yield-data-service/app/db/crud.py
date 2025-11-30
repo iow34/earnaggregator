@@ -272,6 +272,12 @@ class YieldProductCRUD:
                 
                 logger.info(f"🔍 Отримано {len(all_products)} продуктів для сортування за популярністю")
                 
+                # КРИТИЧНА ПЕРЕВІРКА: перевіряємо чи є BTC в продуктах
+                btc_count = sum(1 for p in all_products if p.symbol.upper() == 'BTC')
+                usd1_count = sum(1 for p in all_products if p.symbol.upper() == 'USD1')
+                kaito_count = sum(1 for p in all_products if p.symbol.upper() == 'KAITO')
+                logger.info(f"🔍 Кількість продуктів: BTC={btc_count}, USD1={usd1_count}, KAITO={kaito_count}")
+                
                 # Отримуємо популярність для всіх символів одночасно
                 symbols = list(set(p.symbol.upper() for p in all_products))
                 popularity_map = {}
