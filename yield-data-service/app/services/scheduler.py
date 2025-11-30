@@ -281,6 +281,7 @@ class DataScheduler:
         Синхронізує:
         - Binance продукти
         - Bybit продукти
+        - MEXC продукти
         - Оновлює існуючі дані
         """
         start_time = datetime.now(UTC)
@@ -455,7 +456,35 @@ class DataScheduler:
             except Exception as e:
                 logger.error(f"❌ Помилка синхронізації HTX: {e}", exc_info=True)
                 total_errors += 1
-            
+
+            # Синхронізуємо MEXC
+            try:
+                logger.info("📥 Синхронізація MEXC...")
+                if "mexc" not in available_exchanges:
+                    logger.warning("⚠️ MEXC не доступна в registry, пропускаємо")
+                    total_errors += 1
+                else:
+                    mexc_service = exchange_registry.get_exchange_service("mexc")
+                    mexc_result = await mexc_service.sync_products_to_db()
+                    self.metrics.record_db_sync()
+                    self.metrics.record_api_call(exchange="mexc")
+
+                    if mexc_result["status"] == "success":
+                        stats = mexc_result["sync_stats"]
+                        total_created += stats["created"]
+                        total_updated += stats["updated"]
+                        total_errors += stats["errors"]
+                        logger.info(
+                            f"✅ MEXC: {stats['created']} створено, "
+                            f"{stats['updated']} оновлено, {stats['errors']} помилок"
+                        )
+                    else:
+                        logger.warning(f"⚠️ MEXC sync warning: {mexc_result.get('message')}")
+
+            except Exception as e:
+                logger.error(f"❌ Помилка синхронізації MEXC: {e}", exc_info=True)
+                total_errors += 1
+
             # Оновлюємо priority_products після синхронізації бірж
             try:
                 logger.info("🔄 Оновлення priority_products...")
