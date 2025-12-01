@@ -8,8 +8,8 @@ class Settings(BaseSettings):
     DATA_SERVICE_URL: AnyUrl = Field("http://yield-api:8000")
     # Railway автоматично генерований URL для data service
     RAILWAY_SERVICE_EARNAGGREGATOR_URL: Optional[str] = Field(None, alias="RAILWAY_SERVICE_EARNAGGREGATOR_URL")
-    # Актуальний public domain для earnaggregator сервісу
-    EARNAGGREGATOR_PUBLIC_DOMAIN: Optional[str] = Field(None, alias="EARNAGGREGATOR_PUBLIC_DOMAIN")
+    # Актуальний public URL для data service (з RAILWAY_PUBLIC_DOMAIN earnaggregator)
+    DATA_SERVICE_PUBLIC_URL: Optional[str] = Field(None, alias="DATA_SERVICE_PUBLIC_URL")
     # Публічна адреса для трекінгових посилань (для HTML посилань в Telegram)
     TRACKING_REDIRECT_URL: AnyUrl = Field("http://localhost:8000", alias="TRACKING_REDIRECT_URL")
     REDIS_URL: str = Field("redis://redis:6379/1")
@@ -104,13 +104,13 @@ class Settings(BaseSettings):
         Повертає правильний URL для data service.
 
         Пріоритет:
-        1. EARNAGGREGATOR_PUBLIC_DOMAIN (явно встановлений актуальний URL)
+        1. DATA_SERVICE_PUBLIC_URL (з RAILWAY_PUBLIC_DOMAIN earnaggregator сервісу)
         2. RAILWAY_SERVICE_EARNAGGREGATOR_URL (Railway auto-generated)
         3. DATA_SERVICE_URL (fallback)
         """
-        # Найвищий пріоритет - явно встановлений актуальний URL
-        if self.EARNAGGREGATOR_PUBLIC_DOMAIN:
-            return self.EARNAGGREGATOR_PUBLIC_DOMAIN
+        # Найвищий пріоритет - URL з RAILWAY_PUBLIC_DOMAIN earnaggregator
+        if self.DATA_SERVICE_PUBLIC_URL:
+            return self.DATA_SERVICE_PUBLIC_URL
 
         # Другий пріоритет - Railway auto-generated URL
         if self.RAILWAY_SERVICE_EARNAGGREGATOR_URL:
