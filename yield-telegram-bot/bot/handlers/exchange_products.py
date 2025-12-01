@@ -576,13 +576,16 @@ async def show_all_exchange_products_command(message: Message, state: FSMContext
             # Заглушка для Nexo - продукти будуть додані пізніше
             try:
                 telegram_id = message.from_user.id if hasattr(message, 'from_user') else message.chat.id
-                if telegram_id > 0:
+                try:
+                    # Завжди використовуємо трекінгові посилання через generate_link
                     referral_url = await referral_link_generator.generate_link(
                         telegram_id=telegram_id,
                         exchange="nexo",
                         page="2"  # Сторінка продуктів біржі
                     )
-                else:
+                except Exception as e:
+                    logger.warning(f"⚠️ Помилка генерації трекінгового посилання для nexo: {e}")
+                    # Fallback на прямі посилання тільки при критичній помилці
                     from bot.handlers.main_menu import _get_referral_url
                     referral_url = _get_referral_url("nexo")
                 
@@ -597,7 +600,7 @@ async def show_all_exchange_products_command(message: Message, state: FSMContext
                 )
             except Exception as e:
                 logger.error(f"Помилка показу заглушки для Nexo: {e}", exc_info=True)
-                # Fallback без трекінгового посилання
+                # Fallback на прямі посилання тільки при критичній помилці
                 from bot.handlers.main_menu import _get_referral_url
                 referral_url = _get_referral_url("nexo")
                 escaped_url = referral_url.replace('&', '&amp;')

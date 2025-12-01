@@ -506,16 +506,13 @@ async def _format_single_exchange_preview(
         priority_products.sort(key=lambda p: symbol_order.get(p.get("symbol", "").upper(), 999))
 
         try:
-            if telegram_id > 0:
-                referral_url = await referral_link_generator.generate_link(telegram_id=telegram_id, exchange=exchange, page="1")
-            else:
-                referral_url = _get_referral_url(exchange)
-        except Exception:
+            # Завжди використовуємо трекінгові посилання через generate_link
+            referral_url = await referral_link_generator.generate_link(telegram_id=telegram_id, exchange=exchange, page="1")
+        except Exception as e:
+            logger.warning(f"⚠️ Помилка генерації трекінгового посилання для {exchange}: {e}")
+            # Fallback на прямі посилання тільки при критичній помилці
             referral_url = _get_referral_url(exchange)
 
-        if not referral_url or not referral_url.startswith(
-            'http') or ('localhost' in referral_url):
-            referral_url = _get_referral_url(exchange)
         if not referral_url or not referral_url.startswith('http'):
             referral_url = "https://www.binance.com"
 
@@ -637,15 +634,13 @@ async def _format_single_exchange_preview_fallback(
         priority_products.sort(key=lambda p: symbol_order.get(p.get("symbol", "").upper(), 999))
 
         try:
-            if telegram_id > 0:
-                referral_url = await referral_link_generator.generate_link(telegram_id=telegram_id, exchange=exchange, page="1")
-            else:
-                referral_url = _get_referral_url(exchange)
-        except Exception:
+            # Завжди використовуємо трекінгові посилання через generate_link
+            referral_url = await referral_link_generator.generate_link(telegram_id=telegram_id, exchange=exchange, page="1")
+        except Exception as e:
+            logger.warning(f"⚠️ Помилка генерації трекінгового посилання для {exchange}: {e}")
+            # Fallback на прямі посилання тільки при критичній помилці
             referral_url = _get_referral_url(exchange)
 
-        if not referral_url or not referral_url.startswith('http') or ('localhost' in referral_url):
-            referral_url = _get_referral_url(exchange)
         if not referral_url or not referral_url.startswith('http'):
             referral_url = "https://www.binance.com"
 
@@ -815,18 +810,15 @@ async def _display_all_exchanges(message, state: FSMContext, page: int = 1, is_c
         exchanges = []
         for exchange_name in exchange_names:
             try:
+                # Завжди використовуємо трекінгові посилання через generate_link
                 referral_url = await referral_link_generator.generate_link(
                     telegram_id=telegram_id,
                     exchange=exchange_name,
                     page="3",
                 )
-                if (
-                    not referral_url
-                    or not referral_url.startswith("http")
-                    or "localhost" in referral_url
-                ):
-                    referral_url = _get_referral_url(exchange_name)
-            except Exception:
+            except Exception as e:
+                logger.warning(f"⚠️ Помилка генерації трекінгового посилання для {exchange_name}: {e}")
+                # Fallback на прямі посилання тільки при критичній помилці
                 referral_url = _get_referral_url(exchange_name)
 
             if not referral_url or not referral_url.startswith("http"):
