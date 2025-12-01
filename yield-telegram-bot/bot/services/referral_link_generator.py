@@ -123,6 +123,10 @@ class ReferralLinkGenerator:
             # Побудувати query string з правильним кодуванням URL
             query_string = urlencode(params)
             redirect_url = f"{self.redirect_base_url}/ref?{query_string}"
+
+            # Логування для діагностики URL
+            logger.debug(f"🔗 Використовується redirect_base_url: {self.redirect_base_url}")
+            logger.info(f"🔗 Згенеровано посилання: {redirect_url}")
             
             logger.info(
                 f"🔗 Згенеровано просте трекінгове посилання: telegram_id={telegram_id}, "
