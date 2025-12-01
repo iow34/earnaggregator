@@ -19,12 +19,14 @@ class TrackingClient:
     def __init__(self, base_url: Optional[str] = None):
         """
         Ініціалізація клієнта.
-        
+
         Args:
             base_url: URL Data Service (за замовчуванням з settings)
         """
         self.base_url = base_url or str(settings.DATA_SERVICE_URL)
         self.timeout = settings.REQUEST_TIMEOUT
+        self._tracking_enabled = True  # Початково ввімкнений
+        self._consecutive_failures = 0
     
     async def register_user(
         self,
@@ -36,17 +38,22 @@ class TrackingClient:
     ) -> Optional[Dict[str, Any]]:
         """
         Зареєструвати користувача через deep link.
-        
+
         Args:
             telegram_id: Telegram ID користувача
             payload: Deep link payload
             username: Telegram username
             first_name: Ім'я
             last_name: Прізвище
-            
+
         Returns:
             Дані користувача (uuid, source) або None при помилці
         """
+        # Якщо tracking вимкнений, просто повертаємо None
+        if not getattr(self, '_tracking_enabled', True):
+            logger.debug(f"📊 Tracking вимкнений, пропускаємо реєстрацію user {telegram_id}")
+            return None
+
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
@@ -68,14 +75,28 @@ class TrackingClient:
                     )
                     return data
                 else:
-                    logger.error(
-                        f"❌ Помилка реєстрації користувача {telegram_id}: "
+                    logger.warning(
+                        f"⚠️ Помилка реєстрації користувача {telegram_id}: "
                         f"status={response.status_code}"
                     )
+                    self._consecutive_failures += 1
+
+                    # Якщо багато послідовних помилок, вимикаємо tracking
+                    if self._consecutive_failures >= 3:
+                        logger.error(f"❌ Tracking API недоступний ({self._consecutive_failures} помилок), вимикаємо tracking")
+                        self._tracking_enabled = False
+
                     return None
-                    
+
         except Exception as e:
-            logger.error(f"❌ Помилка виклику tracking API (register): {e}")
+            logger.warning(f"⚠️ Помилка з'єднання з tracking API: {e}")
+            self._consecutive_failures += 1
+
+            # Якщо багато послідовних помилок, вимикаємо tracking
+            if self._consecutive_failures >= 3:
+                logger.error(f"❌ Tracking API недоступний ({self._consecutive_failures} помилок), вимикаємо tracking")
+                self._tracking_enabled = False
+
             return None
     
     async def get_user_info(
@@ -112,6 +133,15 @@ class TrackingClient:
         except Exception as e:
             logger.error(f"❌ Помилка виклику tracking API (get_user): {e}")
             return None
+
+    def is_tracking_enabled(self) -> bool:
+        """Перевірити чи tracking увімкнений."""
+        return self._tracking_enabled
+
+    def reset_tracking_status(self):
+        """Скинути статус tracking (для тестування)."""
+        self._tracking_enabled = True
+        self._consecutive_failures = 0
 
 
 # Глобальний екземпляр

@@ -79,6 +79,7 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
             logger.info(f"📊 Deep link payload отримано: {payload} від user {message.from_user.id}")
         
         # Реєстрація користувача через tracking API (з deep link)
+        # Не блокуємо /start на помилках tracking
         try:
             tracking_result = await tracking_client.register_user(
                 telegram_id=message.from_user.id,
@@ -87,21 +88,23 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
                 first_name=message.from_user.first_name,
                 last_name=message.from_user.last_name
             )
-            
+
             if tracking_result:
                 source = tracking_result.get('acquisition_source', 'organic')
                 is_new = tracking_result.get('is_new_user', False)
                 campaign_id = tracking_result.get('campaign_id')
-                
+
                 logger.info(
                     f"✅ Tracking реєстрація: user={message.from_user.id}, "
                     f"source={source}, new={is_new}, campaign={campaign_id}"
                 )
+            elif not tracking_client.is_tracking_enabled():
+                logger.debug(f"📊 Tracking вимкнений для user {message.from_user.id}")
             else:
-                logger.warning(f"⚠️ Tracking API недоступний для user {message.from_user.id}")
-                
+                logger.debug(f"📊 Tracking реєстрація пропущена для user {message.from_user.id}")
+
         except Exception as e:
-            logger.error(f"❌ Помилка tracking реєстрації: {e}")
+            logger.warning(f"⚠️ Помилка tracking реєстрації (не блокує /start): {e}")
             # Продовжуємо роботу навіть якщо tracking failed
         
         # Перевірка чи користувач вже існує (для визначення чи показувати привітання)
