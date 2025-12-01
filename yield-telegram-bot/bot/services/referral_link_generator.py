@@ -24,18 +24,24 @@ class ReferralLinkGenerator:
     
     def __init__(self):
         """Ініціалізація генератора."""
-        # URL redirect server - використовуємо публічну адресу для HTML посилань
-        # (DATA_SERVICE_URL - внутрішня Docker адреса для API викликів)
+        # Реферальні коди з .env (кешуються, бо не змінюються часто)
+        self.referral_codes = settings.referral_urls
+
+    @property
+    def redirect_base_url(self) -> str:
+        """
+        Динамічно отримує URL для redirect server.
+
+        Використовує TRACKING_REDIRECT_URL якщо встановлено,
+        інакше fallback на data_service_url.
+        """
         # (TRACKING_REDIRECT_URL - публічна адреса для трекінгових посилань)
         tracking_url = getattr(settings, 'TRACKING_REDIRECT_URL', None)
         if tracking_url:
-            self.redirect_base_url = str(tracking_url).rstrip('/')
+            return str(tracking_url).rstrip('/')
         else:
             # Fallback на data_service_url якщо TRACKING_REDIRECT_URL не встановлено
-            self.redirect_base_url = settings.data_service_url.rstrip('/')
-        
-        # Реферальні коди з .env
-        self.referral_codes = settings.referral_urls
+            return settings.data_service_url.rstrip('/')
     
     async def generate_link(
         self,
