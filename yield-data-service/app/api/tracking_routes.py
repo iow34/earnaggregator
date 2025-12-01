@@ -261,7 +261,7 @@ def get_exchange_referral_url(exchange: str) -> str:
     return referral_map.get(exchange.lower(), settings.referral_binance)
 
 
-@redirect_router.get("/ref")
+@redirect_router.get("")
 async def redirect_with_tracking(
     request: Request,
     telegram_id: Optional[int] = Query(None, description="Telegram ID користувача (новий формат)"),
