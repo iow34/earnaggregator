@@ -391,7 +391,7 @@ async def get_all_products(
             try:
                 # Отримуємо продукти з фільтрами
                 if any([symbol, provider, min_apy, max_apy, lock_period_days is not None]):
-                    products = await YieldProductCRUD.filter_products(filters, limit=None, offset=0)  # Отримуємо всі відфільтровані продукти
+                    products = await YieldProductCRUD.filter_products(filters, limit=None)  # Отримуємо всі відфільтровані продукти
                 else:
                     products = await YieldProductCRUD.get_all_products(limit=None, offset=0)  # Отримуємо всі продукти
 
