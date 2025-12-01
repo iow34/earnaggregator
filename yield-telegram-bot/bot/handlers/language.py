@@ -2,6 +2,7 @@
 Обробник вибору мови інтерфейсу.
 """
 
+import asyncio
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
@@ -152,21 +153,49 @@ async def language_callback(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data == "language_back_to_main")
 async def language_back_to_main(callback: CallbackQuery, state: FSMContext) -> None:
-    """Повернення до головного меню з вибору мови."""
+    """Повернення до головного меню з вибору мови з індикатором завантаження."""
     try:
         data = await state.get_data()
         lang = data.get("language") or data.get("lang") or "ua"
         await state.clear()
         await callback.answer()
 
+        # Створюємо задачу для показу індикатора завантаження через 1 секунду
+        loading_task = None
+
+        async def show_loading_indicator():
+            """Показати індикатор завантаження якщо процес займає >1 сек."""
+            try:
+                await asyncio.sleep(1.0)
+                # Якщо ми досі тут - значить завантаження триває
+                loading_text = localization.get_text("loading.main_menu", lang)
+                logger.info(f"🌐 language_back_to_main: Showing loading message in '{lang}': {loading_text}")
+                return await callback.message.answer(loading_text)
+            except asyncio.CancelledError:
+                # Завантаження завершилось швидше 1 секунди
+                pass
+
+        # Запускаємо індикатор в фоні
+        loading_task = asyncio.create_task(show_loading_indicator())
+
         from bot.keyboards.reply import main_menu
         from bot.handlers.main_menu import show_main_menu
 
-        await callback.message.answer(
-            localization.get_text("menu.main.placeholder", lang),
-            reply_markup=main_menu(lang),
-        )
-        await show_main_menu(callback.message, state, lang=lang)
+        try:
+            await callback.message.answer(
+                localization.get_text("menu.main.placeholder", lang),
+                reply_markup=main_menu(lang),
+            )
+            await show_main_menu(callback.message, state, lang=lang)
+        finally:
+            # Скасовуємо індикатор завантаження, якщо він ще не запустився
+            if loading_task and not loading_task.done():
+                loading_task.cancel()
+                try:
+                    await loading_task
+                except asyncio.CancelledError:
+                    pass
+
     except Exception as e:
         logger.error(f"Помилка в language_back_to_main: {e}", exc_info=True)
         await callback.answer("Error", show_alert=True)
