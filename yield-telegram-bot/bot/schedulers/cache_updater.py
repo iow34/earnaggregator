@@ -56,7 +56,7 @@ class CacheUpdater:
         """
         Основний цикл планувальника.
 
-        Оновлює кеш з різними інтервалами залежно від типу даних.
+        Оновлює кеш кожні 15 хвилин для зменшення навантаження на Railway.
         """
         try:
             while self.running:
@@ -65,8 +65,8 @@ class CacheUpdater:
                 except Exception as e:
                     logger.error(f"Помилка в циклі оновлення кешу: {e}", exc_info=True)
 
-                # Чекаємо 5 хвилин перед наступним оновленням
-                await asyncio.sleep(300)  # 5 хвилин
+                # Чекаємо 15 хвилин перед наступним оновленням
+                await asyncio.sleep(900)  # 15 хвилин
 
         except asyncio.CancelledError:
             logger.info("Cache updater скасований")
