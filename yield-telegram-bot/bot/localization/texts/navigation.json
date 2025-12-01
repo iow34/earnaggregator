@@ -14,7 +14,8 @@
     "nav.visit": "перейти ↗️",
     "nav.page": "сторінка",
     "nav.of": "з",
-    "nav.exchanges": "бірж"
+    "nav.exchanges": "бірж",
+    "nav.cancel": "❌ Скасувати"
   },
   "ru": {
     "nav.back_to_list": "⬅️ Назад к списку",
@@ -31,7 +32,8 @@
     "nav.visit": "перейти ↗️",
     "nav.page": "страница",
     "nav.of": "из",
-    "nav.exchanges": "бирж"
+    "nav.exchanges": "бирж",
+    "nav.cancel": "❌ Отмена"
   },
   "en": {
     "nav.back_to_list": "⬅️ Back to List",
@@ -48,6 +50,7 @@
     "nav.visit": "visit ↗️",
     "nav.page": "page",
     "nav.of": "of",
-    "nav.exchanges": "exchanges"
+    "nav.exchanges": "exchanges",
+    "nav.cancel": "❌ Cancel"
   }
 }

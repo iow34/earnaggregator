@@ -20,6 +20,9 @@
     "menu.select_sort_title": "Оберіть сортування",
     "menu.select_product_title": "Оберіть продукт",
     "menu.other_product": "Інший продукт",
+    "menu.manual_product_input_title": "Введення продукту вручну",
+    "menu.manual_product_input_prompt": "Введіть назву продукту:",
+    "menu.manual_product_input_hint": "Наприклад: BTC, ETH, SOL або будь-який інший токен",
     "menu.sort_popularity": "Популярність",
     "menu.sort_apy_desc": "APY (спадання)",
     "menu.sort_apy_asc": "APY (зростання)"
@@ -45,6 +48,9 @@
     "menu.select_sort_title": "Выберите сортировку",
     "menu.select_product_title": "Выберите продукт",
     "menu.other_product": "Другой продукт",
+    "menu.manual_product_input_title": "Ручной ввод продукта",
+    "menu.manual_product_input_prompt": "Введите название продукта:",
+    "menu.manual_product_input_hint": "Например: BTC, ETH, SOL или любой другой токен",
     "menu.sort_popularity": "Популярность",
     "menu.sort_apy_desc": "APY (по убыванию)",
     "menu.sort_apy_asc": "APY (по возрастанию)"
@@ -70,6 +76,9 @@
     "menu.select_sort_title": "Select sorting",
     "menu.select_product_title": "Select product",
     "menu.other_product": "Other product",
+    "menu.manual_product_input_title": "Manual product input",
+    "menu.manual_product_input_prompt": "Enter product name:",
+    "menu.manual_product_input_hint": "For example: BTC, ETH, SOL or any other token",
     "menu.sort_popularity": "Popularity",
     "menu.sort_apy_desc": "APY (desc)",
     "menu.sort_apy_asc": "APY (asc)"
