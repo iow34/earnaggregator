@@ -52,7 +52,7 @@ WORKDIR /app
 # Копіюємо код проекту
 # Структура проекту:
 # - yield-data-service/app/ -> /app/app/ (для yield-api)
-# - yield-telegram-bot/bot/ -> /app/bot/ (для telegram-bot)
+# - yield-telegram-bot/bot/ -> /app/bot/ (для telegram-bot) - включає static_tracking_links.json
 # - VERSION -> /app/VERSION (для версійності)
 # - yield-data-service/scripts/ -> /app/scripts/ (для міграцій)
 COPY yield-data-service/app /app/app

@@ -415,7 +415,7 @@ async def get_all_products(
                     # Сортуємо
                     products.sort(key=sort_key)
                     logger.info(f"🐍 Продукти відсортовані за популярністю в Python")
-
+                    
                     # Застосовуємо пагінацію після сортування
                     start_idx = offset or 0
                     end_idx = start_idx + (limit or len(products))

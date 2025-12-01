@@ -456,7 +456,7 @@ class DataScheduler:
             except Exception as e:
                 logger.error(f"❌ Помилка синхронізації HTX: {e}", exc_info=True)
                 total_errors += 1
-
+            
             # Синхронізуємо MEXC
             try:
                 logger.info("📥 Синхронізація MEXC...")

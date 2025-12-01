@@ -266,16 +266,16 @@ class YieldProductCRUD:
                     func.coalesce(CoinsPopularityDB.market_cap_rank, 9999).asc(),
                     YieldProductDB.apy.desc()
                 )
-
+                
                 # Застосовуємо пагінацію
                 if limit is not None:
                     query = query.limit(limit)
                 if offset > 0:
                     query = query.offset(offset)
-
+                
                 result = await db.execute(query)
                 products = result.scalars().all()
-
+                
                 # Видаляємо дублікати зі збереженням порядку
                 seen = set()
                 unique_products = []
@@ -291,7 +291,7 @@ class YieldProductCRUD:
                 logger.info(f"✅ Отримано {len(unique_products)} продуктів з сортуванням за популярністю (було {len(products)} до видалення дублікатів)")
                 if unique_products:
                     logger.info(f"🔍 Перші 5 продуктів: {[(p.symbol, p.provider, p.apy) for p in unique_products[:5]]}")
-
+                
                 return unique_products
                 
             except Exception as e:
@@ -471,7 +471,7 @@ class YieldProductCRUD:
                 return result.scalars().all()
             except Exception as e:
                 logger.error(f"Помилка отримання всіх записів популярності монет: {e}")
-                return []
+            return []
 
     @staticmethod
     async def filter_products(filters: YieldProductFilter, limit: Optional[int] = None) -> List[YieldProductDB]:
