@@ -16,35 +16,101 @@ from bot.utils.logger import logger
 class StaticTrackingLinks:
     """Клас для роботи зі статичними трекінговими посиланнями."""
 
+    # Статичні дані з посиланнями (вбудовані в код для надійності)
+    _STATIC_LINKS_DATA = {
+        "description": "Статичні трекінгові посилання для бірж. Можна змінювати вручну для оновлення посилань.",
+        "version": "1.0",
+        "last_updated": "2025-12-01",
+        "links": {
+            "binance": {
+                "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=binance&ref_code=39794924",
+                "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=binance&ref_code=39794924",
+                "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=binance&ref_code=39794924"
+            },
+            "bybit": {
+                "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=bybit&ref_code=JG6XK",
+                "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=bybit&ref_code=JG6XK",
+                "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=bybit&ref_code=JG6XK"
+            },
+            "bitmart": {
+                "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=bitmart",
+                "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=bitmart",
+                "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=bitmart"
+            },
+            "okx": {
+                "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=okx",
+                "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=okx",
+                "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=okx"
+            },
+            "mexc": {
+                "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=mexc",
+                "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=mexc",
+                "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=mexc"
+            },
+            "gate": {
+                "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=gate&ref_code=VVKQULFXVG",
+                "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=gate&ref_code=VVKQULFXVG",
+                "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=gate&ref_code=VVKQULFXVG"
+            },
+            "bitget": {
+                "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=bitget",
+                "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=bitget",
+                "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=bitget"
+            },
+            "kraken": {
+                "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=kraken",
+                "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=kraken",
+                "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=kraken"
+            },
+            "kucoin": {
+                "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=kucoin",
+                "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=kucoin",
+                "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=kucoin"
+            },
+            "htx": {
+                "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=htx",
+                "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=htx",
+                "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=htx"
+            }
+        }
+    }
+
     def __init__(self, links_file: str = None):
         """
         Ініціалізація статичних трекінгових посилань.
 
+        Використовує вбудовані статичні дані замість файлу для надійності.
+        Файл може використовуватися для оновлення даних під час виконання.
+
         Args:
             links_file: Шлях до файлу з посиланнями (опціонально)
         """
-        if links_file is None:
-            # Шлях відносно цього файлу
-            current_dir = Path(__file__).parent
-            links_file = current_dir.parent / "static_tracking_links.json"
+        self.links_file = Path(links_file) if links_file else None
+        self._links_data = self._STATIC_LINKS_DATA.copy()
+        self._load_links_from_file()
 
-        self.links_file = Path(links_file)
-        self._links_data = None
-        self._load_links()
+    def _load_links_from_file(self) -> None:
+        """Завантажити оновлені посилання з JSON файлу (якщо існує)."""
+        if not self.links_file:
+            logger.info("ℹ️ Використовуються вбудовані статичні трекінгові посилання")
+            return
 
-    def _load_links(self) -> None:
-        """Завантажити посилання з JSON файлу."""
         try:
             if self.links_file.exists():
                 with open(self.links_file, 'r', encoding='utf-8') as f:
-                    self._links_data = json.load(f)
-                logger.info(f"✅ Завантажено статичні трекінгові посилання з {self.links_file}")
+                    file_data = json.load(f)
+                # Оновлюємо тільки секцію links, зберігаючи іншу інформацію
+                if "links" in file_data:
+                    self._links_data["links"] = file_data["links"]
+                    self._links_data["last_updated"] = file_data.get("last_updated", "from_file")
+                    logger.info(f"✅ Оновлено статичні трекінгові посилання з {self.links_file}")
+                else:
+                    logger.warning(f"⚠️ Файл {self.links_file} не містить секції 'links'")
             else:
-                logger.warning(f"⚠️ Файл з статичними посиланнями не знайдено: {self.links_file}")
-                self._links_data = {"links": {}}
+                logger.info(f"ℹ️ Файл {self.links_file} не знайдено, використовуються вбудовані дані")
         except Exception as e:
-            logger.error(f"❌ Помилка завантаження статичних посилань: {e}")
-            self._links_data = {"links": {}}
+            logger.error(f"❌ Помилка завантаження статичних посилань з файлу: {e}")
+            logger.info("ℹ️ Продовжуємо з вбудованими даними")
 
     def reload_links(self) -> None:
         """Перезавантажити посилання з файлу (корисно після ручних змін)."""
