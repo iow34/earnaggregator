@@ -17,6 +17,7 @@
     "menu.reset_filters": "Скинути фільтри",
     "menu.custom_range": "Власний діапазон",
     "menu.sort": "Сортування",
+    "menu.select_sort_title": "Оберіть сортування",
     "menu.sort_popularity": "Популярність",
     "menu.sort_apy_desc": "APY (спадання)",
     "menu.sort_apy_asc": "APY (зростання)"
@@ -39,6 +40,7 @@
     "menu.reset_filters": "Сбросить фильтры",
     "menu.custom_range": "Свой диапазон",
     "menu.sort": "Сортировка",
+    "menu.select_sort_title": "Выберите сортировку",
     "menu.sort_popularity": "Популярность",
     "menu.sort_apy_desc": "APY (по убыванию)",
     "menu.sort_apy_asc": "APY (по возрастанию)"
@@ -61,6 +63,7 @@
     "menu.reset_filters": "Reset filters",
     "menu.custom_range": "Custom range",
     "menu.sort": "Sort",
+    "menu.select_sort_title": "Select sorting",
     "menu.sort_popularity": "Popularity",
     "menu.sort_apy_desc": "APY (desc)",
     "menu.sort_apy_asc": "APY (asc)"
