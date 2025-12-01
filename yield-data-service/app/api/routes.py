@@ -387,17 +387,45 @@ async def get_all_products(
         
         # Отримуємо продукти з фільтрацією та сортуванням
         if sort_by == "popularity":
-            logger.info(f"📋 Сортування за популярністю через YieldProductCRUD.get_all_products_sorted_by_popularity")
+            logger.info(f"📋 Сортування за популярністю через Python-side sorting")
             try:
-                # Для сортування за популярністю передаємо filters тільки якщо є фільтри
-                has_filters = any([symbol, provider, min_apy, max_apy, lock_period_days is not None])
-                if has_filters:
-                    products = await YieldProductCRUD.get_all_products_sorted_by_popularity(limit=limit, offset=offset, filters=filters)
+                # Отримуємо продукти з фільтрами
+                if any([symbol, provider, min_apy, max_apy, lock_period_days is not None]):
+                    products = await YieldProductCRUD.filter_products(filters, limit=None, offset=0)  # Отримуємо всі відфільтровані продукти
                 else:
-                    products = await YieldProductCRUD.get_all_products_sorted_by_popularity(limit=limit, offset=offset, filters=None)
-                logger.info(f"📊 get_all_products_sorted_by_popularity повернув {len(products) if products else 0} продуктів")
+                    products = await YieldProductCRUD.get_all_products(limit=None, offset=0)  # Отримуємо всі продукти
+
+                # Сортуємо за популярністю в Python
+                if products:
+                    # Отримуємо дані про популярність
+                    from app.db.crud import YieldProductCRUD
+                    popularity_data = {}
+                    try:
+                        popularity_records = await YieldProductCRUD.get_all_coins_popularity()
+                        popularity_data = {p.symbol.upper(): p.market_cap_rank for p in popularity_records}
+                        logger.info(f"📊 Отримано дані про популярність для {len(popularity_data)} монет")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Не вдалося отримати дані про популярність: {e}")
+
+                    # Функція сортування
+                    def sort_key(product):
+                        symbol_upper = product.symbol.upper()
+                        popularity_rank = popularity_data.get(symbol_upper, 9999)
+                        return (popularity_rank, -product.apy, product.id)
+
+                    # Сортуємо
+                    products.sort(key=sort_key)
+                    logger.info(f"🐍 Продукти відсортовані за популярністю в Python")
+
+                    # Застосовуємо пагінацію після сортування
+                    start_idx = offset or 0
+                    end_idx = start_idx + (limit or len(products))
+                    products = products[start_idx:end_idx]
+                    logger.info(f"📊 Повертаємо {len(products)} продуктів після пагінації (offset={start_idx}, limit={limit})")
+
+                logger.info(f"📊 Python-side sorting повернув {len(products) if products else 0} продуктів")
             except Exception as e:
-                logger.error(f"❌ Помилка сортування за популярністю: {e}", exc_info=True)
+                logger.error(f"❌ Помилка Python-side сортування за популярністю: {e}", exc_info=True)
                 products = await YieldProductCRUD.filter_products(filters, limit, offset)
         elif any([symbol, provider, min_apy, max_apy, lock_period_days is not None]):
             logger.info(f"📋 Фільтрація продуктів через filter_products: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}")
