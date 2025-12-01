@@ -9,7 +9,10 @@
     "error.invalid_product": "❌ Некоректний символ продукту",
     "error.unknown_exchange": "❌ Невідома біржа: {exchange}",
     "error.data_unavailable_for_exchange": "⚠️ Дані для біржі {exchange} тимчасово недоступні",
-    "error.display_results_error": "❌ Неможливо відобразити результати. Спробуйте пізніше."
+    "error.display_results_error": "❌ Неможливо відобразити результати. Спробуйте пізніше.",
+    "error.product_input_empty": "❌ Назва продукту не може бути порожньою",
+    "error.product_input_invalid_chars": "❌ Назва продукту може містити тільки великі літери, цифри та дефіси",
+    "error.product_input_too_long": "❌ Назва продукту занадто довга (максимум 20 символів)"
   },
   "ru": {
     "error.api_unavailable": "⚠️ API временно недоступен",
@@ -21,7 +24,10 @@
     "error.invalid_product": "❌ Некорректный символ продукта",
     "error.unknown_exchange": "❌ Неизвестная биржа: {exchange}",
     "error.data_unavailable_for_exchange": "⚠️ Данные для биржи {exchange} временно недоступны",
-    "error.display_results_error": "❌ Невозможно отобразить результаты. Попробуйте позже."
+    "error.display_results_error": "❌ Невозможно отобразить результаты. Попробуйте позже.",
+    "error.product_input_empty": "❌ Название продукта не может быть пустым",
+    "error.product_input_invalid_chars": "❌ Название продукта может содержать только заглавные буквы, цифры и дефисы",
+    "error.product_input_too_long": "❌ Название продукта слишком длинное (максимум 20 символов)"
   },
   "en": {
     "error.api_unavailable": "⚠️ API temporarily unavailable",
@@ -33,7 +39,10 @@
     "error.invalid_product": "❌ Invalid product symbol",
     "error.unknown_exchange": "❌ Unknown exchange: {exchange}",
     "error.data_unavailable_for_exchange": "⚠️ Data for exchange {exchange} temporarily unavailable",
-    "error.display_results_error": "❌ Unable to display results. Please try again later."
+    "error.display_results_error": "❌ Unable to display results. Please try again later.",
+    "error.product_input_empty": "❌ Product name cannot be empty",
+    "error.product_input_invalid_chars": "❌ Product name can only contain uppercase letters, numbers and hyphens",
+    "error.product_input_too_long": "❌ Product name is too long (maximum 20 characters)"
   }
 }
 
