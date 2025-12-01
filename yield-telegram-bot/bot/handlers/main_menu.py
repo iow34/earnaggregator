@@ -678,12 +678,41 @@ async def _format_single_exchange_preview_fallback(
 async def back_to_main_handler(
     callback: CallbackQuery,
      state: FSMContext) -> None:
-    """Обробник кнопки повернення на головну."""
+    """Обробник кнопки повернення на головну з індикатором завантаження."""
     try:
         await callback.answer()
         user_data = await state.get_data()
         lang = user_data.get("lang", "ua")
-        await show_main_menu(callback.message, state, lang)
+
+        # Створюємо задачу для показу індикатора завантаження через 1 секунду
+        loading_task = None
+
+        async def show_loading_indicator():
+            """Показати індикатор завантаження якщо процес займає >1 сек."""
+            try:
+                await asyncio.sleep(1.0)
+                # Якщо ми досі тут - значить завантаження триває
+                loading_text = localization.get_text("loading.main_menu", lang)
+                logger.info(f"🌐 back_to_main_handler: Showing loading message in '{lang}': {loading_text}")
+                return await callback.message.answer(loading_text)
+            except asyncio.CancelledError:
+                # Завантаження завершилось швидше 1 секунди
+                pass
+
+        # Запускаємо індикатор в фоні
+        loading_task = asyncio.create_task(show_loading_indicator())
+
+        try:
+            await show_main_menu(callback.message, state, lang)
+        finally:
+            # Скасовуємо індикатор завантаження, якщо він ще не запустився
+            if loading_task and not loading_task.done():
+                loading_task.cancel()
+                try:
+                    await loading_task
+                except asyncio.CancelledError:
+                    pass
+
     except Exception as e:
         logger.error(f"Помилка в back_to_main_handler: {e}", exc_info=True)
         await callback.answer("❌ Error")
