@@ -47,13 +47,19 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
     # Determine initial language from Telegram for loading message (fallback to 'ua')
     tg_lang = message.from_user.language_code if message.from_user else "uk"
     temp_lang = "ua"
+    logger.info(f"🌐 /start: tg_lang='{tg_lang}', determining temp_lang")
+
     if tg_lang:
         if tg_lang.startswith("ru"):
             temp_lang = "ru"
         elif tg_lang.startswith("en"):
             temp_lang = "en"
-        elif tg_lang.startswith("uk"):
+        elif tg_lang.startswith("uk") or tg_lang == "ua":
             temp_lang = "ua"
+        else:
+            logger.warning(f"🌐 /start: Unknown tg_lang='{tg_lang}', using default 'ua'")
+
+    logger.info(f"🌐 /start: Determined temp_lang='{temp_lang}' for user {message.from_user.id}")
     
     try:
         start_time = time.time()
@@ -64,7 +70,9 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
             try:
                 await asyncio.sleep(1.0)
                 # Якщо ми досі тут - значить завантаження триває
-                return await message.answer(localization.get_text("loading.main_menu", temp_lang))
+                loading_text = localization.get_text("loading.main_menu", temp_lang)
+                logger.info(f"🌐 /start: Showing loading message in '{temp_lang}': {loading_text}")
+                return await message.answer(loading_text)
             except asyncio.CancelledError:
                 # Завантаження завершилось швидше 1 секунди
                 pass
