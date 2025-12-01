@@ -45,21 +45,24 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
     loading_task = None
     
     # Determine initial language from Telegram for loading message (fallback to 'ua')
-    tg_lang = message.from_user.language_code if message.from_user else "uk"
-    temp_lang = "ua"
-    logger.info(f"🌐 /start: tg_lang='{tg_lang}', determining temp_lang")
+    tg_lang = message.from_user.language_code if message.from_user else None
+    temp_lang = "ua"  # default
+    logger.info(f"🌐 /start: Telegram language_code='{tg_lang}', determining temp_lang for loading message")
 
     if tg_lang:
-        if tg_lang.startswith("ru"):
+        tg_lang_lower = tg_lang.lower()
+        if tg_lang_lower.startswith("ru") or tg_lang_lower == "be":  # Russian or Belarusian
             temp_lang = "ru"
-        elif tg_lang.startswith("en"):
+        elif tg_lang_lower.startswith("en"):
             temp_lang = "en"
-        elif tg_lang.startswith("uk") or tg_lang == "ua":
+        elif tg_lang_lower.startswith("uk") or tg_lang_lower == "ua":  # Ukrainian
             temp_lang = "ua"
         else:
-            logger.warning(f"🌐 /start: Unknown tg_lang='{tg_lang}', using default 'ua'")
+            logger.warning(f"🌐 /start: Unknown language_code='{tg_lang}', using default 'ua'")
+    else:
+        logger.info("🌐 /start: No language_code from Telegram, using default 'ua'")
 
-    logger.info(f"🌐 /start: Determined temp_lang='{temp_lang}' for user {message.from_user.id}")
+    logger.info(f"🌐 /start: Determined temp_lang='{temp_lang}' for loading message, user {message.from_user.id}")
     
     try:
         start_time = time.time()
@@ -70,8 +73,9 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
             try:
                 await asyncio.sleep(1.0)
                 # Якщо ми досі тут - значить завантаження триває
+                # Використовуємо temp_lang для повідомлення завантаження (з Telegram)
                 loading_text = localization.get_text("loading.main_menu", temp_lang)
-                logger.info(f"🌐 /start: Showing loading message in '{temp_lang}': {loading_text}")
+                logger.info(f"🌐 /start: Showing loading message in '{temp_lang}' (from Telegram): {loading_text}")
                 return await message.answer(loading_text)
             except asyncio.CancelledError:
                 # Завантаження завершилось швидше 1 секунди
