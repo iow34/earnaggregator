@@ -374,7 +374,7 @@ async def get_all_products(
     """
     try:
         logger.info(f"📋 Запит всіх продуктів з фільтрами: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}, sort_by={sort_by}")
-
+        
         # Створюємо фільтри
         filters = YieldProductFilter(
             symbol=symbol,
@@ -389,11 +389,16 @@ async def get_all_products(
         if sort_by == "popularity":
             logger.info(f"📋 Сортування за популярністю через YieldProductCRUD.get_all_products_sorted_by_popularity")
             try:
-                products = await YieldProductCRUD.get_all_products_sorted_by_popularity(limit, offset)
+                # Для сортування за популярністю передаємо filters тільки якщо є фільтри
+                    has_filters = any([symbol, provider, min_apy, max_apy, lock_period_days is not None])
+                if has_filters:
+                    products = await YieldProductCRUD.get_all_products_sorted_by_popularity(limit, offset, filters)
+                else:
+                    products = await YieldProductCRUD.get_all_products_sorted_by_popularity(limit, offset, None)
                 logger.info(f"📊 get_all_products_sorted_by_popularity повернув {len(products) if products else 0} продуктів")
             except Exception as e:
                 logger.error(f"❌ Помилка сортування за популярністю: {e}", exc_info=True)
-                products = await YieldProductCRUD.get_all_products(limit, offset)
+                products = await YieldProductCRUD.filter_products(filters, limit, offset)
         elif any([symbol, provider, min_apy, max_apy, lock_period_days is not None]):
             logger.info(f"📋 Фільтрація продуктів через filter_products: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}")
             products = await YieldProductCRUD.filter_products(filters)
