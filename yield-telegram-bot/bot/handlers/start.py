@@ -66,7 +66,10 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
     
     try:
         start_time = time.time()
-        
+
+        # Очистити стан на початку /start щоб уникнути конфліктів з попередніми станами
+        await state.clear()
+
         # Створюємо задачу для показу індикатора завантаження через 1 секунду
         async def show_loading_indicator():
             """Показати індикатор завантаження якщо процес займає >1 сек."""
