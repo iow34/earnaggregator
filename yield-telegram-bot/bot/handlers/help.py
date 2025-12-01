@@ -90,9 +90,11 @@ async def help_handler(message: Message, state: FSMContext) -> None:
 
 
 # Обробник для кнопки "Help" з клавіатури
-@router.message(F.text == localization.get_menu_text("menu.main.help", "ua"))
-@router.message(F.text == localization.get_menu_text("menu.main.help", "ru"))
-@router.message(F.text == localization.get_menu_text("menu.main.help", "en"))
+@router.message(F.text.in_([
+    localization.get_menu_text("menu.main.help", "ua"),
+    localization.get_menu_text("menu.main.help", "ru"),
+    localization.get_menu_text("menu.main.help", "en")
+]))
 async def help_button_handler(message: Message, state: FSMContext) -> None:
     """Обробник натискання кнопки 'Help'."""
     await help_handler(message, state)

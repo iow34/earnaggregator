@@ -52,8 +52,8 @@ def get_language_keyboard(current_lang: str) -> InlineKeyboardMarkup:
 
 @router.message(F.text.in_([
     "🌐 Language",      # English
-    "🌐 Мова",         # Ukrainian (якщо буде перекладено)
-    "🌐 Язык"          # Russian (якщо буде перекладено)
+    "🌐 Мова",         # Ukrainian
+    "🌐 Язык"          # Russian
 ]))
 async def language_handler(message: Message, state: FSMContext) -> None:
     """Обробник кнопки Language."""

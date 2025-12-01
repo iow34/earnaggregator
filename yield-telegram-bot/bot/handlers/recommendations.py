@@ -250,7 +250,11 @@ async def recommendations_command_handler(message: Message, state: FSMContext) -
         )
 
 
-@router.message(F.text.in_({"🎯 Recommendations", "🎯 Рекомендації", "🎯 Рекомендации"}))
+@router.message(F.text.in_([
+    "🎯 Recommendations",  # English
+    "🎯 Рекомендації",    # Ukrainian
+    "🎯 Рекомендации"     # Russian
+]))
 async def recommendations_button_handler(message: Message, state: FSMContext) -> None:
     """Обробник кнопки 'Recommendations' з reply клавіатури."""
     await recommendations_command_handler(message, state)

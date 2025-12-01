@@ -733,8 +733,8 @@ async def all_exchanges_handler(
 @router.message(Command("exchanges"))
 @router.message(F.text.in_([
     "🏦 Exchanges",     # English
-    "🏦 Біржі",        # Ukrainian (якщо буде перекладено)
-    "🏦 Биржи"         # Russian (якщо буде перекладено)
+    "🏦 Біржі",        # Ukrainian
+    "🏦 Биржи"         # Russian
 ]))
 async def exchanges_command_handler(
     message: Message,
