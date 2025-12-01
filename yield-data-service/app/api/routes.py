@@ -390,7 +390,7 @@ async def get_all_products(
             logger.info(f"📋 Сортування за популярністю через YieldProductCRUD.get_all_products_sorted_by_popularity")
             try:
                 # Для сортування за популярністю передаємо filters тільки якщо є фільтри
-                    has_filters = any([symbol, provider, min_apy, max_apy, lock_period_days is not None])
+                has_filters = any([symbol, provider, min_apy, max_apy, lock_period_days is not None])
                 if has_filters:
                     products = await YieldProductCRUD.get_all_products_sorted_by_popularity(limit, offset, filters)
                 else:
