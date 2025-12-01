@@ -1,10 +1,10 @@
 {
   "ua": {
     "menu.main.welcome": "👋 Вітаємо в ChainAdvisor Bot!",
-    "menu.main.language": "🌐 Language",
-    "menu.main.exchanges": "🏦 Exchanges",
-    "menu.main.recommendations": "🎯 Recommendations",
-    "menu.main.help": "❓ Help",
+    "menu.main.language": "🌐 Мова",
+    "menu.main.exchanges": "🏦 Біржі",
+    "menu.main.recommendations": "🎯 Рекомендації",
+    "menu.main.help": "❓ Допомога",
     "menu.main.placeholder": "Оберіть дію з меню",
     "menu.back_to_main": "⬅️ На головну",
     "menu.advanced_search": "🔍 Розширений пошук",
