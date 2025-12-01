@@ -33,15 +33,15 @@ class ReferralLinkGenerator:
         Динамічно отримує URL для redirect server.
 
         Використовує TRACKING_REDIRECT_URL якщо встановлено,
-        інакше fallback на data_service_url.
+        інакше hardcode на актуальний Railway домен.
         """
         # (TRACKING_REDIRECT_URL - публічна адреса для трекінгових посилань)
         tracking_url = getattr(settings, 'TRACKING_REDIRECT_URL', None)
         if tracking_url:
             return str(tracking_url).rstrip('/')
         else:
-            # Fallback на data_service_url якщо TRACKING_REDIRECT_URL не встановлено
-            return settings.data_service_url.rstrip('/')
+            # Hardcode на актуальний Railway домен для гарантованої роботи
+            return "https://go-to-the-exchange.up.railway.app"
     
     async def generate_link(
         self,
