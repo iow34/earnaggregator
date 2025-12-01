@@ -187,7 +187,7 @@ async def health():
 # Підключаємо роутери
 # Примітка: api_router вже має prefix="/api/v1" в routes.py, тому не додаємо prefix тут
 app.include_router(api_router, tags=["api"])
-app.include_router(tracking_router, prefix="/tracking", tags=["tracking"])
+app.include_router(tracking_router, prefix="/api/v1/tracking", tags=["tracking"])
 app.include_router(redirect_router, prefix="/ref", tags=["redirect"])
 app.include_router(migrations_router, tags=["migrations"])
 

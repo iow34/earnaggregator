@@ -27,7 +27,7 @@ from app.config import settings
 
 
 # Створюємо роутери
-router = APIRouter(prefix="/api/v1/tracking", tags=["tracking"])
+router = APIRouter(tags=["tracking"])
 redirect_router = APIRouter(tags=["redirect"])
 
 
