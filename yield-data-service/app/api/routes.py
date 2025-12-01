@@ -398,7 +398,6 @@ async def get_all_products(
                 # Сортуємо за популярністю в Python
                 if products:
                     # Отримуємо дані про популярність
-                    from app.db.crud import YieldProductCRUD
                     popularity_data = {}
                     try:
                         popularity_records = await YieldProductCRUD.get_all_coins_popularity()
