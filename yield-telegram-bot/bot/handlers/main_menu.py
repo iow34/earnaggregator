@@ -224,53 +224,55 @@ async def show_main_menu(
             logger.info(f"🎯 Головне меню отримано з кешу ({lang})")
             cached_text = cached_menu["text"]
 
-            # Replace links for user
-            try:
-                exchanges = [
-    "binance",
-    "bybit",
-    "bitmart",
-    "okx",
-    "mexc",
-    "gate",
-    "bitget",
-    "kraken",
-    "kucoin",
-     "htx"]
-
-                async def generate_tracking_link(exchange: str):
-                    try:
-                        tracking_url = await referral_link_generator.generate_link(
-                            telegram_id=telegram_id,
-                            exchange=exchange,
-                            page="1"
-                        )
-                        if tracking_url and tracking_url.startswith('http'):
-                            if 'localhost' not in tracking_url and '127.0.0.1' not in tracking_url and 'yield-api' not in tracking_url:
-                                return exchange, tracking_url
-                    except Exception as e:
-                        logger.warning(
-                            f"⚠️ Не вдалося згенерувати трекінгове посилання для {exchange}: {e}")
-                    return exchange, None
-
-                tracking_tasks = [generate_tracking_link(
-                    exchange) for exchange in exchanges]
-                tracking_results = await asyncio.gather(*tracking_tasks)
-
-                for exchange, tracking_url in tracking_results:
-                    if tracking_url:
-                        direct_url = _get_referral_url(exchange)
-                        if direct_url and direct_url != "#":
-                            escaped_direct = direct_url.replace('&', '&amp;')
-                            escaped_tracking = tracking_url.replace(
-                                '&', '&amp;')
-                            if escaped_direct in cached_text:
-                                cached_text = cached_text.replace(
-                                    escaped_direct, escaped_tracking)
-            except Exception as e:
-                logger.error(
-    f"❌ Помилка заміни посилань в кешованому меню: {e}",
-     exc_info=True)
+            # NOTE: Генерація трекінгових посилань прибрана для покращення продуктивності /start
+            # Якщо потрібно, посилання будуть генеруватися при кліку на кнопки бірж
+            # Replace links for user - DISABLED for performance
+            # try:
+            #     exchanges = [
+            # "binance",
+            # "bybit",
+            # "bitmart",
+            # "okx",
+            # "mexc",
+            # "gate",
+            # "bitget",
+            # "kraken",
+            # "kucoin",
+            #  "htx"]
+            #
+            #     async def generate_tracking_link(exchange: str):
+            #         try:
+            #             tracking_url = await referral_link_generator.generate_link(
+            #                 telegram_id=telegram_id,
+            #                 exchange=exchange,
+            #                 page="1"
+            #             )
+            #             if tracking_url and tracking_url.startswith('http'):
+            #                 if 'localhost' not in tracking_url and '127.0.0.1' not in tracking_url and 'yield-api' not in tracking_url:
+            #                     return exchange, tracking_url
+            #         except Exception as e:
+            #             logger.warning(
+            #                 f"⚠️ Не вдалося згенерувати трекінгове посилання для {exchange}: {e}")
+            #         return exchange, None
+            #
+            #     tracking_tasks = [generate_tracking_link(
+            #         exchange) for exchange in exchanges]
+            #     tracking_results = await asyncio.gather(*tracking_tasks)
+            #
+            #     for exchange, tracking_url in tracking_results:
+            #         if tracking_url:
+            #             direct_url = _get_referral_url(exchange)
+            #             if direct_url and direct_url != "#":
+            #             escaped_direct = direct_url.replace('&', '&amp;')
+            #             escaped_tracking = tracking_url.replace(
+            #                 '&', '&amp;')
+            #             if escaped_direct in cached_text:
+            #                 cached_text = cached_text.replace(
+            #                     escaped_direct, escaped_tracking)
+            # except Exception as e:
+            #     logger.error(
+            # f"❌ Помилка заміни посилань в кешованому меню: {e}",
+            #  exc_info=True)
 
             await message.answer(
                 text=cached_text,
