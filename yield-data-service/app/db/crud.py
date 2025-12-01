@@ -461,6 +461,19 @@ class YieldProductCRUD:
             return []
 
     @staticmethod
+    async def get_all_coins_popularity() -> List[CoinsPopularityDB]:
+        """
+        Отримати всі записи про популярність монет.
+        """
+        async with get_database_session() as db:
+            try:
+                result = await db.execute(select(CoinsPopularityDB))
+                return result.scalars().all()
+            except Exception as e:
+                logger.error(f"Помилка отримання всіх записів популярності монет: {e}")
+                return []
+
+    @staticmethod
     async def filter_products(filters: YieldProductFilter, limit: Optional[int] = None) -> List[YieldProductDB]:
         """
         Фільтрує продукти за критеріями.
