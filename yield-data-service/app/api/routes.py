@@ -392,9 +392,9 @@ async def get_all_products(
                 # Для сортування за популярністю передаємо filters тільки якщо є фільтри
                 has_filters = any([symbol, provider, min_apy, max_apy, lock_period_days is not None])
                 if has_filters:
-                    products = await YieldProductCRUD.get_all_products_sorted_by_popularity(limit, offset, filters)
+                    products = await YieldProductCRUD.get_all_products_sorted_by_popularity(limit=limit, offset=offset, filters=filters)
                 else:
-                    products = await YieldProductCRUD.get_all_products_sorted_by_popularity(limit, offset)
+                    products = await YieldProductCRUD.get_all_products_sorted_by_popularity(limit=limit, offset=offset, filters=None)
                 logger.info(f"📊 get_all_products_sorted_by_popularity повернув {len(products) if products else 0} продуктів")
             except Exception as e:
                 logger.error(f"❌ Помилка сортування за популярністю: {e}", exc_info=True)
