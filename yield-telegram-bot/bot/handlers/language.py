@@ -50,16 +50,20 @@ def get_language_keyboard(current_lang: str) -> InlineKeyboardMarkup:
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
-@router.message(F.text == "🌐 Language")
+@router.message(F.text.in_([
+    "🌐 Language",      # English
+    "🌐 Мова",         # Ukrainian (якщо буде перекладено)
+    "🌐 Язык"          # Russian (якщо буде перекладено)
+]))
 async def language_handler(message: Message, state: FSMContext) -> None:
     """Обробник кнопки Language."""
     try:
         user_id = message.from_user.id
-        
+
         # Get current language from DB to mark selected
         async with db_manager.get_session() as session:
             user = await get_or_create_user(
-                session, 
+                session,
                 telegram_id=user_id,
                 username=message.from_user.username,
                 first_name=message.from_user.first_name,
