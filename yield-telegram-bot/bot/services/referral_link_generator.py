@@ -31,8 +31,8 @@ class ReferralLinkGenerator:
         if tracking_url:
             self.redirect_base_url = str(tracking_url).rstrip('/')
         else:
-            # Fallback на DATA_SERVICE_URL якщо TRACKING_REDIRECT_URL не встановлено
-            self.redirect_base_url = str(settings.DATA_SERVICE_URL).rstrip('/')
+            # Fallback на data_service_url якщо TRACKING_REDIRECT_URL не встановлено
+            self.redirect_base_url = settings.data_service_url.rstrip('/')
         
         # Реферальні коди з .env
         self.referral_codes = settings.referral_urls

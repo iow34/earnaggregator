@@ -6,6 +6,8 @@ from typing import Dict, Optional, List
 class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str = Field(..., alias="BOT_TOKEN")
     DATA_SERVICE_URL: AnyUrl = Field("http://yield-api:8000")
+    # Railway автоматично генерований URL для data service
+    RAILWAY_SERVICE_EARNAGGREGATOR_URL: Optional[str] = Field(None, alias="RAILWAY_SERVICE_EARNAGGREGATOR_URL")
     # Публічна адреса для трекінгових посилань (для HTML посилань в Telegram)
     TRACKING_REDIRECT_URL: AnyUrl = Field("http://localhost:8000", alias="TRACKING_REDIRECT_URL")
     REDIS_URL: str = Field("redis://redis:6379/1")
@@ -93,6 +95,22 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
+
+    @property
+    def data_service_url(self) -> str:
+        """
+        Повертає правильний URL для data service.
+
+        На Railway використовує RAILWAY_SERVICE_EARNAGGREGATOR_URL,
+        інакше використовує DATA_SERVICE_URL.
+        """
+        if self.RAILWAY_SERVICE_EARNAGGREGATOR_URL:
+            # Railway автоматично генерує URL без https://
+            if self.RAILWAY_SERVICE_EARNAGGREGATOR_URL.startswith('http'):
+                return self.RAILWAY_SERVICE_EARNAGGREGATOR_URL
+            else:
+                return f"https://{self.RAILWAY_SERVICE_EARNAGGREGATOR_URL}"
+        return str(self.DATA_SERVICE_URL)
 
     @property
     def referral_urls(self) -> Dict[str, str]:

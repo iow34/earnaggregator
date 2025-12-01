@@ -19,11 +19,11 @@ class TrackingClient:
     def __init__(self, base_url: Optional[str] = None):
         """
         Ініціалізація клієнта.
-
+        
         Args:
             base_url: URL Data Service (за замовчуванням з settings)
         """
-        self.base_url = base_url or str(settings.DATA_SERVICE_URL)
+        self.base_url = base_url or settings.data_service_url
         self.timeout = settings.REQUEST_TIMEOUT
         self._tracking_enabled = True  # Початково ввімкнений
         self._consecutive_failures = 0
@@ -38,14 +38,14 @@ class TrackingClient:
     ) -> Optional[Dict[str, Any]]:
         """
         Зареєструвати користувача через deep link.
-
+        
         Args:
             telegram_id: Telegram ID користувача
             payload: Deep link payload
             username: Telegram username
             first_name: Ім'я
             last_name: Прізвище
-
+            
         Returns:
             Дані користувача (uuid, source) або None при помилці
         """
@@ -87,7 +87,7 @@ class TrackingClient:
                         self._tracking_enabled = False
 
                     return None
-
+                    
         except Exception as e:
             logger.warning(f"⚠️ Помилка з'єднання з tracking API: {e}")
             self._consecutive_failures += 1

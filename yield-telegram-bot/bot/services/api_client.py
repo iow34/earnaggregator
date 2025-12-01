@@ -68,7 +68,7 @@ class APIClient:
         max_retries: int = 3,
         backoff_factor: float = 1.5
     ) -> None:
-        self._base_url = base_url or str(settings.DATA_SERVICE_URL)
+        self._base_url = base_url or settings.data_service_url
         self._timeout = timeout or settings.REQUEST_TIMEOUT
         self._max_retries = max_retries
         self._backoff_factor = backoff_factor

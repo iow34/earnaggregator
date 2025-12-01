@@ -88,12 +88,12 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
                 first_name=message.from_user.first_name,
                 last_name=message.from_user.last_name
             )
-
+            
             if tracking_result:
                 source = tracking_result.get('acquisition_source', 'organic')
                 is_new = tracking_result.get('is_new_user', False)
                 campaign_id = tracking_result.get('campaign_id')
-
+                
                 logger.info(
                     f"✅ Tracking реєстрація: user={message.from_user.id}, "
                     f"source={source}, new={is_new}, campaign={campaign_id}"
@@ -102,7 +102,7 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
                 logger.debug(f"📊 Tracking вимкнений для user {message.from_user.id}")
             else:
                 logger.debug(f"📊 Tracking реєстрація пропущена для user {message.from_user.id}")
-
+                
         except Exception as e:
             logger.warning(f"⚠️ Помилка tracking реєстрації (не блокує /start): {e}")
             # Продовжуємо роботу навіть якщо tracking failed
