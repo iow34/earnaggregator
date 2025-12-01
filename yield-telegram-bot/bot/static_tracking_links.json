@@ -1,0 +1,57 @@
+{
+  "description": "Статичні трекінгові посилання для бірж. Можна змінювати вручну для оновлення посилань.",
+  "version": "1.0",
+  "last_updated": "2025-12-01",
+  "links": {
+    "binance": {
+      "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=binance&ref_code=39794924",
+      "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=binance&ref_code=39794924",
+      "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=binance&ref_code=39794924"
+    },
+    "bybit": {
+      "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=bybit&ref_code=JG6XK",
+      "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=bybit&ref_code=JG6XK",
+      "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=bybit&ref_code=JG6XK"
+    },
+    "bitmart": {
+      "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=bitmart",
+      "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=bitmart",
+      "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=bitmart"
+    },
+    "okx": {
+      "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=okx",
+      "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=okx",
+      "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=okx"
+    },
+    "mexc": {
+      "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=mexc",
+      "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=mexc",
+      "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=mexc"
+    },
+    "gate": {
+      "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=gate&ref_code=VVKQULFXVG",
+      "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=gate&ref_code=VVKQULFXVG",
+      "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=gate&ref_code=VVKQULFXVG"
+    },
+    "bitget": {
+      "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=bitget",
+      "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=bitget",
+      "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=bitget"
+    },
+    "kraken": {
+      "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=kraken",
+      "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=kraken",
+      "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=kraken"
+    },
+    "kucoin": {
+      "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=kucoin",
+      "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=kucoin",
+      "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=kucoin"
+    },
+    "htx": {
+      "page_1": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=1&exchange=htx",
+      "page_2": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=2&exchange=htx",
+      "page_3": "https://go-to-the-exchange.up.railway.app/ref?telegram_id={telegram_id}&source=organic&page=3&exchange=htx"
+    }
+  }
+}

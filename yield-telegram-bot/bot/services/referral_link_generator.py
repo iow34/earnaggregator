@@ -17,6 +17,7 @@ from typing import Optional, Dict
 from bot.config import settings
 from bot.utils.logger import logger
 from bot.services.tracking_client import tracking_client
+from bot.services.static_tracking_links import static_tracking_links
 
 
 class ReferralLinkGenerator:
@@ -66,94 +67,36 @@ class ReferralLinkGenerator:
         Returns:
             URL через redirect server з трекінгом
         """
-        # КРИТИЧНА ПЕРЕВІРКА: Для telegram_id=0 або негативних значень (кеш/плейсхолдер)
-        # НЕ генеруємо трекінгові посилання - використовуємо прямі реферальні посилання
-        # Це запобігає створенню тимчасових UUID які не існують в БД
+        # Для telegram_id=0 або негативних значень використовуємо прямі посилання
         if not telegram_id or telegram_id <= 0:
             logger.info(
-                f"ℹ️ Telegram ID={telegram_id} є плейсхолдером (кеш/система). "
-                f"Використовуємо прямі реферальні посилання без трекінгу."
+                f"ℹ️ Telegram ID={telegram_id} є плейсхолдером. Використовуємо прямі посилання."
             )
             return self._get_direct_link(exchange, ref_code)
-        
-        # КРОК 1: Отримати source (спроба реєстрації опціональна)
-        # ВАРІАНТ 2: Для простого трекінгу не обов'язково реєструвати користувача
-        # Просто використовуємо organic як source за замовчуванням
-        source = 'organic'
-        
-        # Опціональна спроба отримати source через реєстрацію (не критично)
-        try:
-            user_info = await tracking_client.get_user_info(telegram_id)
-            if not user_info:
-                # Спроба швидкої реєстрації (тільки для отримання source)
-                user_info = await tracking_client.register_user(
-                    telegram_id=telegram_id,
-                    payload=None  # organic
-                )
-            
-            if user_info:
-                source = user_info.get('acquisition_source', 'organic')
-                logger.debug(f"ℹ️ Source отримано: {source} для {telegram_id}")
-        except Exception as e:
-            logger.debug(f"ℹ️ Не вдалося отримати source для {telegram_id}, використовуємо organic: {e}")
-            # Продовжуємо з organic source - це не критично
-            source = 'organic'
-        
-        # КРОК 2: Нормалізація page номера
-        # Замінюємо 'N' на '3' (список бірж - це сторінка 3)
-        normalized_page = page if page != 'N' else '3'
-        
-        # КРОК 3: Отримати реферальний код з .env якщо не передано
-        if not ref_code:
-            ref_code = self._get_ref_code_from_env(exchange)
-        
-        # КРОК 4: Сформувати трекінгове URL через redirect server
-        # ВАРІАНТ 2: Використовуємо telegram_id напряму замість user_uuid
-        try:
-            params = {
-                'telegram_id': str(telegram_id),  # Замість 'user' використовуємо 'telegram_id'
-                'source': source,
-                'page': normalized_page,
-                'exchange': exchange.lower()
-            }
-            
-            if ref_code:
-                params['ref_code'] = ref_code
-            
-            # Побудувати query string з правильним кодуванням URL
-            query_string = urlencode(params)
-            redirect_url = f"{self.redirect_base_url}/ref?{query_string}"
 
-            # Логування для діагностики URL
-            logger.debug(f"🔗 Використовується redirect_base_url: {self.redirect_base_url}")
-            logger.info(f"🔗 Згенеровано посилання: {redirect_url}")
-            
-            logger.info(
-                f"🔗 Згенеровано просте трекінгове посилання: telegram_id={telegram_id}, "
-                f"exchange={exchange}, page={normalized_page}"
-            )
-            
-            # Перевірка валідності URL перед поверненням
-            if not redirect_url or not redirect_url.startswith('http'):
-                logger.error(f"❌ Сформоване трекінгове посилання некоректне: {redirect_url}")
-                # Fallback на пряме посилання
-                return self._get_direct_link(exchange, ref_code)
-            
-            # КРИТИЧНА ПЕРЕВІРКА: якщо URL містить localhost/127.0.0.1/yield-api - Telegram не може перейти на нього
-            # Логуємо попередження, handlers повинні замінити на прямі реферальні посилання
-            if 'localhost' in redirect_url or '127.0.0.1' in redirect_url or 'yield-api' in redirect_url:
-                logger.warning(
-                    f"⚠️ Згенероване трекінгове посилання містить localhost/yield-api для {exchange}: {redirect_url[:80]}... "
-                    f"Handlers повинні замінити на прямі реферальні посилання (Telegram не може перейти на внутрішні адреси Docker)"
-                )
-            
-            return redirect_url
-            
-        except Exception as e:
-            logger.error(f"❌ Критична помилка генерації посилання для {telegram_id}: {e}", exc_info=True)
-            
-            # При помилці повертаємо прямі реферальні посилання замість трекінгових
-            # Це краще ніж генерувати тимчасовий UUID який не існує в БД
+        # Нормалізація page номера
+        try:
+            page_int = int(page)
+            if page_int < 1:
+                page_int = 1
+            elif page_int > 3:
+                page_int = 3
+        except (ValueError, TypeError):
+            page_int = 1
+
+        # Отримати статичне посилання
+        tracking_url = static_tracking_links.get_tracking_link(
+            exchange=exchange,
+            page=page_int,
+            telegram_id=telegram_id
+        )
+
+        if tracking_url:
+            logger.info(f"🔗 Використано статичне трекінгове посилання для {exchange} сторінка {page_int}")
+            return tracking_url
+        else:
+            # Fallback на пряме реферальне посилання
+            logger.warning(f"⚠️ Статичне посилання не знайдено для {exchange} сторінка {page_int}, використано fallback")
             return self._get_direct_link(exchange, ref_code)
     
     def _get_ref_code_from_env(self, exchange: str) -> Optional[str]:
