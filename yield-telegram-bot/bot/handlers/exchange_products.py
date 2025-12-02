@@ -285,8 +285,9 @@ async def _display_exchange_products(
         text += filters_display + "\n\n"
 
         # Блок 2.5: Повідомлення про fallback сортування (якщо популярність недоступна)
-        if filters.get("sort_by") == "apy_desc" and sort_by == "popularity":
-            text += f"⚠️ {localization.get_text('messages.popularity_sort_unavailable', lang)}\n\n"
+        # Тимчасово закоментовано - популярність тепер повинна бути доступна для всіх бірж
+        # if filters.get("sort_by") == "apy_desc" and sort_by == "popularity":
+        #     text += f"⚠️ {localization.get_text('messages.popularity_sort_unavailable', lang)}\n\n"
         
         # Блок 3: Таблиця з продуктами
         if not products:

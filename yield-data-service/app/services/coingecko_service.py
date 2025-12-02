@@ -173,6 +173,103 @@ class CoinGeckoService:
 
         raise Exception(f"Не вдалося отримати trending дані з CoinGecko API після {COINGECKO_MAX_RETRIES} спроб")
 
+    async def add_missing_htx_symbols(self) -> Dict[str, Any]:
+        """
+        Додає HTX символи, які відсутні в таблиці популярності.
+
+        HTX може мати продукти для монет, які не входять в топ CoinGecko.
+        Додаємо їх з market_cap_rank = 9999 для можливості сортування.
+        """
+        start_time = datetime.now()
+
+        try:
+            logger.info("[CoinGecko] 🔄 Початок додавання HTX символів до популярності")
+
+            # Отримуємо всі HTX символи з продуктів
+            htx_symbols = await self._get_htx_symbols_from_products()
+
+            if not htx_symbols:
+                logger.warning("[CoinGecko] ⚠️ Не знайдено HTX символів")
+                return {
+                    "success": False,
+                    "message": "Не знайдено HTX символів",
+                    "symbols_processed": 0,
+                    "symbols_added": 0
+                }
+
+            added_count = 0
+            async with get_database_session() as session:
+                for symbol in htx_symbols:
+                    try:
+                        # Перевіряємо, чи символ вже існує
+                        existing = await YieldProductCRUD.get_coin_popularity_by_symbol(session, symbol)
+                        if existing:
+                            continue  # Символ вже існує
+
+                        # Додаємо символ з низьким пріоритетом
+                        popularity_data = {
+                            "coin_id": f"htx_{symbol.lower()}",  # Унікальний ID
+                            "symbol": symbol.upper(),
+                            "name": f"{symbol.upper()} (HTX Product)",
+                            "market_cap_rank": 9999,  # Низький пріоритет
+                            "current_price": None,
+                            "market_cap": None
+                        }
+
+                        await create_or_update_coins_popularity(session, popularity_data)
+                        added_count += 1
+
+                        if added_count % 10 == 0:
+                            logger.info(f"[CoinGecko] Додано {added_count} HTX символів")
+
+                    except Exception as e:
+                        logger.error(f"[CoinGecko] Помилка додавання HTX символу {symbol}: {e}")
+
+                await session.commit()
+
+            duration = (datetime.now() - start_time).total_seconds()
+
+            return {
+                "success": True,
+                "message": f"Додано {added_count} HTX символів до таблиці популярності",
+                "symbols_processed": len(htx_symbols),
+                "symbols_added": added_count,
+                "duration_seconds": duration
+            }
+
+        except Exception as e:
+            logger.error(f"[CoinGecko] Критична помилка додавання HTX символів: {e}")
+            return {
+                "success": False,
+                "message": f"Помилка додавання HTX символів: {e}",
+                "symbols_processed": 0,
+                "symbols_added": 0,
+                "duration_seconds": (datetime.now() - start_time).total_seconds()
+            }
+
+    async def _get_htx_symbols_from_products(self) -> List[str]:
+        """
+        Отримує всі унікальні символи HTX продуктів з бази даних.
+        """
+        try:
+            async with get_database_session() as session:
+                from sqlalchemy import select, distinct
+                from app.db.models import YieldProductDB
+
+                result = await session.execute(
+                    select(distinct(YieldProductDB.symbol))
+                    .where(YieldProductDB.provider == "htx")
+                    .where(YieldProductDB.is_active == True)
+                )
+
+                symbols = [row[0] for row in result.fetchall()]
+                logger.info(f"[CoinGecko] Знайдено {len(symbols)} унікальних HTX символів")
+                return symbols
+
+        except Exception as e:
+            logger.error(f"[CoinGecko] Помилка отримання HTX символів: {e}")
+            return []
+
     async def update_coins_popularity(self) -> Dict[str, Any]:
         """
         Оновлює дані популярності монет у базі даних.

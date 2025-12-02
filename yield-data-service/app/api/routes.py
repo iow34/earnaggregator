@@ -1900,6 +1900,46 @@ async def trigger_healthcheck_endpoint():
 # COINGECKO POPULARITY ENDPOINTS
 # =============================================================================
 
+@router.post("/coingecko/add-htx-symbols")
+async def add_htx_symbols_to_popularity():
+    """
+    Додає HTX символи до таблиці популярності монет.
+
+    HTX може мати продукти для монет, які не входять в топ CoinGecko.
+    Додає їх з market_cap_rank = 9999 для можливості сортування.
+
+    Returns:
+        dict: Результат додавання
+    """
+    try:
+        logger.info("[API] 📊 Початок додавання HTX символів до популярності")
+
+        # Викликаємо сервіс додавання HTX символів
+        result = await coingecko_service.add_missing_htx_symbols()
+
+        if result["success"]:
+            logger.info(f"[API] ✅ HTX символи додані: {result['message']}")
+            return {
+                "success": True,
+                "message": "HTX символи успішно додані до популярності",
+                "data": result,
+                "timestamp": datetime.now(UTC).isoformat()
+            }
+        else:
+            logger.error(f"[API] ❌ Помилка додавання HTX символів: {result['message']}")
+            return create_error_response(
+                error="Помилка додавання HTX символів",
+                details=str(result)
+            )
+
+    except Exception as e:
+        logger.error(f"[API] Критична помилка додавання HTX символів: {e}")
+        return create_error_response(
+            error="Критична помилка додавання HTX символів",
+            details=str(e)
+        )
+
+
 @router.post("/coingecko/update-popularity")
 async def update_coins_popularity():
     """
