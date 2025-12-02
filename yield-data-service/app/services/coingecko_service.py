@@ -201,17 +201,13 @@ class CoinGeckoService:
             async with get_database_session() as session:
                 for symbol in htx_symbols:
                     try:
-                        # Перевіряємо, чи символ вже існує
-                        existing = await YieldProductCRUD.get_coin_popularity_by_symbol(session, symbol)
-                        if existing:
-                            continue  # Символ вже існує
-
-                        # Додаємо символ з низьким пріоритетом
+                        # Завжди додаємо/оновлюємо HTX символи з низьким пріоритетом
+                        # Це гарантує, що HTX продукти зможуть сортуватися за популярністю
                         popularity_data = {
-                            "coin_id": f"htx_{symbol.lower()}",  # Унікальний ID
+                            "coin_id": f"htx_{symbol.lower()}",  # Унікальний ID для HTX
                             "symbol": symbol.upper(),
                             "name": f"{symbol.upper()} (HTX Product)",
-                            "market_cap_rank": 9999,  # Низький пріоритет
+                            "market_cap_rank": 9999,  # Низький пріоритет після основних монет
                             "current_price": None,
                             "market_cap": None
                         }
