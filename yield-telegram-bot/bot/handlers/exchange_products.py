@@ -171,11 +171,11 @@ async def _display_exchange_products(
             min_popular_threshold = 3 if provider.lower() in ["mexc", "htx"] else 10
 
             if not data.get("success") or len(data.get("data", [])) < min_popular_threshold:
-                logger.info(f"⚠️ Популярних продуктів {provider} недостатньо ({len(data.get('data', []))} < {min_popular_threshold}), використовуємо звичайні продукти з APY сортуванням як fallback")
+                logger.info(f"⚠️ Популярних продуктів {provider} недостатньо ({len(data.get('data', []))} < {min_popular_threshold}), використовуємо звичайні продукти з повідомленням про недоступність популярності")
                 limit = 50 if provider.lower() == "htx" else 1000
                 data = await api_client.get_exchanges(exchange=provider, limit=limit)
-                # Змінюємо на APY сортування, бо популярність недоступна
-                filters["sort_by"] = "apy_desc"
+                # Залишаємо sort_by="popularity" але додаємо прапор що це fallback
+                filters["popularity_fallback"] = True
 
         elif sort_by in ["apy_desc", "apy_asc"]:
             # Для APY сортування завжди використовуємо звичайний ендпоінт
@@ -285,9 +285,8 @@ async def _display_exchange_products(
         text += filters_display + "\n\n"
 
         # Блок 2.5: Повідомлення про fallback сортування (якщо популярність недоступна)
-        # Тимчасово закоментовано - популярність тепер повинна бути доступна для всіх бірж
-        # if filters.get("sort_by") == "apy_desc" and sort_by == "popularity":
-        #     text += f"⚠️ {localization.get_text('messages.popularity_sort_unavailable', lang)}\n\n"
+        if filters.get("popularity_fallback") and sort_by == "popularity":
+            text += f"⚠️ {localization.get_text('messages.popularity_sort_unavailable', lang)}\n\n"
         
         # Блок 3: Таблиця з продуктами
         if not products:
@@ -432,13 +431,17 @@ def _apply_local_filters(products: List[Dict], filters: Dict) -> List[Dict]:
     if filters.get("apy_max"):
         filtered = [p for p in filtered if p.get("apy", 0) <= filters["apy_max"]]
     
-    # Сортування (тільки для APY, популярність вже відсортована в API)
+    # Сортування
     sort_by = filters.get("sort_by", "apy_desc")
-    if sort_by == "apy_desc":
+    if sort_by == "popularity":
+        # Якщо це fallback режим популярності (недоступна), сортуємо за APY
+        if filters.get("popularity_fallback"):
+            filtered.sort(key=lambda x: x.get("apy", 0), reverse=True)
+        # Якщо популярність доступна, сортування вже зроблено в API
+    elif sort_by == "apy_desc":
         filtered.sort(key=lambda x: x.get("apy", 0), reverse=True)
     elif sort_by == "apy_asc":
         filtered.sort(key=lambda x: x.get("apy", 0))
-    # Для популярності сортування вже зроблено в API, тому нічого не робимо
     
     return filtered
 
