@@ -16,6 +16,7 @@
     "messages.product_selected": "✅ Обрано продукт: {product}",
     "messages.canceled": "❌ Скасовано",
     "messages.nexo_coming_soon": "Продукти біржі {exchange} будуть додані пізніше, з повним списком актуальних продуктів можна ознайомитись на самій біржі {exchange_link}.",
+    "messages.popularity_sort_unavailable": "Сортування за популярністю недоступне для цієї біржі, показано продукти відсортовані за APY",
     "error.general": "❌ Сталася помилка. Спробуйте пізніше.",
     "error.loading_products": "❌ Помилка завантаження продуктів. Спробуйте пізніше.",
     "error.showing_help": "❌ Сталася помилка при показі довідки."
@@ -37,6 +38,7 @@
     "messages.product_selected": "✅ Выбран продукт: {product}",
     "messages.canceled": "❌ Отменено",
     "messages.nexo_coming_soon": "Продукты биржи {exchange} будут добавлены позже, с полным списком актуальных продуктов можно ознакомиться на самой бирже {exchange_link}.",
+    "messages.popularity_sort_unavailable": "Сортировка по популярности недоступна для этой биржи, показаны продукты отсортированные по APY",
     "error.general": "❌ Произошла ошибка. Попробуйте позже.",
     "error.loading_products": "❌ Ошибка загрузки продуктов. Попробуйте позже.",
     "error.showing_help": "❌ Произошла ошибка при показе справки."
@@ -58,6 +60,7 @@
     "messages.product_selected": "✅ Product selected: {product}",
     "messages.canceled": "❌ Canceled",
     "messages.nexo_coming_soon": "Products for {exchange} exchange will be added later, you can check the full list of current products on the {exchange_link} exchange itself.",
+    "messages.popularity_sort_unavailable": "Popularity sorting is not available for this exchange, products are shown sorted by APY",
     "error.general": "❌ An error occurred. Please try again later.",
     "error.loading_products": "❌ Error loading products. Please try again later.",
     "error.showing_help": "❌ Error displaying help."

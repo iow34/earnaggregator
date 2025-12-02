@@ -283,6 +283,10 @@ async def _display_exchange_products(
         filters_display = await FilterStateManager.get_filters_display(state, lang=lang)
         # FilterStateManager is in bot/services/filter_state.py. I should check it later.
         text += filters_display + "\n\n"
+
+        # Блок 2.5: Повідомлення про fallback сортування (якщо популярність недоступна)
+        if filters.get("sort_by") == "apy_desc" and sort_by == "popularity":
+            text += f"⚠️ {localization.get_text('messages.popularity_sort_unavailable', lang)}\n\n"
         
         # Блок 3: Таблиця з продуктами
         if not products:
