@@ -1184,7 +1184,7 @@ async def get_htx_products_from_db(
         # Отримуємо продукти напряму з бази даних
         from app.db.crud import YieldProductCRUD
         products = await YieldProductCRUD.get_products_by_provider_with_popularity_sorting(
-            db, "htx", limit
+            db, "HTX", limit
         )
 
         # Конвертуємо в формат YieldProduct для відповіді
