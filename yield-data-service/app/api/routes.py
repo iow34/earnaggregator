@@ -2226,6 +2226,31 @@ async def get_products_sorted_by_popularity(
         )
 
 
+@router.post("/admin/update-coingecko", tags=["admin"])
+async def update_coingecko_popularity(
+    db: AsyncSession = Depends(get_database_session)
+) -> Dict[str, Any]:
+    """
+    Ручне оновлення популярності монет з CoinGecko.
+
+    Використовується для тестування та ручного запуску.
+    """
+    from app.services.coingecko_service import coingecko_service
+
+    try:
+        logger.info("🔄 Ручне оновлення CoinGecko популярності...")
+        result = await coingecko_service.update_coins_popularity()
+        logger.info(f"✅ Ручне оновлення завершено: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"❌ Помилка ручного оновлення: {e}")
+        return {
+            "success": False,
+            "message": str(e),
+            "error": "update_failed"
+        }
+
+
 @router.get("/exchanges/{exchange}/popular", response_model=YieldResponse)
 async def get_exchange_products_sorted_by_popularity(
     exchange: str,
