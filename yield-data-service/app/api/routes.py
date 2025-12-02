@@ -2250,11 +2250,10 @@ async def fill_test_popularity_data(
             {"coin_id": "dogecoin", "symbol": "DOGE", "market_cap_rank": 8},
             {"coin_id": "polygon", "symbol": "MATIC", "market_cap_rank": 9},
             {"coin_id": "avalanche-2", "symbol": "AVAX", "market_cap_rank": 10},
-            {"coin_id": "chainlink", "symbol": "LINK", "market_cap_rank": 11},
-            {"coin_id": "polkadot", "symbol": "DOT", "market_cap_rank": 12},
-            {"coin_id": "litecoin", "symbol": "LTC", "market_cap_rank": 13},
-            {"coin_id": "internet-computer", "symbol": "ICP", "market_cap_rank": 14},
-            {"coin_id": "bitcoin-cash", "symbol": "BCH", "market_cap_rank": 15},
+            # HTX має специфічні символи, додамо їх
+            {"coin_id": "xinfin", "symbol": "XCN", "market_cap_rank": 100},
+            {"coin_id": "injective-protocol", "symbol": "INJ", "market_cap_rank": 101},
+            {"coin_id": "usd1", "symbol": "USD1", "market_cap_rank": 102},
         ]
 
         from app.db.crud import create_or_update_coins_popularity
