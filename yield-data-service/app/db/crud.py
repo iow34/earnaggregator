@@ -1391,6 +1391,7 @@ async def get_products_sorted_by_popularity(
 
 
 async def get_products_by_provider_sorted_by_popularity(
+    session: AsyncSession,
     provider: str,
     limit: int = 50
 ) -> List[YieldProductDB]:
@@ -1401,16 +1402,16 @@ async def get_products_by_provider_sorted_by_popularity(
     для зручності використання.
 
     Args:
+        session: Сесія бази даних
         provider: Назва провайдера (Binance, Bybit)
         limit: Ліміт записів
 
     Returns:
         List[YieldProductDB]: Список продуктів провайдера відсортований за популярністю
     """
-    async with get_database_session() as session:
-        return await YieldProductCRUD.get_products_by_provider_sorted_by_popularity(
-            session, provider=provider, limit=limit
-        )
+    return await YieldProductCRUD.get_products_by_provider_sorted_by_popularity(
+        session, provider=provider, limit=limit
+    )
 
 
 async def get_database_stats(db: AsyncSession) -> Dict[str, Any]:
