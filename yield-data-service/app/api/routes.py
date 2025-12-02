@@ -2330,16 +2330,19 @@ async def get_exchange_products_sorted_by_popularity(
 
         # Отримуємо продукти біржі відсортовані за популярністю
         logger.info(f"🔥 Викликаємо CRUD для провайдера: {provider_db}")
-        from app.db.crud import get_products_by_provider_sorted_by_popularity
-        products = await get_products_by_provider_sorted_by_popularity(
-            db, provider_db, limit
-        )
-        logger.info(f"🔥 Отримано {len(products)} продуктів з CRUD для {exchange_lower}")
+        from app.db.crud import YieldProductCRUD
+        try:
+            products = await YieldProductCRUD.get_products_by_provider_sorted_by_popularity(
+                db, provider_db, limit
+            )
+            logger.info(f"🔥 Отримано {len(products)} продуктів з CRUD для {exchange_lower}")
+        except Exception as e:
+            logger.warning(f"⚠️ Помилка отримання популярних продуктів для {exchange_lower}: {e}, використовуємо fallback")
+            products = []
 
-        # Fallback: якщо популярних продуктів недостатньо, отримуємо звичайні продукти відсортовані за APY
+        # Fallback: якщо популярних продуктів недостатньо або помилка, отримуємо звичайні продукти відсортовані за APY
         if len(products) < 3:  # Мінімальна кількість для значущого результату
             logger.info(f"⚠️ Популярних продуктів для {exchange_lower} недостатньо ({len(products)}), використовуємо fallback з APY сортуванням")
-            from app.db.crud import YieldProductCRUD
             products = await YieldProductCRUD.get_products_by_provider(db, provider_db)
             # Обмежуємо кількість продуктів
             products = products[:limit] if len(products) > limit else products
