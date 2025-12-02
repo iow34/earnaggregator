@@ -323,13 +323,18 @@ async def _display_exchange_products(
             await api_client.close()
             return
         
-        # Пагінація - збільшено до 50 продуктів на сторінку
-        paginator = Paginator(products, items_per_page=50)
+        # Пагінація - для HTX використовуємо більше продуктів на сторінку через велику кількість
+        if provider.lower() == "htx":
+            items_per_page = 100  # HTX має багато продуктів, показуємо 100 на сторінку
+        else:
+            items_per_page = 50   # Для інших бірж залишаємо 50
+
+        paginator = Paginator(products, items_per_page=items_per_page)
         page_products = paginator.get_page(page)
 
         # Форматування таблиці (пагінація вже зроблена вище)
         # format_exchange_product_table needs lang!
-        table_text = format_exchange_product_table(page_products, page, 50, len(products), lang=lang)
+        table_text = format_exchange_product_table(page_products, page, items_per_page, len(products), lang=lang)
         text += table_text
         
         # Блок 4: Підсумок та пагінація
