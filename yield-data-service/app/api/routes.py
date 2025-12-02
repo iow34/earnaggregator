@@ -19,7 +19,7 @@ API маршрути (ендпоінти) - РОЗДІЛ 3.1: Створення
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, UTC
 
 from app.db.database import get_database_session, get_db_transaction
