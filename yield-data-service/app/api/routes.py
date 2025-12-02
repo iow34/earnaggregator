@@ -2425,7 +2425,7 @@ async def get_exchange_products_sorted_by_popularity(
             'bitget': 'bitget',
             'kraken': 'Kraken',
             'kucoin': 'KuCoin',
-            'htx': 'htx'
+            'htx': 'HTX'
         }
         provider_db = provider_mapping.get(exchange_lower, exchange_lower.title())
 
