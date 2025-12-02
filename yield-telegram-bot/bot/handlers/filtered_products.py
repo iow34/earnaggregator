@@ -169,10 +169,6 @@ async def _display_flexible_products(
             provider_api = provider_mapping.get(provider.lower(), provider.title())
             logger.info(f"🔍 Мапінг провайдера: {provider} -> {provider_api}")
 
-        # Отримати всі продукти з фільтрами
-        # Використовуємо оптимізований API endpoint з сортуванням за популярністю за замовчуванням
-        sort_by = filters.get("sort_by", "popularity")
-        
         # Для Flexible продуктів отримуємо всі доступні продукти (до 1000) і пагінуємо локально
         items_per_page = 50
         sort_by = filters.get("sort_by", "popularity")
@@ -180,60 +176,71 @@ async def _display_flexible_products(
         logger.info(f"🔄 Запит всіх доступних Flexible продуктів: symbol={symbol}, provider={provider_api}, sort_by={sort_by}")
 
         try:
-            # Отримуємо максимальну кількість доступних Flexible продуктів
-            data = await api_client.get_all_products(
-                limit=5000,  # Максимально дозволений limit
-                offset=0,
-                symbol=symbol.upper() if symbol else None,
-                provider=provider_api,
-                sort_by=sort_by,
-                lock_period_days=0  # Фільтр для Flexible продуктів
-            )
-            
+            # Якщо сортування за популярністю, використовуємо окремий endpoint
+            if sort_by == "popularity" and not symbol and not provider_api:
+                # Використовуємо спеціальний endpoint для сортування за популярністю
+                data = await api_client.get_products_popular(
+                    limit=5000,  # Максимально дозволений limit
+                    offset=0
+                )
+                logger.info("🔥 Використано спеціальний endpoint /products/popular для сортування за популярністю")
+            else:
+                # Звичайний запит з фільтрами
+                data = await api_client.get_all_products(
+                    limit=5000,  # Максимально дозволений limit
+                    offset=0,
+                    symbol=symbol.upper() if symbol else None,
+                    provider=provider_api,
+                    sort_by=sort_by,
+                    lock_period_days=0  # Фільтр для Flexible продуктів
+                )
+
             logger.info(f"📦 Отримано відповідь: success={data.get('success')}, products_count={len(data.get('data', []))}")
         except Exception as api_error:
             logger.error(f"❌ Помилка запиту до API: {api_error}", exc_info=True)
             error_text = localization.get_error_text("error.data_unavailable", lang)
             keyboard = flexible_products_keyboard(filters, page=page, total_pages=1, lang=lang)
-            
+
             if is_callback:
                 await message.edit_text(error_text, reply_markup=keyboard, parse_mode="HTML")
             else:
                 await message.answer(error_text, reply_markup=keyboard, parse_mode="HTML")
-            
+
             await api_client.close()
             return
-        
+
         if not data.get("success"):
             error_text = localization.get_error_text("error.data_unavailable", lang)
             keyboard = flexible_products_keyboard(filters, page=page, total_pages=1, lang=lang)
-            
+
             if is_callback:
                 await message.edit_text(error_text, reply_markup=keyboard, parse_mode="HTML")
             else:
                 await message.answer(error_text, reply_markup=keyboard, parse_mode="HTML")
-            
+
             await api_client.close()
             return
 
         flexible_products = data.get("data", [])
         logger.info(f"📊 Отримано {len(flexible_products)} Flexible продуктів з API")
 
+        # Фільтруємо тільки Flexible продукти (якщо використовували популярний endpoint)
+        if sort_by == "popularity" and not symbol and not provider_api:
+            flexible_products = [p for p in flexible_products if p.get("lock_period_days", 0) == 0]
+            logger.info(f"🔍 Після фільтрації Flexible продуктів: {len(flexible_products)} продуктів")
+
         # Застосувати локальні фільтри (якщо потрібно)
         flexible_products = _apply_local_filters(flexible_products, filters)
         logger.info(f"🔍 Після локальних фільтрів: {len(flexible_products)} продуктів")
 
-        # Продукти вже відсортовані через API (за популярністю за замовчуванням)
-        # Локальне сортування тільки для інших типів сортування
+        # Локальне сортування тільки для інших типів сортування (не популярність)
         if sort_by == "apy_desc":
             flexible_products.sort(key=lambda x: x.get("apy", 0), reverse=True)
             logger.info("📊 Продукти відсортовані за APY (від більшого)")
         elif sort_by == "apy_asc":
             flexible_products.sort(key=lambda x: x.get("apy", 0))
             logger.info("📊 Продукти відсортовані за APY (від меншого)")
-        elif sort_by == "popularity":
-            # Продукти вже відсортовані за популярністю через API
-            logger.info("📊 Продукти відсортовані за популярністю (через API JOIN)")
+        # Для популярності продукти вже відсортовані через API
 
         # Вибираємо порцію для поточної сторінки після сортування
         items_per_page = 50
@@ -412,11 +419,11 @@ async def _display_locked_products(
             provider_api = provider_mapping.get(provider.lower(), provider.title())
             logger.info(f"🔍 Мапінг провайдера: {provider} -> {provider_api}")
 
-        # Отримати всі продукти з фільтрами
-        # Використовуємо оптимізований API endpoint з сортуванням за популярністю за замовчуванням
+        # Для Locked продуктів отримуємо всі доступні продукти і фільтруємо локально
+        items_per_page = 50
         sort_by = filters.get("sort_by", "popularity")
 
-        logger.info(f"🔄 Запит продуктів: symbol={symbol}, provider={provider_api}, sort_by={sort_by}")
+        logger.info(f"🔄 Запит Locked продуктів: symbol={symbol}, provider={provider_api}, sort_by={sort_by}")
 
         # Спочатку отримуємо статистику для підрахунку загальної кількості Locked продуктів
         try:
@@ -430,25 +437,31 @@ async def _display_locked_products(
             total_locked_products = 0
 
         # Розрахувати загальну кількість сторінок
-        items_per_page = 50
         total_pages = (total_locked_products + items_per_page - 1) // items_per_page
         if total_pages == 0:
             total_pages = 1
 
         # Отримуємо більше продуктів, щоб після фільтрації Locked залишилося достатньо
-        # Використовуємо більший limit, щоб компенсувати фільтрацію
         api_limit = min(5000, items_per_page * 20)  # отримуємо в 20 разів більше, але не більше 5000
-        offset = 0  # завжди починаємо з початку, бо фільтруємо локально
 
         try:
-            data = await api_client.get_all_products(
-                limit=api_limit,
-                offset=offset,
-                symbol=symbol.upper() if symbol else None,
-                provider=provider_api,
-                sort_by=sort_by,
-                lock_period_days=None  # Отримуємо всі продукти, потім відфільтруємо локально
-            )
+            # Якщо сортування за популярністю і немає фільтрів, використовуємо спеціальний endpoint
+            if sort_by == "popularity" and not symbol and not provider_api:
+                data = await api_client.get_products_popular(
+                    limit=api_limit,
+                    offset=0
+                )
+                logger.info("🔥 Використано спеціальний endpoint /products/popular для сортування Locked продуктів за популярністю")
+            else:
+                # Звичайний запит з фільтрами
+                data = await api_client.get_all_products(
+                    limit=api_limit,
+                    offset=0,
+                    symbol=symbol.upper() if symbol else None,
+                    provider=provider_api,
+                    sort_by=sort_by,
+                    lock_period_days=None  # Отримуємо всі продукти, потім відфільтруємо локально
+                )
 
             logger.info(f"📦 Отримано відповідь: success={data.get('success')}, products_count={len(data.get('data', []))}")
         except Exception as api_error:
@@ -479,25 +492,23 @@ async def _display_locked_products(
         products = data.get("data", [])
         logger.info(f"📊 Отримано {len(products)} продуктів з API")
 
-        # Фільтруємо тільки Locked продукти (lock_period_days > 0)
-        products = [p for p in products if p.get("lock_period_days", 0) > 0]
-        logger.info(f"🔒 Після фільтрації Locked продуктів: {len(products)} продуктів")
+        # Фільтруємо тільки Locked продукти (якщо використовували популярний endpoint)
+        if sort_by == "popularity" and not symbol and not provider_api:
+            products = [p for p in products if p.get("lock_period_days", 0) > 0]
+            logger.info(f"🔒 Після фільтрації Locked продуктів: {len(products)} продуктів")
 
         # Застосувати локальні фільтри (якщо потрібно)
         products = _apply_local_filters(products, filters)
         logger.info(f"🔍 Після локальних фільтрів: {len(products)} продуктів")
 
-        # Продукти вже відсортовані через API (за популярністю за замовчуванням)
-        # Локальне сортування тільки для інших типів сортування
+        # Локальне сортування тільки для інших типів сортування (не популярність)
         if sort_by == "apy_desc":
             products.sort(key=lambda x: x.get("apy", 0), reverse=True)
             logger.info("📊 Продукти відсортовані за APY (від більшого)")
         elif sort_by == "apy_asc":
             products.sort(key=lambda x: x.get("apy", 0))
             logger.info("📊 Продукти відсортовані за APY (від меншого)")
-        elif sort_by == "popularity":
-            # Продукти вже відсортовані за популярністю через API JOIN
-            logger.info("📊 Продукти відсортовані за популярністю (через API JOIN)")
+        # Для популярності продукти вже відсортовані через API
 
         # Вибираємо порцію для поточної сторінки після всіх фільтрів і сортування
         start_idx = (page - 1) * items_per_page
@@ -681,14 +692,23 @@ async def _display_all_products(
         logger.info(f"🔄 Запит всіх доступних продуктів: symbol={symbol}, provider={provider_api}, sort_by={sort_by}")
 
         try:
-            # Отримуємо максимальну кількість доступних відфільтрованих продуктів
-            data = await api_client.get_all_products(
-                limit=5000,  # Максимально дозволений limit
-                offset=0,
-                symbol=symbol.upper() if symbol else None,
-                provider=provider_api,
-                sort_by=sort_by
-            )
+            # Якщо сортування за популярністю і немає фільтрів, використовуємо спеціальний endpoint
+            if sort_by == "popularity" and not symbol and not provider_api:
+                # Використовуємо спеціальний endpoint для сортування за популярністю
+                data = await api_client.get_products_popular(
+                    limit=5000,  # Максимально дозволений limit
+                    offset=0
+                )
+                logger.info("🔥 Використано спеціальний endpoint /products/popular для сортування всіх продуктів за популярністю")
+            else:
+                # Звичайний запит з фільтрами
+                data = await api_client.get_all_products(
+                    limit=5000,  # Максимально дозволений limit
+                    offset=0,
+                    symbol=symbol.upper() if symbol else None,
+                    provider=provider_api,
+                    sort_by=sort_by
+                )
 
             logger.info(f"📦 Отримано відповідь: success={data.get('success')}, products_count={len(data.get('data', []))}")
         except Exception as api_error:
@@ -718,7 +738,7 @@ async def _display_all_products(
 
         products = data.get("data", [])
         logger.info(f"📊 Отримано {len(products)} продуктів з API")
-        
+
         # Детальне логування для дебагу
         if len(products) == 0:
             logger.warning(f"⚠️ API повернув порожній список продуктів. Параметри запиту: limit=5000, offset=0, symbol={symbol}, provider={provider_api}, sort_by={sort_by}")
@@ -728,17 +748,14 @@ async def _display_all_products(
         products = _apply_local_filters(products, filters)
         logger.info(f"🔍 Після локальних фільтрів: {len(products)} продуктів")
 
-        # Продукти вже відсортовані через API (за популярністю за замовчуванням)
-        # Локальне сортування тільки для інших типів сортування
+        # Локальне сортування тільки для інших типів сортування (не популярність)
         if sort_by == "apy_desc":
             products.sort(key=lambda x: x.get("apy", 0), reverse=True)
             logger.info("📊 Продукти відсортовані за APY (від більшого)")
         elif sort_by == "apy_asc":
             products.sort(key=lambda x: x.get("apy", 0))
             logger.info("📊 Продукти відсортовані за APY (від меншого)")
-        elif sort_by == "popularity":
-            # Продукти вже відсортовані за популярністю через API JOIN
-            logger.info("📊 Продукти відсортовані за популярністю (через API JOIN)")
+        # Для популярності продукти вже відсортовані через API
 
         # Вибираємо порцію для поточної сторінки після сортування
         items_per_page = 50

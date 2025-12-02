@@ -180,7 +180,7 @@ class APIClient:
 
     async def get_products_popular(self, limit: Optional[int] = None, offset: Optional[int] = None) -> Dict[str, Any]:
         """
-        Отримати всі продукти відсортовані за популярністю.
+        Отримати всі продукти відсортовані за популярністю через окремий endpoint.
 
         Args:
             limit: Кількість продуктів для повернення

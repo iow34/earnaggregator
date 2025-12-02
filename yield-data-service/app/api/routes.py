@@ -389,11 +389,13 @@ async def get_all_products(
         if sort_by == "popularity":
             logger.info(f"📋 Сортування за популярністю через Python-side sorting")
             try:
-                # Отримуємо продукти з фільтрами
+                # Завжди отримуємо продукти з фільтрами спочатку, якщо є фільтри
                 if any([symbol, provider, min_apy, max_apy, lock_period_days is not None]):
                     products = await YieldProductCRUD.filter_products(filters, limit=None)  # Отримуємо всі відфільтровані продукти
+                    logger.info(f"📊 Отримано {len(products) if products else 0} відфільтрованих продуктів для сортування за популярністю")
                 else:
                     products = await YieldProductCRUD.get_all_products(limit=None, offset=0)  # Отримуємо всі продукти
+                    logger.info(f"📊 Отримано {len(products) if products else 0} всіх продуктів для сортування за популярністю")
 
                 # Сортуємо за популярністю в Python
                 if products:
@@ -406,7 +408,7 @@ async def get_all_products(
                     except Exception as e:
                         logger.warning(f"⚠️ Не вдалося отримати дані про популярність: {e}")
 
-                    # Функція сортування
+                    # Функція сортування - популярність спочатку, потім APY, потім ID
                     def sort_key(product):
                         symbol_upper = product.symbol.upper()
                         popularity_rank = popularity_data.get(symbol_upper, 9999)
@@ -414,8 +416,8 @@ async def get_all_products(
 
                     # Сортуємо
                     products.sort(key=sort_key)
-                    logger.info(f"🐍 Продукти відсортовані за популярністю в Python")
-                    
+                    logger.info(f"🐍 Продукти відсортовані за популярністю в Python (перші 10: {[p.symbol for p in products[:10]]})")
+
                     # Застосовуємо пагінацію після сортування
                     start_idx = offset or 0
                     end_idx = start_idx + (limit or len(products))
@@ -425,6 +427,7 @@ async def get_all_products(
                 logger.info(f"📊 Python-side sorting повернув {len(products) if products else 0} продуктів")
             except Exception as e:
                 logger.error(f"❌ Помилка Python-side сортування за популярністю: {e}", exc_info=True)
+                # Fallback до звичайної фільтрації без сортування
                 products = await YieldProductCRUD.filter_products(filters, limit, offset)
         elif any([symbol, provider, min_apy, max_apy, lock_period_days is not None]):
             logger.info(f"📋 Фільтрація продуктів через filter_products: symbol={symbol}, provider={provider}, min_apy={min_apy}, max_apy={max_apy}, lock_period_days={lock_period_days}")
@@ -2327,25 +2330,13 @@ async def get_exchange_products_sorted_by_popularity(
 
         logger.info(f"🔥 Запит продуктів {exchange_lower} відсортованих за популярністю: limit={limit}")
 
-        # Отримуємо продукти біржі відсортовані за популярністю
-        logger.info(f"🔥 Викликаємо CRUD для провайдера: {provider_db}")
+        # Отримуємо всі продукти біржі відсортовані за популярністю
+        logger.info(f"🔥 Отримуємо всі продукти {exchange_lower} відсортовані за популярністю")
         from app.db.crud import YieldProductCRUD
-        try:
-            products = await YieldProductCRUD.get_products_by_provider_sorted_by_popularity(
-                db, provider_db, limit
-            )
-            logger.info(f"🔥 Отримано {len(products)} продуктів з CRUD для {exchange_lower}")
-        except Exception as e:
-            logger.warning(f"⚠️ Помилка отримання популярних продуктів для {exchange_lower}: {e}, використовуємо fallback")
-            products = []
-
-        # Fallback: якщо популярних продуктів недостатньо або помилка, отримуємо звичайні продукти відсортовані за APY
-        if len(products) < 3:  # Мінімальна кількість для значущого результату
-            logger.info(f"⚠️ Популярних продуктів для {exchange_lower} недостатньо ({len(products)}), використовуємо fallback з APY сортуванням")
-            products = await YieldProductCRUD.get_products_by_provider(db, provider_db)
-            # Обмежуємо кількість продуктів
-            products = products[:limit] if len(products) > limit else products
-            logger.info(f"🔥 Fallback: отримано {len(products)} продуктів {exchange_lower} відсортованих за APY")
+        products = await YieldProductCRUD.get_products_by_provider_with_popularity_sorting(
+            db, provider_db, limit
+        )
+        logger.info(f"🔥 Отримано {len(products)} продуктів {exchange_lower} відсортованих за популярністю")
 
         # Конвертуємо в модель відповіді
         logger.info(f"🔄 Конвертуємо {len(products)} продуктів в модель відповіді")
