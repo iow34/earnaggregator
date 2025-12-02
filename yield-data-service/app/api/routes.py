@@ -2187,7 +2187,7 @@ async def get_trending_stats():
 
 @router.get("/products/popular", response_model=YieldResponse)
 async def get_products_sorted_by_popularity(
-    limit: int = Query(default=100, ge=1, le=500, description="Кількість продуктів (макс 500)"),
+    limit: int = Query(default=100, ge=1, le=5000, description="Кількість продуктів (макс 5000)"),
     offset: int = Query(default=0, ge=0, description="Зміщення для пагінації"),
     db: AsyncSession = Depends(get_database_session)
 ) -> YieldResponse:

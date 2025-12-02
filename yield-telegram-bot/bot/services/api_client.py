@@ -98,18 +98,53 @@ class APIClient:
                         continue
                     logger.error("API timeout (final attempt)", extra={"path": path, "params": params, "attempts": attempt + 1})
                 except httpx.HTTPStatusError as e:
+                    status_code = e.response.status_code
+
                     # Retry on server errors (5xx) and rate limits (429)
-                    if e.response.status_code >= 500 or e.response.status_code == 429:
+                    if status_code >= 500 or status_code == 429:
                         last_exception = e
                         if attempt < self._max_retries:
                             delay = self._backoff_factor ** attempt
-                            logger.warning(f"API server error {e.response.status_code} (attempt {attempt + 1}/{self._max_retries + 1}), retrying in {delay:.1f}s",
-                                         extra={"path": path, "status": e.response.status_code, "attempt": attempt + 1})
+                            logger.warning(f"API server error {status_code} (attempt {attempt + 1}/{self._max_retries + 1}), retrying in {delay:.1f}s",
+                                         extra={"path": path, "status": status_code, "attempt": attempt + 1})
                             await asyncio.sleep(delay)
                             continue
-                    # Don't retry on client errors (4xx except 429)
-                    logger.error(f"API client error {e.response.status_code}",
-                               extra={"path": path, "status": e.response.status_code})
+
+                    # Handle validation errors (422) - try to fix automatically
+                    elif status_code == 422:
+                        try:
+                            error_data = e.response.json()
+                            logger.warning(f"API validation error 422: {error_data}", extra={"path": path, "error": error_data})
+
+                            # Check if it's a limit validation error
+                            if isinstance(error_data, list) and len(error_data) > 0:
+                                error_info = error_data[0]
+                                if (error_info.get("type") == "less_than_equal" and
+                                    error_info.get("loc") == ["query", "limit"]):
+                                    max_allowed = error_info.get("ctx", {}).get("le", 500)
+                                    logger.info(f"API limit validation error, adjusting limit to {max_allowed}")
+                                    # Modify params to use allowed limit
+                                    if params and "limit" in params:
+                                        original_limit = params["limit"]
+                                        params["limit"] = min(original_limit, max_allowed)
+                                        logger.info(f"Adjusted limit from {original_limit} to {params['limit']}")
+
+                                        # Retry with adjusted limit
+                                        if attempt < self._max_retries:
+                                            delay = 0.5  # Short delay for retry
+                                            logger.info(f"Retrying with adjusted limit in {delay}s")
+                                            await asyncio.sleep(delay)
+                                            continue
+
+                        except Exception as parse_error:
+                            logger.warning(f"Could not parse 422 error response: {parse_error}")
+
+                        # If we can't fix it, treat as client error
+                        logger.error(f"API validation error 422 (unfixable)", extra={"path": path})
+                        raise
+
+                    # Don't retry on other client errors (4xx except 429 and 422)
+                    logger.error(f"API client error {status_code}", extra={"path": path, "status": status_code})
                     raise
                 except Exception as e:
                     last_exception = e
