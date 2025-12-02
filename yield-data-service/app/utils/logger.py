@@ -35,10 +35,14 @@ def setup_logger(
     log_level = level or settings.log_level
 
     # В продакшені підвищуємо рівень до WARNING для зменшення кількості логів
-    if settings.environment and settings.environment.lower() == "production":
-        # В продакшені тільки WARNING та вище
-        if log_level.upper() in ["DEBUG", "INFO"]:
-            log_level = "WARNING"
+    try:
+        if hasattr(settings, 'environment') and settings.environment and settings.environment.lower() == "production":
+            # В продакшені тільки WARNING та вище
+            if log_level.upper() in ["DEBUG", "INFO"]:
+                log_level = "WARNING"
+    except AttributeError:
+        # Якщо поле відсутнє, використовуємо звичайний рівень
+        pass
 
     numeric_level = getattr(logging, log_level.upper(), logging.INFO)
     

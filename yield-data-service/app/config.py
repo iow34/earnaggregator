@@ -34,9 +34,16 @@ class Settings(BaseSettings):
     # PostgreSQL налаштування
     database_url: str = Field(..., description="PostgreSQL connection string", alias="DATABASE_URL")
     
+    # Середовище виконання
+    environment: str = Field(
+        default="development",
+        description="Середовище виконання (development/production)",
+        alias="ENVIRONMENT"
+    )
+
     # Кешування
     cache_expiration: int = Field(
-        default=3600, 
+        default=3600,
         description="Час життя кешу в секундах (1 година)"
     )
     update_interval: int = Field(
