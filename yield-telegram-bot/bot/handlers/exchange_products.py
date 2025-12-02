@@ -171,10 +171,11 @@ async def _display_exchange_products(
             min_popular_threshold = 3 if provider.lower() in ["mexc", "htx"] else 10
 
             if not data.get("success") or len(data.get("data", [])) < min_popular_threshold:
-                logger.info(f"⚠️ Популярних продуктів {provider} недостатньо ({len(data.get('data', []))} < {min_popular_threshold}), використовуємо звичайні з APY сортуванням")
+                logger.info(f"⚠️ Популярних продуктів {provider} недостатньо ({len(data.get('data', []))} < {min_popular_threshold}), використовуємо звичайні продукти з APY сортуванням як fallback")
                 limit = 50 if provider.lower() == "htx" else 1000
                 data = await api_client.get_exchanges(exchange=provider, limit=limit)
-                filters["sort_by"] = "apy_desc"  # Змінюємо на APY сортування
+                # Змінюємо на APY сортування, бо популярність недоступна
+                filters["sort_by"] = "apy_desc"
 
         elif sort_by in ["apy_desc", "apy_asc"]:
             # Для APY сортування завжди використовуємо звичайний ендпоінт
