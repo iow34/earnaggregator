@@ -323,11 +323,8 @@ async def _display_exchange_products(
             await api_client.close()
             return
         
-        # Пагінація - для HTX використовуємо більше продуктів на сторінку через велику кількість
-        if provider.lower() == "htx":
-            items_per_page = 100  # HTX має багато продуктів, показуємо 100 на сторінку
-        else:
-            items_per_page = 50   # Для інших бірж залишаємо 50
+        # Пагінація - стандартно 50 продуктів на сторінку для всіх бірж
+        items_per_page = 50
 
         paginator = Paginator(products, items_per_page=items_per_page)
         page_products = paginator.get_page(page)
