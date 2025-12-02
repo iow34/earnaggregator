@@ -2273,6 +2273,7 @@ async def get_exchange_products_sorted_by_popularity(
         logger.info(f"🔥 Викликаємо CRUD для провайдера: {provider_db}")
         from app.db.crud import get_products_by_provider_sorted_by_popularity
         products = await get_products_by_provider_sorted_by_popularity(
+            db=db,
             provider=provider_db,
             limit=limit
         )

@@ -456,11 +456,11 @@ class YieldProductCRUD:
             ).where(YieldProductDB.provider == provider)
             total_count = await db.execute(count_query)
             total_products = total_count.scalar()
-            logger.info(f"🔍 Загальна кількість продуктів {provider}: {total_products}")
+            logger.warning(f"🔍 Загальна кількість продуктів {provider}: {total_products}")
 
             result = await db.execute(query)
             products = result.scalars().all()
-            logger.info(f"🔍 SQL запит виконано, отримано {len(products)} продуктів після JOIN з популярністю")
+            logger.warning(f"🔍 SQL запит виконано, отримано {len(products)} продуктів після JOIN з популярністю")
 
             logger.info(f"✅ Отримано {len(products)} продуктів {provider} за популярністю")
             return products
