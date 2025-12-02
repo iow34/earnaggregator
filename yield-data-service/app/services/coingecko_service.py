@@ -13,7 +13,7 @@ import logging
 from sqlalchemy import text
 
 from app.utils.logger import logger
-from app.db.database import get_database_session
+from app.db.database import db_manager
 from app.db.crud import create_or_update_coins_popularity
 
 # Налаштування CoinGecko API
@@ -198,7 +198,8 @@ class CoinGeckoService:
                 }
 
             added_count = 0
-            async with get_database_session() as session:
+            session = db_manager.session_factory()
+            try:
                 for symbol in htx_symbols:
                     try:
                         # Завжди додаємо/оновлюємо HTX символи з низьким пріоритетом
@@ -222,6 +223,8 @@ class CoinGeckoService:
                         logger.error(f"[CoinGecko] Помилка додавання HTX символу {symbol}: {e}")
 
                 await session.commit()
+            finally:
+                await session.close()
 
             duration = (datetime.now() - start_time).total_seconds()
 
@@ -247,24 +250,26 @@ class CoinGeckoService:
         """
         Отримує всі унікальні символи HTX продуктів з бази даних.
         """
+        session = db_manager.session_factory()
         try:
-            async with get_database_session() as session:
-                from sqlalchemy import select, distinct
-                from app.db.models import YieldProductDB
+            from sqlalchemy import select, distinct
+            from app.db.models import YieldProductDB
 
-                result = await session.execute(
-                    select(distinct(YieldProductDB.symbol))
-                    .where(YieldProductDB.provider == "HTX")
-                    .where(YieldProductDB.is_active == True)
-                )
+            result = await session.execute(
+                select(distinct(YieldProductDB.symbol))
+                .where(YieldProductDB.provider == "HTX")
+                .where(YieldProductDB.is_active == True)
+            )
 
-                symbols = [row[0] for row in result.fetchall()]
-                logger.info(f"[CoinGecko] Знайдено {len(symbols)} унікальних HTX символів")
-                return symbols
+            symbols = [row[0] for row in result.fetchall()]
+            logger.info(f"[CoinGecko] Знайдено {len(symbols)} унікальних HTX символів")
+            return symbols
 
         except Exception as e:
             logger.error(f"[CoinGecko] Помилка отримання HTX символів: {e}")
             return []
+        finally:
+            await session.close()
 
     async def update_coins_popularity(self) -> Dict[str, Any]:
         """
@@ -301,7 +306,8 @@ class CoinGeckoService:
             errors = 0
 
             # Зберігаємо дані в БД
-            async with get_database_session() as session:
+            session = db_manager.session_factory()
+            try:
                 for coin_data in coins_data:
                     try:
                         # Нормалізуємо дані
@@ -324,6 +330,8 @@ class CoinGeckoService:
                 updated = processed - errors
 
                 await session.commit()
+            finally:
+                await session.close()
 
             duration = (datetime.now() - start_time).total_seconds()
 
@@ -432,27 +440,29 @@ class CoinGeckoService:
         Returns:
             Optional[int]: Рейтинг популярності або None якщо не знайдено
         """
+        session = db_manager.session_factory()
         try:
-            async with get_database_session() as session:
-                # Шукаємо за нормалізованим символом
-                normalized_symbol = symbol.upper()
+            # Шукаємо за нормалізованим символом
+            normalized_symbol = symbol.upper()
 
-                # Виконуємо запит до БД
-                result = await session.execute(
-                    text("""
-                    SELECT market_cap_rank
-                    FROM coins_popularity
-                    WHERE symbol = :symbol
-                    """),
-                    {"symbol": normalized_symbol}
-                )
+            # Виконуємо запит до БД
+            result = await session.execute(
+                text("""
+                SELECT market_cap_rank
+                FROM coins_popularity
+                WHERE symbol = :symbol
+                """),
+                {"symbol": normalized_symbol}
+            )
 
-                rank = result.scalar()
-                return rank
+            rank = result.scalar()
+            return rank
 
         except Exception as e:
             logger.error(f"[CoinGecko] Помилка отримання рейтингу для {symbol}: {e}")
             return None
+        finally:
+            await session.close()
 
     async def get_trending_stats(self) -> Dict[str, Any]:
         """
@@ -485,36 +495,36 @@ class CoinGeckoService:
         Returns:
             Dict: Статистика
         """
+        session = db_manager.session_factory()
         try:
-            async with get_database_session() as session:
-                # Підраховуємо загальну кількість
-                result = await session.execute(
-                    text("SELECT COUNT(*) FROM coins_popularity")
-                )
-                total_coins = result.scalar()
+            # Підраховуємо загальну кількість
+            result = await session.execute(
+                text("SELECT COUNT(*) FROM coins_popularity")
+            )
+            total_coins = result.scalar()
 
-                # Знаходимо останнє оновлення
-                result = await session.execute(
-                    text("SELECT MAX(updated_at) FROM coins_popularity")
-                )
-                last_update = result.scalar()
+            # Знаходимо останнє оновлення
+            result = await session.execute(
+                text("SELECT MAX(updated_at) FROM coins_popularity")
+            )
+            last_update = result.scalar()
 
-                # Знаходимо топ-5 монет
-                result = await session.execute(
-                    text("""
-                    SELECT symbol, market_cap_rank
-                    FROM coins_popularity
-                    ORDER BY market_cap_rank ASC
-                    LIMIT 5
-                    """)
-                )
-                top_coins = result.fetchall()
+            # Знаходимо топ-5 монет
+            result = await session.execute(
+                text("""
+                SELECT symbol, market_cap_rank
+                FROM coins_popularity
+                ORDER BY market_cap_rank ASC
+                LIMIT 5
+                """)
+            )
+            top_coins = result.fetchall()
 
-                return {
-                    "total_coins": total_coins,
-                    "last_update": last_update.isoformat() if last_update else None,
-                    "top_coins": [{"symbol": coin[0], "rank": coin[1]} for coin in top_coins]
-                }
+            return {
+                "total_coins": total_coins,
+                "last_update": last_update.isoformat() if last_update else None,
+                "top_coins": [{"symbol": coin[0], "rank": coin[1]} for coin in top_coins]
+            }
 
         except Exception as e:
             logger.error(f"[CoinGecko] Помилка отримання статистики: {e}")
@@ -523,6 +533,8 @@ class CoinGeckoService:
                 "last_update": None,
                 "top_coins": []
             }
+        finally:
+            await session.close()
 
 
 # Глобальний екземпляр сервісу

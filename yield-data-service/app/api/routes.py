@@ -284,17 +284,29 @@ async def get_top_yields(
                 provider_products = []
                 for product in products:
                     try:
+                        # Конвертуємо та валідуємо типи даних
+                        try:
+                            min_amount = float(product.min_amount) if product.min_amount is not None else 0.0
+                            max_amount = float(product.max_amount) if product.max_amount is not None else None
+                            apy = float(product.apy) if product.apy is not None else 0.0
+                            max_apy = float(product.max_apy) if product.max_apy is not None else None
+                            lock_period_days = int(product.lock_period_days) if product.lock_period_days is not None else 0
+                        except (ValueError, TypeError) as type_error:
+                            logger.warning(f"⚠️ Помилка конвертації типів для продукту {product.id}: min_amount={product.min_amount} ({type(product.min_amount)}), max_amount={product.max_amount} ({type(product.max_amount)}), apy={product.apy} ({type(product.apy)})")
+                            # Пропускаємо продукт з невалідними типами
+                            continue
+
                         yield_product = YieldProduct(
                             id=product.id,
                             symbol=product.symbol,
                             name=product.name,
                             provider=product.provider,
-                            apy=product.apy,
+                            apy=apy,
                             is_cefi=product.is_cefi,
-                            min_amount=product.min_amount,
-                            max_amount=product.max_amount,
-                            lock_period_days=product.lock_period_days,
-                            max_apy=product.max_apy,
+                            min_amount=min_amount,
+                            max_amount=max_amount,
+                            lock_period_days=lock_period_days,
+                            max_apy=max_apy,
                             risk_level=product.risk_level,
                             is_active=product.is_active,
                             website_url=product.website_url,
@@ -307,7 +319,12 @@ async def get_top_yields(
                         provider_products.append(yield_product)
                         total_converted += 1
                     except Exception as e:
-                        logger.error(f"❌ Помилка конвертації продукту {product.id} від {provider}: {e}")
+                        logger.error(f"❌ Помилка конвертації продукту {product.id} від {provider}: {e}", exc_info=True)
+                        # Додатково логування для діагностики
+                        try:
+                            logger.debug(f"🔍 Деталі продукту {product.id}: apy={product.apy} ({type(product.apy)}), min_amount={product.min_amount} ({type(product.min_amount)}), max_amount={product.max_amount} ({type(product.max_amount)}), lock_period_days={product.lock_period_days} ({type(product.lock_period_days)})")
+                        except Exception as debug_error:
+                            logger.error(f"❌ Помилка діагностики продукту {product.id}: {debug_error}")
                         continue
 
                 if provider_products:  # Додаємо тільки якщо є успішно конвертовані продукти
