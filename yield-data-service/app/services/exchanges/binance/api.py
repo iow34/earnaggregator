@@ -177,6 +177,7 @@ class BinanceAPI(BaseExchange):
 
             rows = self._extract_list_from_response(resp, ["rows", "data", "list"])
             products: List[Dict[str, Any]] = []
+            skipped_symbols = []  # Збираємо статистику пропущених символів
 
             for item in rows:
                 # Для Locked продуктів дані знаходяться в item['detail']
@@ -197,7 +198,7 @@ class BinanceAPI(BaseExchange):
 
                 # Фільтруємо продукти з невалідними символами (занадто короткі)
                 if len(symbol) < 2:
-                    logger.warning(f"[BinanceAPI] Пропущено Locked продукт з невалідним символом '{symbol}': {item.get('projectId')}")
+                    skipped_symbols.append(f"{symbol}:{item.get('projectId')}")
                     continue
 
                 product = {
@@ -214,6 +215,10 @@ class BinanceAPI(BaseExchange):
                     "raw_data": item
                 }
                 products.append(product)
+
+            # Груповий лог пропущених символів
+            if skipped_symbols:
+                logger.warning(f"[BinanceAPI] Пропущено {len(skipped_symbols)} Locked продуктів з невалідними символами: {', '.join(skipped_symbols[:5])}{'...' if len(skipped_symbols) > 5 else ''}")
 
             return products
 
