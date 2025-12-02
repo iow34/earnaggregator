@@ -29,7 +29,7 @@ class YieldProduct(BaseModel):
     
     # Основні поля
     id: str = Field(..., description="Унікальний ідентифікатор продукту")
-    symbol: str = Field(..., min_length=2, max_length=10, description="Символ токену (BTC, ETH)")
+    symbol: str = Field(..., min_length=1, max_length=10, description="Символ токену (BTC, ETH)")
     name: str = Field(..., min_length=1, max_length=200, description="Назва продукту")
     provider: str = Field(..., min_length=1, max_length=50, description="Провайдер (Binance, Bybit)")
     apy: float = Field(..., ge=0, le=1000, description="APY у відсотках")

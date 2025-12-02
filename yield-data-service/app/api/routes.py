@@ -286,13 +286,33 @@ async def get_top_yields(
                     try:
                         # Конвертуємо та валідуємо типи даних
                         try:
-                            min_amount = float(product.min_amount) if product.min_amount is not None else 0.0
-                            max_amount = float(product.max_amount) if product.max_amount is not None else None
-                            apy = float(product.apy) if product.apy is not None else 0.0
-                            max_apy = float(product.max_apy) if product.max_apy is not None else None
-                            lock_period_days = int(product.lock_period_days) if product.lock_period_days is not None else 0
-                        except (ValueError, TypeError) as type_error:
-                            logger.warning(f"⚠️ Помилка конвертації типів для продукту {product.id}: min_amount={product.min_amount} ({type(product.min_amount)}), max_amount={product.max_amount} ({type(product.max_amount)}), apy={product.apy} ({type(product.apy)})")
+                            # Безпечна конвертація в float
+                            def safe_float(value, default=0.0):
+                                if value is None:
+                                    return default
+                                try:
+                                    return float(value)
+                                except (ValueError, TypeError):
+                                    logger.warning(f"⚠️ Неможливо конвертувати в float: {value} ({type(value)}) для продукту {product.id}")
+                                    return default
+
+                            def safe_int(value, default=0):
+                                if value is None:
+                                    return default
+                                try:
+                                    return int(float(value))  # Спочатку в float, потім в int для рядків типу "1.0"
+                                except (ValueError, TypeError):
+                                    logger.warning(f"⚠️ Неможливо конвертувати в int: {value} ({type(value)}) для продукту {product.id}")
+                                    return default
+
+                            min_amount = safe_float(product.min_amount, 0.0)
+                            max_amount = safe_float(product.max_amount, None) if product.max_amount is not None else None
+                            apy = safe_float(product.apy, 0.0)
+                            max_apy = safe_float(product.max_apy, None) if product.max_apy is not None else None
+                            lock_period_days = safe_int(product.lock_period_days, 0)
+
+                        except Exception as type_error:
+                            logger.warning(f"⚠️ Критична помилка конвертації типів для продукту {product.id}: {type_error}")
                             # Пропускаємо продукт з невалідними типами
                             continue
 
