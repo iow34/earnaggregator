@@ -67,8 +67,9 @@ class YieldProduct(BaseModel):
         """Валідація символу токену."""
         if not v.isupper():
             v = v.upper()
-        if not v.isalnum():
-            raise ValueError('Символ має містити тільки літери та цифри')
+        # Дозволяємо літери, цифри та дефіси
+        if not all(c.isalnum() or c == '-' for c in v):
+            raise ValueError('Символ має містити тільки літери, цифри та дефіси')
         return v.strip()
     
     @field_validator('apy')
