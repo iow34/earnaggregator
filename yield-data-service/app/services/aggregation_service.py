@@ -87,6 +87,9 @@ class DataAggregationService:
         self.cache_ttl = settings.cache_expiration
         self.max_retry_attempts = 3
         self.timeout_seconds = 30
+
+        # Популярні символи для перевірки кешу
+        self.priority_symbols = ["BTC", "ETH", "USDT", "USDC", "BNB", "SOL", "ADA", "DOT", "MATIC", "AVAX"]
         
         # Налаштування fallback стратегій
         self.fallback_chain = [
@@ -641,18 +644,35 @@ class DataAggregationService:
             else:
                 results = []
 
+            # Статистика помилок валідації для групового логування
+            validation_errors = []
+            total_processed = 0
+
             for result in results:
                 if isinstance(result, Exception):
                     continue
                 for item in result:
+                    total_processed += 1
                     try:
                         product = YieldProduct(**item)
                         api_products.append(product)
                     except Exception as e:
-                        logger.warning(f"⚠️ Помилка конвертації API продукту: {e}")
-                    
+                        # Збираємо помилки замість індивідуального логування
+                        error_msg = str(e)
+                        if len(error_msg) > 100:  # Обрізаємо довгі помилки
+                            error_msg = error_msg[:97] + "..."
+                        validation_errors.append(error_msg)
         except Exception as e:
             logger.error(f"❌ Критична помилка live API: {e}")
+
+        # Груповий лог помилок валідації замість індивідуальних WARNING
+        if validation_errors:
+            unique_errors = list(set(validation_errors))  # Видаляємо дублікати
+            error_counts = {error: validation_errors.count(error) for error in unique_errors}
+
+            logger.warning(f"⚠️ Валідація API продуктів: {len(validation_errors)} помилок з {total_processed} продуктів")
+            for error, count in error_counts.items():
+                logger.warning(f"  • {error} ({count} випадків)")
 
         logger.info(f"🎯 Live API: загалом отримано {len(api_products)} продуктів з джерел: {sources_used}")
         return api_products, sources_used, api_calls

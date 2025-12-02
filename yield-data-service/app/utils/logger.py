@@ -33,6 +33,13 @@ def setup_logger(
     
     # Визначаємо рівень логування
     log_level = level or settings.log_level
+
+    # В продакшені підвищуємо рівень до WARNING для зменшення кількості логів
+    if settings.environment and settings.environment.lower() == "production":
+        # В продакшені тільки WARNING та вище
+        if log_level.upper() in ["DEBUG", "INFO"]:
+            log_level = "WARNING"
+
     numeric_level = getattr(logging, log_level.upper(), logging.INFO)
     
     # Створюємо логер

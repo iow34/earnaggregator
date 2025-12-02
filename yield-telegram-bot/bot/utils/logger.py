@@ -8,6 +8,13 @@ from bot.config import settings
 
 def setup_logger(name: str = "yield_telegram_bot", level: Optional[str] = None) -> logging.Logger:
     log_level = (level or settings.LOG_LEVEL).upper()
+
+    # В продакшені підвищуємо рівень до WARNING для зменшення кількості логів
+    if hasattr(settings, 'ENVIRONMENT') and settings.ENVIRONMENT and settings.ENVIRONMENT.lower() == "production":
+        # В продакшені тільки WARNING та вище
+        if log_level in ["DEBUG", "INFO"]:
+            log_level = "WARNING"
+
     numeric_level = getattr(logging, log_level, logging.INFO)
 
     logger = logging.getLogger(name)
