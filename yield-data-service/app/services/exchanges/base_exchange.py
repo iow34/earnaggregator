@@ -74,7 +74,8 @@ class BaseExchange(ABC):
         """
         return {
             "Content-Type": "application/json",
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
 
     async def _make_request(
@@ -137,8 +138,18 @@ class BaseExchange(ABC):
             return result
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"[{self.__class__.__name__}] HTTP помилка {e.response.status_code}: {e.response.text}")
-            raise Exception(f"API помилка {e.response.status_code}: {e.response.text}")
+            status_code = e.response.status_code
+
+            # Спеціальна обробка для 403 помилки (Cloudflare або bot protection)
+            if status_code == 403:
+                content = e.response.text
+                if "Just a moment" in content or "cloudflare" in content.lower():
+                    logger.warning(f"[{self.__class__.__name__}] Cloudflare protection detected (403). Waiting 30 seconds before retry...")
+                    await asyncio.sleep(30)  # Довша затримка для Cloudflare challenge
+                    raise Exception(f"Cloudflare protection (403): Request blocked, retry after delay")
+
+            logger.error(f"[{self.__class__.__name__}] HTTP помилка {status_code}: {e.response.text}")
+            raise Exception(f"API помилка {status_code}: {e.response.text}")
 
         except httpx.RequestError as e:
             logger.error(f"[{self.__class__.__name__}] Помилка запиту: {e}")

@@ -36,7 +36,8 @@ class HTXAPI(BaseExchange):
         )
         self.host = "api.htx.com"
         self.max_retry_attempts = 4
-        self.retry_delays = [1, 2, 4, 8]  # Exponential backoff
+        self.retry_delays = [2, 5, 10, 30]  # Більші затримки для уникнення rate limit
+        self.request_delay = 1.0  # Затримка між запитами в секундах
 
     def get_headers(self) -> Dict[str, str]:
         """Заголовки для API запитів HTX."""
@@ -178,9 +179,13 @@ class HTXAPI(BaseExchange):
         """
         for attempt in range(self.max_retry_attempts):
             try:
+                # Затримка між запитами для зменшення навантаження
+                if attempt > 0:
+                    await asyncio.sleep(self.request_delay)
+
                 # Підготовка підписаних параметрів
                 signed_params = self._prepare_signed_params(method, path, params)
-                
+
                 # Виконуємо запит
                 response = await self._make_request(
                     method=method,
@@ -192,47 +197,65 @@ class HTXAPI(BaseExchange):
                 # Перевірка статусу відповіді
                 if isinstance(response, dict):
                     status = response.get("status")
-                    
+
                     if status == "ok":
                         return response
-                    
+
                     elif status == "error":
                         err_code = response.get("err-code", "unknown")
                         err_msg = response.get("err-msg", "Unknown error")
-                        
+
                         # Обробка специфічних помилок
                         if "invalid signature" in err_code.lower() or "invalid signature" in err_msg.lower():
                             logger.error(f"[HTXAPI] Invalid signature error. Attempt {attempt + 1}/{self.max_retry_attempts}")
                             # Логування для діагностики
                             self._log_failed_signature(method, path, params, response)
-                            
+
                             if attempt == self.max_retry_attempts - 1:
                                 raise ValueError(f"Invalid signature after {self.max_retry_attempts} attempts")
-                            
+
                             await asyncio.sleep(self.retry_delays[attempt])
                             continue
-                        
+
                         elif "invalid timestamp" in err_code.lower() or "invalid timestamp" in err_msg.lower():
                             logger.warning(f"[HTXAPI] Invalid timestamp, retrying with updated time")
                             await asyncio.sleep(1)
                             continue
-                        
+
                         elif "429" in err_code or "rate limit" in err_msg.lower():
                             logger.warning(f"[HTXAPI] Rate limit exceeded, waiting 10 seconds")
                             await asyncio.sleep(10)
                             continue
-                        
+
                         else:
                             logger.error(f"[HTXAPI] API error: {err_code} - {err_msg}")
                             raise ValueError(f"HTX API error: {err_code} - {err_msg}")
-                
+
+                # Якщо відповідь не dict, це може бути помилка (наприклад HTML від Cloudflare)
+                elif isinstance(response, str) and ("Just a moment" in response or "cloudflare" in response.lower()):
+                    logger.warning(f"[HTXAPI] Cloudflare protection detected in response. Attempt {attempt + 1}/{self.max_retry_attempts}")
+                    if attempt < self.max_retry_attempts - 1:
+                        await asyncio.sleep(30)  # Довша затримка для Cloudflare
+                        continue
+                    else:
+                        raise ValueError("Cloudflare protection blocked request after all retries")
+
                 return response
                 
             except Exception as e:
+                error_msg = str(e)
+
+                # Спеціальна обробка для Cloudflare 403 помилки
+                if "403" in error_msg and ("Just a moment" in error_msg or "cloudflare" in error_msg.lower()):
+                    logger.warning(f"[HTXAPI] Cloudflare 403 protection detected. Attempt {attempt + 1}/{self.max_retry_attempts}")
+                    if attempt < self.max_retry_attempts - 1:
+                        await asyncio.sleep(30)  # Довша затримка для Cloudflare
+                        continue
+
                 if attempt == self.max_retry_attempts - 1:
                     logger.error(f"[HTXAPI] Request failed after {self.max_retry_attempts} attempts: {e}")
                     raise
-                
+
                 logger.warning(f"[HTXAPI] Request failed (attempt {attempt + 1}/{self.max_retry_attempts}): {e}")
                 await asyncio.sleep(self.retry_delays[attempt])
         
