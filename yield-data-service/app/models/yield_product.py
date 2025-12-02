@@ -78,13 +78,19 @@ class YieldProduct(BaseModel):
             # Замість падіння, очищуємо символ від недозволених символів
             cleaned = ''.join(c for c in v if c in allowed_chars)
             if not cleaned:
-                raise ValueError(f'Символ "{original_v}" не містить валідних символів')
+                # Якщо після очищення нічого не залишилося, створюємо fallback символ
+                fallback_symbol = f"HTX_{hash(original_v) % 10000}"
+                logger.warning(f"⚠️ Символ '{original_v}' не містить валідних символів, використано fallback: '{fallback_symbol}'")
+                return fallback_symbol
             logger.warning(f"⚠️ Очищено символ '{original_v}' -> '{cleaned}'")
             v = cleaned
 
         result = v.strip()
         if not result:
-            raise ValueError(f'Символ "{original_v}" став порожнім після очищення')
+            # Якщо після очищення нічого не залишилося, створюємо fallback
+            fallback_symbol = f"HTX_{hash(original_v) % 10000}"
+            logger.warning(f"⚠️ Символ '{original_v}' став порожнім, використано fallback: '{fallback_symbol}'")
+            return fallback_symbol
 
         return result
     
