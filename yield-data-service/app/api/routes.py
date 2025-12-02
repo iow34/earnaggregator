@@ -2226,28 +2226,62 @@ async def get_products_sorted_by_popularity(
         )
 
 
-@router.post("/admin/update-coingecko", tags=["admin"])
-async def update_coingecko_popularity(
+@router.post("/admin/fill-test-popularity", tags=["admin"])
+async def fill_test_popularity_data(
     db: AsyncSession = Depends(get_database_session)
 ) -> Dict[str, Any]:
     """
-    Ручне оновлення популярності монет з CoinGecko.
+    Заповнення тестових даних популярності монет для тестування сортування.
 
-    Використовується для тестування та ручного запуску.
+    Створює базові записи популярності для основних монет.
     """
-    from app.services.coingecko_service import coingecko_service
-
     try:
-        logger.info("🔄 Ручне оновлення CoinGecko популярності...")
-        result = await coingecko_service.update_coins_popularity()
-        logger.info(f"✅ Ручне оновлення завершено: {result}")
-        return result
+        logger.info("🔄 Заповнення тестових даних популярності...")
+
+        # Тестові дані популярності для основних монет
+        test_popularity_data = [
+            {"coin_id": "bitcoin", "symbol": "BTC", "market_cap_rank": 1},
+            {"coin_id": "ethereum", "symbol": "ETH", "market_cap_rank": 2},
+            {"coin_id": "tether", "symbol": "USDT", "market_cap_rank": 3},
+            {"coin_id": "binancecoin", "symbol": "BNB", "market_cap_rank": 4},
+            {"coin_id": "solana", "symbol": "SOL", "market_cap_rank": 5},
+            {"coin_id": "usd-coin", "symbol": "USDC", "market_cap_rank": 6},
+            {"coin_id": "cardano", "symbol": "ADA", "market_cap_rank": 7},
+            {"coin_id": "dogecoin", "symbol": "DOGE", "market_cap_rank": 8},
+            {"coin_id": "polygon", "symbol": "MATIC", "market_cap_rank": 9},
+            {"coin_id": "avalanche-2", "symbol": "AVAX", "market_cap_rank": 10},
+            {"coin_id": "chainlink", "symbol": "LINK", "market_cap_rank": 11},
+            {"coin_id": "polkadot", "symbol": "DOT", "market_cap_rank": 12},
+            {"coin_id": "litecoin", "symbol": "LTC", "market_cap_rank": 13},
+            {"coin_id": "internet-computer", "symbol": "ICP", "market_cap_rank": 14},
+            {"coin_id": "bitcoin-cash", "symbol": "BCH", "market_cap_rank": 15},
+        ]
+
+        from app.db.crud import create_or_update_coins_popularity
+
+        created = 0
+        updated = 0
+        for coin_data in test_popularity_data:
+            try:
+                await create_or_update_coins_popularity(db, coin_data)
+                created += 1
+                logger.debug(f"✅ Створено популярність для {coin_data['symbol']}")
+            except Exception as e:
+                logger.warning(f"⚠️ Помилка створення популярності для {coin_data['symbol']}: {e}")
+
+        logger.info(f"✅ Заповнено {created} тестових записів популярності")
+        return {
+            "success": True,
+            "message": f"Створено {created} тестових записів популярності",
+            "records_created": created
+        }
+
     except Exception as e:
-        logger.error(f"❌ Помилка ручного оновлення: {e}")
+        logger.error(f"❌ Помилка заповнення тестових даних: {e}")
         return {
             "success": False,
             "message": str(e),
-            "error": "update_failed"
+            "error": "fill_failed"
         }
 
 
