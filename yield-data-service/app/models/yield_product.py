@@ -65,12 +65,28 @@ class YieldProduct(BaseModel):
     @classmethod
     def validate_symbol(cls, v):
         """Валідація символу токену."""
+        if not isinstance(v, str):
+            raise ValueError('Символ має бути строкою')
+
+        original_v = v
         if not v.isupper():
             v = v.upper()
-        # Дозволяємо літери, цифри та дефіси
-        if not all(c.isalnum() or c == '-' for c in v):
-            raise ValueError('Символ має містити тільки літери, цифри та дефіси')
-        return v.strip()
+
+        # Дозволяємо літери, цифри, дефіси, підкреслення та двокрапки
+        allowed_chars = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_:')
+        if not all(c in allowed_chars for c in v):
+            # Замість падіння, очищуємо символ від недозволених символів
+            cleaned = ''.join(c for c in v if c in allowed_chars)
+            if not cleaned:
+                raise ValueError(f'Символ "{original_v}" не містить валідних символів')
+            logger.warning(f"⚠️ Очищено символ '{original_v}' -> '{cleaned}'")
+            v = cleaned
+
+        result = v.strip()
+        if not result:
+            raise ValueError(f'Символ "{original_v}" став порожнім після очищення')
+
+        return result
     
     @field_validator('apy')
     @classmethod
