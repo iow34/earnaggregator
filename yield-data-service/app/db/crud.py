@@ -471,7 +471,7 @@ class YieldProductCRUD:
 
     @staticmethod
     async def get_products_by_provider_with_popularity_sorting(
-        db: AsyncSession,
+        session,
         provider: str,
         limit: int = 50
     ) -> List[YieldProductDB]:
@@ -479,7 +479,7 @@ class YieldProductCRUD:
         Отримує всі продукти провайдера і сортує їх за популярністю монет з fallback на APY.
 
         Args:
-            db: Сесія бази даних
+            session: Сесія або контекст менеджер бази даних
             provider: Назва провайдера (Binance, Bybit)
             limit: Ліміт записів
 
@@ -487,53 +487,79 @@ class YieldProductCRUD:
             List[YieldProductDB]: Список продуктів провайдера відсортований за популярністю
         """
         try:
-            # Спочатку отримуємо всі продукти провайдера
-            result = await db.execute(
-                select(YieldProductDB)
-                .where(YieldProductDB.is_active == True)
-                .where(YieldProductDB.provider == provider)
-            )
-            products = result.scalars().all()
-            logger.info(f"🔍 Отримано {len(products)} продуктів {provider} для сортування за популярністю")
-
-            if not products:
-                return []
-
-            # Отримуємо дані про популярність
-            popularity_result = await db.execute(select(CoinsPopularityDB))
-            popularity_data = {p.symbol.upper(): p.market_cap_rank for p in popularity_result.scalars().all()}
-            logger.info(f"📊 Отримано дані про популярність для {len(popularity_data)} монет")
-
-            # Сортуємо продукти за популярністю
-            def sort_key(product):
-                symbol_upper = product.symbol.upper()
-                popularity_rank = popularity_data.get(symbol_upper, 9999)
-                return (popularity_rank, -product.apy, product.id)
-
-            products.sort(key=sort_key)
-            logger.info(f"🐍 Відсортовано {len(products)} продуктів {provider} за популярністю")
-
-            # Обмежуємо кількість
-            products = products[:limit]
-            logger.info(f"📊 Повертаємо {len(products)} продуктів {provider} після обмеження")
-
-            return products
+            # Якщо передано контекст менеджер, використовуємо сесію з нього
+            if hasattr(session, '__aenter__'):
+                async with session as db:
+                    return await YieldProductCRUD._get_products_sorted_by_popularity_internal(db, provider, limit)
+            else:
+                # Якщо передано пряму сесію
+                return await YieldProductCRUD._get_products_sorted_by_popularity_internal(session, provider, limit)
 
         except Exception as e:
             logger.error(f"❌ Помилка отримання продуктів {provider} з сортуванням за популярністю: {e}", exc_info=True)
             # Fallback: повертаємо продукти без сортування
             try:
-                result = await db.execute(
-                    select(YieldProductDB)
-                    .where(YieldProductDB.is_active == True)
-                    .where(YieldProductDB.provider == provider)
-                    .order_by(desc(YieldProductDB.apy))
-                    .limit(limit)
-                )
-                return result.scalars().all()
+                if hasattr(session, '__aenter__'):
+                    async with session as db:
+                        result = await db.execute(
+                            select(YieldProductDB)
+                            .where(YieldProductDB.is_active == True)
+                            .where(YieldProductDB.provider == provider)
+                            .order_by(desc(YieldProductDB.apy))
+                            .limit(limit)
+                        )
+                        return result.scalars().all()
+                else:
+                    result = await session.execute(
+                        select(YieldProductDB)
+                        .where(YieldProductDB.is_active == True)
+                        .where(YieldProductDB.provider == provider)
+                        .order_by(desc(YieldProductDB.apy))
+                        .limit(limit)
+                    )
+                    return result.scalars().all()
             except Exception as fallback_error:
                 logger.error(f"❌ Помилка fallback для {provider}: {fallback_error}")
                 return []
+
+    @staticmethod
+    async def _get_products_sorted_by_popularity_internal(
+        db: AsyncSession,
+        provider: str,
+        limit: int
+    ) -> List[YieldProductDB]:
+        """Внутрішня функція для сортування продуктів за популярністю."""
+        # Спочатку отримуємо всі продукти провайдера
+        result = await db.execute(
+            select(YieldProductDB)
+            .where(YieldProductDB.is_active == True)
+            .where(YieldProductDB.provider == provider)
+        )
+        products = result.scalars().all()
+        logger.info(f"🔍 Отримано {len(products)} продуктів {provider} для сортування за популярністю")
+
+        if not products:
+            return []
+
+        # Отримуємо дані про популярність
+        popularity_result = await db.execute(select(CoinsPopularityDB))
+        popularity_data = {p.symbol.upper(): p.market_cap_rank for p in popularity_result.scalars().all()}
+        logger.info(f"📊 Отримано дані про популярність для {len(popularity_data)} монет")
+
+        # Сортуємо продукти за популярністю
+        def sort_key(product):
+            symbol_upper = product.symbol.upper()
+            popularity_rank = popularity_data.get(symbol_upper, 9999)
+            return (popularity_rank, -product.apy, product.id)
+
+        products.sort(key=sort_key)
+        logger.info(f"🐍 Відсортовано {len(products)} продуктів {provider} за популярністю")
+
+        # Обмежуємо кількість
+        products = products[:limit]
+        logger.info(f"📊 Повертаємо {len(products)} продуктів {provider} після обмеження")
+
+        return products
 
     @staticmethod
     async def get_all_coins_popularity() -> List[CoinsPopularityDB]:
