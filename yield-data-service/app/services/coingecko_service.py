@@ -271,6 +271,7 @@ class CoinGeckoService:
         Оновлює дані популярності монет у базі даних.
 
         Викликає CoinGecko API та зберігає дані в таблицю coins_popularity.
+        Отримує тільки топ 250 монет за ринковою капіталізацією.
 
         Returns:
             Dict: Статистика оновлення
@@ -278,24 +279,11 @@ class CoinGeckoService:
         start_time = datetime.now()
 
         try:
-            logger.info("[CoinGecko] 🔄 Початок оновлення рейтингу популярності монет")
+            logger.info("[CoinGecko] 🔄 Початок оновлення рейтингу популярності монет (топ 250)")
 
-            # Отримуємо дані з CoinGecko (максимум 500 монет за раз)
-            # Отримуємо кілька сторінок для покриття більшої кількості монет
-            all_coins_data = []
-            for page in range(1, 3):  # Отримуємо перші 2 сторінки (до 1000 монет)
-                try:
-                    page_data = await self.get_top_coins_markets(per_page=500, page=page)
-                    if page_data:
-                        all_coins_data.extend(page_data)
-                        logger.info(f"[CoinGecko] Отримано {len(page_data)} монет зі сторінки {page}")
-                    else:
-                        break  # Якщо сторінка порожня, зупиняємося
-                except Exception as e:
-                    logger.warning(f"[CoinGecko] Помилка отримання сторінки {page}: {e}")
-                    break
-            
-            coins_data = all_coins_data
+            # Отримуємо тільки топ 250 монет з CoinGecko API
+            coins_data = await self.get_top_coins_markets(per_page=250, page=1)
+            logger.info(f"[CoinGecko] Отримано {len(coins_data)} монет (топ 250 за ринковою капіталізацією)")
 
             if not coins_data:
                 logger.warning("[CoinGecko] ⚠️ Не отримано даних з CoinGecko API")
