@@ -1170,7 +1170,7 @@ async def get_htx_health():
 
 @router.get("/htx/products", response_model=YieldResponse)
 async def get_htx_products_from_db(
-    limit: int = Query(default=50, ge=1, le=1000, description="Кількість продуктів (макс 1000)"),
+    limit: int = Query(default=1000, ge=1, le=1000, description="Кількість продуктів (макс 1000)"),
     db: AsyncSession = Depends(get_database_session)
 ) -> YieldResponse:
     """

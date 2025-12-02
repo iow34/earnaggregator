@@ -162,7 +162,7 @@ async def _display_exchange_products(
         if provider.lower() == "htx":
             # HTX має спеціальну логіку - отримуємо дані напряму з бази даних
             # оскільки aggregation service може не працювати коректно для HTX
-            limit = 50  # HTX має обмеження через велику кількість продуктів
+            limit = 1000  # HTX отримує до 1000 продуктів для повного відображення
             logger.info(f"🔥 Отримуємо HTX продукти з бази даних (limit={limit})")
 
             if sort_by == "popularity":

@@ -113,6 +113,28 @@ async def test_connection():
         except Exception as e:
             print(f"❌ Помилка тестування HTX логіки: {e}")
 
+        # Тестуємо Railway API для HTX продуктів
+        print("\n🌐 Тестуємо Railway API для HTX продуктів...")
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get("https://go-to-the-exchange.up.railway.app/api/v1/htx/products?limit=5")
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("success"):
+                        products = data.get("data", [])
+                        print(f"✅ Railway API повернув {len(products)} HTX продуктів")
+                        if products:
+                            print("📱 Перші 3 продукти з API:")
+                            for i, product in enumerate(products[:3], 1):
+                                print(f"  {i}. {product['symbol']} - {product['apy']}% APY ({product['product_type']})")
+                    else:
+                        print(f"❌ Railway API повернув помилку: {data}")
+                else:
+                    print(f"❌ HTTP помилка {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"❌ Помилка тестування Railway API: {e}")
+
         await conn.close()
         print("\n✅ Тест завершено успішно!")
         return True
