@@ -258,7 +258,7 @@ class CoinGeckoService:
 
                 result = await session.execute(
                     select(distinct(YieldProductDB.symbol))
-                    .where(YieldProductDB.provider == "htx")
+                    .where(YieldProductDB.provider == "HTX")
                     .where(YieldProductDB.is_active == True)
                 )
 
