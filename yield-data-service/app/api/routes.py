@@ -1168,6 +1168,70 @@ async def get_htx_health():
         )
 
 
+@router.get("/htx/products", response_model=YieldResponse)
+async def get_htx_products_from_db(
+    limit: int = Query(default=50, ge=1, le=1000, description="Кількість продуктів (макс 1000)"),
+    db: AsyncSession = Depends(get_database_session)
+) -> YieldResponse:
+    """
+    Отримати HTX продукти напряму з бази даних.
+
+    Цей маршрут спеціально для телеграм бота - отримує дані з БД замість API.
+    """
+    try:
+        logger.info(f"🔥 Запит HTX продуктів з бази даних (limit={limit})")
+
+        # Отримуємо продукти напряму з бази даних
+        from app.db.crud import YieldProductCRUD
+        products = await YieldProductCRUD.get_products_by_provider_with_popularity_sorting(
+            db, "htx", limit
+        )
+
+        # Конвертуємо в формат YieldProduct для відповіді
+        product_dicts = []
+        for product in products:
+            product_dict = {
+                "id": product.id,
+                "symbol": product.symbol,
+                "name": product.name,
+                "provider": product.provider,
+                "apy": float(product.apy),
+                "is_cefi": product.is_cefi,
+                "min_amount": float(product.min_amount) if product.min_amount else 0.0,
+                "max_amount": float(product.max_amount) if product.max_amount else None,
+                "lock_period_days": product.lock_period_days,
+                "max_apy": float(product.max_apy) if product.max_apy else None,
+                "risk_level": product.risk_level,
+                "is_active": product.is_active,
+                "website_url": product.website_url,
+                "description": product.description,
+                "product_type": product.product_type,
+                "created_at": product.created_at.isoformat() if product.created_at else None,
+                "updated_at": product.updated_at.isoformat() if product.updated_at else None,
+                "last_checked": product.last_checked.isoformat() if product.last_checked else None,
+                "raw_data": product.raw_data
+            }
+            product_dicts.append(product_dict)
+
+        logger.info(f"✅ Отримано {len(product_dicts)} HTX продуктів з бази даних")
+
+        return YieldResponse(
+            success=True,
+            data=product_dicts,
+            count=len(product_dicts),
+            cached=False,  # Дані з БД, не з кешу
+            source="htx_db",
+            message=f"Знайдено {len(product_dicts)} HTX продуктів з бази даних"
+        )
+
+    except Exception as e:
+        logger.error(f"❌ Помилка отримання HTX продуктів з БД: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Внутрішня помилка сервера: {str(e)}"
+        )
+
+
 # =============================================================================
 # OKX API ENDPOINTS
 # =============================================================================

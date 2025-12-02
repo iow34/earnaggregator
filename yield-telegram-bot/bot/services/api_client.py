@@ -213,6 +213,21 @@ class APIClient:
             params["limit"] = limit
         return await self._get(f"/api/v1/exchanges/{exchange}/popular", params=params)
 
+    async def get_htx_products_from_db(self, limit: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Отримати HTX продукти напряму з бази даних через спеціальний маршрут.
+
+        Args:
+            limit: Кількість продуктів для повернення
+
+        Returns:
+            Dict з HTX продуктами з бази даних
+        """
+        params: Dict[str, Any] = {}
+        if limit is not None:
+            params["limit"] = limit
+        return await self._get("/api/v1/htx/products", params=params)
+
     async def get_products_popular(self, limit: Optional[int] = None, offset: Optional[int] = None) -> Dict[str, Any]:
         """
         Отримати всі продукти відсортовані за популярністю через окремий endpoint.

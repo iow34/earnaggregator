@@ -159,34 +159,51 @@ async def _display_exchange_products(
         sort_by = filters.get("sort_by", "popularity")
 
         # Стратегія отримання даних залежно від типу сортування
-        if sort_by == "popularity":
+        if provider.lower() == "htx":
+            # HTX має спеціальну логіку - отримуємо дані напряму з бази даних
+            # оскільки aggregation service може не працювати коректно для HTX
+            limit = 50  # HTX має обмеження через велику кількість продуктів
+            logger.info(f"🔥 Отримуємо HTX продукти з бази даних (limit={limit})")
+
+            if sort_by == "popularity":
+                # Спробуємо отримати популярні продукти через API
+                data = await api_client.get_exchanges_popular(exchange="htx", limit=limit)
+                if not data.get("success") or len(data.get("data", [])) < 3:
+                    # Fallback на отримання з бази даних через звичайний маршрут
+                    logger.info(f"⚠️ Популярних HTX продуктів недостатньо, використовуємо звичайні продукти з БД")
+                    data = await api_client.get_htx_products_from_db(limit=limit)
+                    filters["popularity_fallback"] = True
+            else:
+                # Для APY сортування отримуємо з бази даних
+                logger.info(f"📊 Отримуємо HTX продукти для сортування ({sort_by}, limit={limit})")
+                data = await api_client.get_htx_products_from_db(limit=limit)
+
+        elif sort_by == "popularity":
             # Спробуємо отримати популярні продукти з сервера
-            # Для HTX зменшуємо limit щоб уникнути таймаутів
-            limit = 50 if provider.lower() == "htx" else 1000
+            limit = 1000  # Для інших бірж використовуємо більший ліміт
             logger.info(f"🔥 Отримуємо популярні продукти {provider} з сервера (limit={limit})")
             data = await api_client.get_exchanges_popular(exchange=provider.lower(), limit=limit)
 
             # Якщо популярних продуктів недостатньо, fallback на звичайні продукти
-            # Для невеликих бірж (як MEXC, HTX) зменшуємо поріг до 3 продуктів
-            min_popular_threshold = 3 if provider.lower() in ["mexc", "htx"] else 10
+            min_popular_threshold = 10  # Для інших бірж залишаємо стандартний поріг
 
             if not data.get("success") or len(data.get("data", [])) < min_popular_threshold:
                 logger.info(f"⚠️ Популярних продуктів {provider} недостатньо ({len(data.get('data', []))} < {min_popular_threshold}), використовуємо звичайні продукти з повідомленням про недоступність популярності")
-                limit = 50 if provider.lower() == "htx" else 1000
+                limit = 1000
                 data = await api_client.get_exchanges(exchange=provider, limit=limit)
                 # Залишаємо sort_by="popularity" але додаємо прапор що це fallback
                 filters["popularity_fallback"] = True
 
         elif sort_by in ["apy_desc", "apy_asc"]:
             # Для APY сортування завжди використовуємо звичайний ендпоінт
-            limit = 50 if provider.lower() == "htx" else 1000
+            limit = 1000
             logger.info(f"📊 Отримуємо продукти {provider} для локального APY сортування ({sort_by}, limit={limit})")
             data = await api_client.get_exchanges(exchange=provider, limit=limit)
 
         else:
             # Невідомий тип сортування - fallback на популярність
             logger.warning(f"⚠️ Невідомий тип сортування {sort_by}, використовуємо популярність")
-            limit = 50 if provider.lower() == "htx" else 1000
+            limit = 1000
             data = await api_client.get_exchanges_popular(exchange=provider.lower(), limit=limit)
             filters["sort_by"] = "popularity"
         

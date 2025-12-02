@@ -58,7 +58,27 @@ async def test_connection():
             print(f"\n📦 Записів у yield_products: {count}")
         except Exception as e:
             print(f"⚠️  Помилка підрахунку yield_products: {e}")
-        
+
+        # Перевіряємо HTX продукти
+        try:
+            htx_count = await conn.fetchval("SELECT COUNT(*) FROM yield_products WHERE provider = 'HTX' AND is_active = true;")
+            print(f"🏦 HTX активних продуктів: {htx_count}")
+
+            # Перевіряємо топ 5 HTX продуктів
+            htx_products = await conn.fetch("""
+                SELECT id, symbol, name, apy, product_type
+                FROM yield_products
+                WHERE provider = 'HTX' AND is_active = true
+                ORDER BY apy DESC
+                LIMIT 5
+            """)
+            print("\n🏦 Топ 5 HTX продуктів:")
+            for product in htx_products:
+                print(f"  - {product['symbol']}: {product['apy']}% APY ({product['product_type']})")
+
+        except Exception as e:
+            print(f"⚠️  Помилка підрахунку HTX продуктів: {e}")
+
         # Перевіряємо priority_products
         try:
             count = await conn.fetchval("SELECT COUNT(*) FROM priority_products;")
@@ -66,6 +86,33 @@ async def test_connection():
         except Exception as e:
             print(f"⚠️  Помилка підрахунку priority_products: {e}")
         
+        # Тестуємо імітацію роботи телеграм бота з HTX
+        try:
+            print("\n🤖 Тестуємо імітацію HTX логіки телеграм бота...")
+
+            # Імітуємо отримання HTX продуктів через YieldProductCRUD
+            htx_products_db = await conn.fetch("""
+                SELECT
+                    id, symbol, name, provider, apy, is_cefi, min_amount, max_amount,
+                    lock_period_days, max_apy, risk_level, is_active, website_url,
+                    description, product_type, created_at, updated_at, last_checked, raw_data
+                FROM yield_products
+                WHERE provider = 'HTX' AND is_active = true
+                ORDER BY apy DESC, symbol ASC
+                LIMIT 10
+            """)
+
+            print(f"📱 Отримали {len(htx_products_db)} HTX продуктів для відображення")
+            print("📱 Перші 3 продукти:")
+
+            for i, product in enumerate(htx_products_db[:3], 1):
+                print(f"  {i}. {product['symbol']} - {product['apy']}% APY ({product['product_type']})")
+
+            print("✅ Імітація телеграм бота успішна!")
+
+        except Exception as e:
+            print(f"❌ Помилка тестування HTX логіки: {e}")
+
         await conn.close()
         print("\n✅ Тест завершено успішно!")
         return True
