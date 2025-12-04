@@ -125,3 +125,63 @@ class TestDeepLinkValidator:
         assert parsed['platform'] == 'xcom'
         assert parsed['campaign_id'] == 'nov2025_123'
 
+    # Тести для UTM формату
+    def test_valid_utm_payload(self):
+        """Тест валідного UTM payload."""
+        payload = "utm_tgads_geo_ua_creative_a"
+        is_valid, source, parsed = DeepLinkValidator.validate(payload)
+
+        assert is_valid is True
+        assert source == "utm_tgads_geo_ua_creative_a"
+        assert parsed is not None
+        assert parsed['format'] == 'utm'
+        assert parsed['source'] == 'tgads'
+        assert parsed['geo'] == 'geo'
+        assert parsed['creative'] == 'ua_creative_a'
+        assert parsed['campaign_id'] == 'tgads_geo'
+
+    def test_valid_utm_payload_simple(self):
+        """Тест простого UTM payload."""
+        payload = "utm_blogpost_partners_jan"
+        is_valid, source, parsed = DeepLinkValidator.validate(payload)
+
+        assert is_valid is True
+        assert source == "utm_blogpost_partners_jan"
+        assert parsed['format'] == 'utm'
+        assert parsed['source'] == 'blogpost'
+        assert parsed['geo'] == 'partners'
+        assert parsed['creative'] == 'jan'
+        assert parsed['campaign_id'] == 'blogpost_partners'
+
+    def test_invalid_utm_payload_wrong_parts(self):
+        """Тест UTM payload з неправильною кількістю частин."""
+        payload = "utm_source_only"
+        is_valid, source, parsed = DeepLinkValidator.validate(payload)
+        assert is_valid is False
+        assert source == "malformed_deeplink"
+
+    def test_invalid_utm_payload_empty_parts(self):
+        """Тест UTM payload з пустими частинами."""
+        payload = "utm__geo_creative"
+        is_valid, source, parsed = DeepLinkValidator.validate(payload)
+        assert is_valid is False
+        assert source == "malformed_deeplink"
+
+    def test_utm_case_insensitive(self):
+        """Тест регістронезалежності для UTM формату."""
+        payload_upper = "UTM_TGADS_UA_CREATIVE_A"
+        is_valid, source, parsed = DeepLinkValidator.validate(payload_upper)
+        assert is_valid is True
+        assert parsed['format'] == 'utm'
+        assert parsed['source'] == 'tgads'
+        assert parsed['geo'] == 'ua'
+        assert parsed['creative'] == 'creative_a'
+
+    def test_extract_campaign_id_utm(self):
+        """Тест витягування campaign_id з UTM payload."""
+        campaign_id = DeepLinkValidator.extract_campaign_id("utm_tgads_geo_ua_creative_a")
+        assert campaign_id == "tgads_geo"
+
+        campaign_id = DeepLinkValidator.extract_campaign_id("utm_blogpost_partners_jan")
+        assert campaign_id == "blogpost_partners"
+

@@ -2,7 +2,8 @@
 Валідатор для deep link payload.
 
 Валідує payload з deep link посилань згідно з ТЗ:
-- Формат: ad_platform_campaignID_extra
+- Формат: ad_platform_campaignID_extra (старий формат)
+- Формат: utm_source_geo_creative (новий UTM-подібний формат)
 - Regex перевірка
 - Whitelist платформ
 - Обробка edge cases
@@ -45,9 +46,15 @@ class DeepLinkValidator:
     ]
     
     # Regex для валідації payload
-    # Формат: (ad|test)_platform_campaignID_extra (extra опціонально)
-    PAYLOAD_PATTERN = re.compile(
+    # Формат: (ad|test)_platform_campaignID_extra (старий формат, extra опціонально)
+    LEGACY_PAYLOAD_PATTERN = re.compile(
         r'^(ad|test)_([a-z0-9_-]+)_([a-z0-9_-]+)(_[a-z0-9_-]+)?$',
+        re.IGNORECASE
+    )
+
+    # Формат: utm_source_geo_creative (новий UTM-подібний формат)
+    UTM_PAYLOAD_PATTERN = re.compile(
+        r'^utm_([a-z0-9_-]+)_([a-z0-9_-]+)_([a-z0-9_-]+)$',
         re.IGNORECASE
     )
     
@@ -94,49 +101,13 @@ class DeepLinkValidator:
             logger.warning(f"⚠️ Payload містить недозволені символи: {payload}")
             return False, "malformed_deeplink", {"reason": "invalid_characters"}
         
-        # Простіший парсинг: розділити по підкреслення
-        parts = payload.split('_')
-        
-        if len(parts) < 3:
-            logger.warning(f"⚠️ Payload не відповідає формату (замало частин): {payload}")
-            return False, "malformed_deeplink", {"reason": "invalid_format"}
-        
-        # Формат: prefix_platform_campaign_parts...
-        prefix = parts[0].lower()  # ad або test
-        platform = parts[1].lower()
-        
-        # Campaign ID - все після platform (parts[2:])
-        campaign_id = '_'.join(parts[2:])
-        
-        # Валідація префіксу
-        if prefix not in ['ad', 'test']:
-            logger.warning(f"⚠️ Невалідний префікс: {prefix}")
-            return False, "malformed_deeplink", {"reason": "invalid_prefix"}
-        
-        # Семантична валідація: перевірка платформи
-        if platform not in cls.ALLOWED_PLATFORMS:
-            logger.warning(f"⚠️ Невідома платформа: {platform} (не в whitelist)")
-            # Все одно зберігаємо, але позначаємо
-            source = payload.lower()
-            parsed_data = {
-                "prefix": prefix,
-                "platform": platform,
-                "campaign_id": campaign_id,
-                "warning": "unknown_platform"
-            }
-            return True, source, parsed_data
-        
-        # Успішна валідація
-        source = payload.lower()
-        
-        parsed_data = {
-            "prefix": prefix,
-            "platform": platform,
-            "campaign_id": campaign_id
-        }
-        
-        logger.info(f"✅ Payload валідний: {source}, campaign_id={campaign_id}")
-        return True, source, parsed_data
+        # Визначення типу payload та відповідний парсинг
+        if payload.lower().startswith('utm_'):
+            # Новий UTM формат: utm_source_geo_creative
+            return cls._validate_utm_payload(payload)
+        else:
+            # Старий формат: ad_platform_campaignID_extra
+            return cls._validate_legacy_payload(payload)
     
     @classmethod
     def extract_campaign_id(
@@ -161,7 +132,111 @@ class DeepLinkValidator:
             return None
         
         return parsed_data.get('campaign_id')
-    
+
+    @classmethod
+    def _validate_utm_payload(
+        cls,
+        payload: str
+    ) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+        """
+        Валідує UTM-подібний payload формату: utm_source_geo_creative
+
+        Args:
+            payload: Payload в UTM форматі
+
+        Returns:
+            Tuple: (is_valid, source, parsed_data)
+        """
+        # Перевірка через regex
+        match = cls.UTM_PAYLOAD_PATTERN.match(payload)
+        if not match:
+            logger.warning(f"⚠️ UTM payload не відповідає формату: {payload}")
+            return False, "malformed_deeplink", {"reason": "invalid_utm_format"}
+
+        source_part, geo_part, creative_part = match.groups()
+
+        # Валідація частин
+        if not all([source_part, geo_part, creative_part]):
+            logger.warning(f"⚠️ UTM payload містить пусті частини: {payload}")
+            return False, "malformed_deeplink", {"reason": "empty_utm_parts"}
+
+        # Для UTM формату campaign_id = source_geo
+        campaign_id = f"{source_part}_{geo_part}"
+
+        # Source для збереження - повний payload
+        source = payload.lower()
+
+        parsed_data = {
+            "format": "utm",
+            "source": source_part,
+            "geo": geo_part,
+            "creative": creative_part,
+            "campaign_id": campaign_id
+        }
+
+        logger.info(f"✅ UTM payload валідний: {source}, campaign_id={campaign_id}")
+        return True, source, parsed_data
+
+    @classmethod
+    def _validate_legacy_payload(
+        cls,
+        payload: str
+    ) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+        """
+        Валідує legacy payload формату: (ad|test)_platform_campaignID_extra
+
+        Args:
+            payload: Payload в legacy форматі
+
+        Returns:
+            Tuple: (is_valid, source, parsed_data)
+        """
+        # Простіший парсинг: розділити по підкреслення
+        parts = payload.split('_')
+
+        if len(parts) < 3:
+            logger.warning(f"⚠️ Legacy payload не відповідає формату (замало частин): {payload}")
+            return False, "malformed_deeplink", {"reason": "invalid_format"}
+
+        # Формат: prefix_platform_campaign_parts...
+        prefix = parts[0].lower()  # ad або test
+        platform = parts[1].lower()
+
+        # Campaign ID - все після platform (parts[2:])
+        campaign_id = '_'.join(parts[2:])
+
+        # Валідація префіксу
+        if prefix not in ['ad', 'test']:
+            logger.warning(f"⚠️ Невалідний префікс: {prefix}")
+            return False, "malformed_deeplink", {"reason": "invalid_prefix"}
+
+        # Семантична валідація: перевірка платформи
+        if platform not in cls.ALLOWED_PLATFORMS:
+            logger.warning(f"⚠️ Невідома платформа: {platform} (не в whitelist)")
+            # Все одно зберігаємо, але позначаємо
+            source = payload.lower()
+            parsed_data = {
+                "format": "legacy",
+                "prefix": prefix,
+                "platform": platform,
+                "campaign_id": campaign_id,
+                "warning": "unknown_platform"
+            }
+            return True, source, parsed_data
+
+        # Успішна валідація
+        source = payload.lower()
+
+        parsed_data = {
+            "format": "legacy",
+            "prefix": prefix,
+            "platform": platform,
+            "campaign_id": campaign_id
+        }
+
+        logger.info(f"✅ Legacy payload валідний: {source}, campaign_id={campaign_id}")
+        return True, source, parsed_data
+
     @classmethod
     def is_test_payload(
         cls,
