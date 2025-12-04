@@ -53,8 +53,9 @@ class DeepLinkValidator:
     )
 
     # Формат: utm_source_geo_creative (новий UTM-подібний формат)
+    # Де creative може містити підкреслення
     UTM_PAYLOAD_PATTERN = re.compile(
-        r'^utm_([a-z0-9_-]+)_([a-z0-9_-]+)_([a-z0-9_-]+)$',
+        r'^utm_([a-z0-9_-]+)_([a-z0-9_-]+)_(.+)$',
         re.IGNORECASE
     )
     
@@ -147,20 +148,23 @@ class DeepLinkValidator:
         Returns:
             Tuple: (is_valid, source, parsed_data)
         """
-        # Перевірка через regex
-        match = cls.UTM_PAYLOAD_PATTERN.match(payload)
-        if not match:
+        # Простий парсинг: розділити по підкреслення
+        parts = payload.split('_', 3)  # Максимум 4 частини: utm, source, geo, creative
+
+        if len(parts) < 4 or parts[0].lower() != 'utm':
             logger.warning(f"⚠️ UTM payload не відповідає формату: {payload}")
             return False, "malformed_deeplink", {"reason": "invalid_utm_format"}
 
-        source_part, geo_part, creative_part = match.groups()
+        source_part = parts[1]
+        geo_part = parts[2]
+        creative_part = parts[3] if len(parts) > 3 else ""
 
         # Валідація частин
         if not all([source_part, geo_part, creative_part]):
             logger.warning(f"⚠️ UTM payload містить пусті частини: {payload}")
             return False, "malformed_deeplink", {"reason": "empty_utm_parts"}
 
-        # Для UTM формату campaign_id = source_geo
+        # Для UTM формату campaign_id = source_geo (тільки перші два компоненти)
         campaign_id = f"{source_part}_{geo_part}"
 
         # Source для збереження - повний payload
