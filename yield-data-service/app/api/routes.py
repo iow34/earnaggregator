@@ -18,7 +18,7 @@ API маршрути (ендпоінти) - РОЗДІЛ 3.1: Створення
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from typing import List, Optional, Dict, Any
 from datetime import datetime, UTC
 
@@ -689,16 +689,11 @@ async def health_check_detailed() -> HealthResponse:
     try:
         # Перевіряємо БД через стандартну сесію
         db_status = "unhealthy"
-        db_health = None
         try:
             async with get_database_session() as db:
-                db_health = await get_database_stats(db)
-                if db_health and isinstance(db_health.get("total_products"), int):
-                    db_status = "healthy"
-                    logger.info(f"✅ БД healthy: {db_health.get('total_products')} продуктів")
-                else:
-                    db_status = "unhealthy"
-                    logger.warning("⚠️ БД не містить даних або недоступна")
+                await db.execute(text("SELECT 1"))
+                db_status = "healthy"
+                logger.info("✅ БД healthy (SELECT 1 успішно)")
         except Exception as e:
             logger.warning(f"⚠️ Помилка перевірки БД: {e}")
             db_status = "unhealthy"
