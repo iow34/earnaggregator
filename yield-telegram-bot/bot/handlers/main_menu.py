@@ -350,23 +350,42 @@ async def _format_top_10_section(
         text += f"{h_num}  {h_prod}  {h_exch}     {h_apy}    {h_type}\n"
         text += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 
-        symbols = [coin.get("symbol", "").upper() for coin in trending_coins[:10]]
         trending_products = []
-        
+
+        # 1) Спроба отримати готовий TOP з нового endpoint (top_products)
         try:
-            batch_data = await api_client.get_multiple_yields(symbols, limit=20)
-            if batch_data.get("success") and isinstance(batch_data.get("data"), dict):
-                for coin in trending_coins[:10]:
-                    symbol = coin.get("symbol", "").upper()
-                    symbol_products = batch_data.get("data", {}).get(symbol, [])
-                    if isinstance(symbol_products, list) and symbol_products:
-                        best_product = find_best_flexible_product(
-                            symbol_products, symbol, coin.get("score", 0)
-                        )
-                        if best_product:
-                            trending_products.append(best_product)
+            top_resp = await api_client.get_top_products(limit=10)
+            if top_resp.get("success") and isinstance(top_resp.get("data"), list):
+                for item in top_resp["data"]:
+                    best_exchange = item.get("best_exchange") or "N/A"
+                    best_apy = float(item.get("best_apy") or 0.0)
+                    trending_products.append({
+                        "symbol": item.get("symbol", "").upper(),
+                        "provider": best_exchange[:9],
+                        "apy": best_apy,
+                        "lock_period_days": 0,
+                        "trending_score": max(0, 100 - (item.get("rank", 10) - 1) * 5)
+                    })
         except Exception as e:
-            logger.warning(f"⚠️ Помилка batch запиту для trending products: {e}")
+            logger.warning(f"⚠️ Помилка top_products endpoint: {e}")
+
+        # 2) Fallback — стара логіка через batch/individual (може бути повільною)
+        if not trending_products:
+            symbols = [coin.get("symbol", "").upper() for coin in trending_coins[:10]]
+            try:
+                batch_data = await api_client.get_multiple_yields(symbols, limit=20)
+                if batch_data.get("success") and isinstance(batch_data.get("data"), dict):
+                    for coin in trending_coins[:10]:
+                        symbol = coin.get("symbol", "").upper()
+                        symbol_products = batch_data.get("data", {}).get(symbol, [])
+                        if isinstance(symbol_products, list) and symbol_products:
+                            best_product = find_best_flexible_product(
+                                symbol_products, symbol, coin.get("score", 0)
+                            )
+                            if best_product:
+                                trending_products.append(best_product)
+            except Exception as e:
+                logger.warning(f"⚠️ Помилка batch запиту для trending products: {e}")
         
         if not trending_products:
             try:

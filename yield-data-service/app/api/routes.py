@@ -24,7 +24,7 @@ from datetime import datetime, UTC
 
 from app.db.database import get_database_session, get_db_transaction
 from app.db.crud import YieldProductCRUD, ExchangeDataCRUD, CacheMetadataCRUD, PriorityProductCRUD, get_database_stats
-from app.db.models import YieldProductDB, CoinsPopularityDB
+from app.db.models import YieldProductDB, CoinsPopularityDB, TopProductDB
 from app.models.yield_product import YieldProduct, YieldProductFilter, YieldProductCreate
 from app.models.response import (
     YieldResponse, TopByProviderResponse, ErrorResponse, create_success_response,
@@ -3303,6 +3303,55 @@ async def update_priority_products(
         logger.error(f"❌ Помилка оновлення priority_products: {e}", exc_info=True)
         return create_error_response(
             error="Помилка оновлення priority_products",
+            details=str(e)
+        )
+
+
+# =============================================================================
+# TOP PRODUCTS ENDPOINT
+# =============================================================================
+
+@router.get("/top-products")
+async def get_top_products_endpoint(
+    limit: int = Query(10, ge=1, le=10, description="Кількість продуктів (1-10)")
+):
+    """
+    Отримати TOP products з таблиці top_products.
+    """
+    try:
+        async with get_database_session() as db:
+            result = await db.execute(
+                select(TopProductDB).order_by(TopProductDB.rank).limit(limit)
+            )
+            items = result.scalars().all()
+
+        data = []
+        for item in items:
+            data.append({
+                "rank": item.rank,
+                "symbol": item.symbol,
+                "coin_name": item.coin_name,
+                "market_cap_rank": item.market_cap_rank,
+                "best_apy": float(item.best_apy) if item.best_apy is not None else 0.0,
+                "best_exchange": item.best_exchange or None,
+                "product_id": item.product_id or None,
+                "updated_at": item.updated_at.isoformat() if item.updated_at else None
+            })
+
+        return {
+            "success": True,
+            "status": "success",
+            "data": data,
+            "count": len(data),
+            "limit": limit,
+            "source": "top_products_table",
+            "timestamp": datetime.now(UTC).isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Помилка отримання top_products: {e}", exc_info=True)
+        return create_error_response(
+            error="Помилка отримання top_products",
             details=str(e)
         )
 

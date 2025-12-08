@@ -188,6 +188,9 @@ class APIClient:
     async def get_top(self, limit: int = 20) -> Dict[str, Any]:
         return await self._get("/api/v1/top", params={"limit": limit})
 
+    async def get_top_products(self, limit: int = 10) -> Dict[str, Any]:
+        return await self._get("/api/v1/top-products", params={"limit": limit})
+
     @ttl_cache(ttl_seconds=600)  # 10 хвилин кешування для даних бірж (збільшено для кращої продуктивності)
     async def get_exchanges(self, exchange: str, symbol: Optional[str] = None, limit: Optional[int] = None) -> Dict[str, Any]:
         params: Dict[str, Any] = {"exchange": exchange}
