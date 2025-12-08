@@ -218,6 +218,43 @@ CREATE INDEX IF NOT EXISTS idx_coins_popularity_symbol ON coins_popularity(symbo
 CREATE INDEX IF NOT EXISTS idx_coins_popularity_updated ON coins_popularity(updated_at);
 """
 
+MIGRATION_005 = """
+-- Створення таблиці top_products (TOP 10 трендових монет з CoinGecko + найкращий APY)
+
+CREATE TABLE IF NOT EXISTS top_products (
+    id SERIAL PRIMARY KEY,
+    rank INTEGER NOT NULL CHECK (rank >= 1 AND rank <= 10),
+    symbol VARCHAR(20) NOT NULL,
+    coin_name VARCHAR(100),
+    market_cap_rank INTEGER,
+    best_apy DECIMAL(10,4) DEFAULT 0.0,
+    best_exchange VARCHAR(50),
+    product_id VARCHAR(100),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE top_products
+    ADD CONSTRAINT unique_top_products_rank UNIQUE (rank);
+
+CREATE INDEX IF NOT EXISTS idx_top_products_rank ON top_products(rank);
+CREATE INDEX IF NOT EXISTS idx_top_products_symbol ON top_products(symbol);
+CREATE INDEX IF NOT EXISTS idx_top_products_updated_at ON top_products(updated_at);
+
+CREATE OR REPLACE FUNCTION update_top_products_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_top_products_updated_at
+    BEFORE UPDATE ON top_products
+    FOR EACH ROW
+    EXECUTE FUNCTION update_top_products_updated_at();
+"""
+
 @router.post("/run")
 async def run_migrations():
     """
@@ -231,6 +268,7 @@ async def run_migrations():
             ("002_create_simple_clicks_table.sql", MIGRATION_002),
             ("003_create_priority_products_table.sql", MIGRATION_003),
             ("004_create_yield_products_tables.sql", MIGRATION_004),
+            ("005_create_top_products_table.sql", MIGRATION_005),
         ]
         
         results = []

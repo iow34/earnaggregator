@@ -26,6 +26,7 @@ from app.services.exchanges import exchange_registry
 from app.services.cache import cache_manager
 from app.services.coingecko_service import coingecko_service
 from app.services.priority_products_service import priority_products_service
+from app.services.top_products_service import top_products_service
 from app.db.database import get_database_session
 from app.utils.logger import logger
 
@@ -634,6 +635,34 @@ class DataScheduler:
             duration = (datetime.now(UTC) - start_time).total_seconds() * 1000
             self.metrics.record_execution(job_name, duration, False)
             logger.error(f"❌ Помилка оновлення CoinGecko: {e}", exc_info=True)
+
+    async def update_top_products_job(self):
+        """
+        Оновлення таблиці top_products (CoinGecko trending + найкращий flexible APY) кожні 12 годин.
+        """
+        start_time = datetime.now(UTC)
+        job_name = "update_top_products_job"
+
+        try:
+            async with get_database_session() as db:
+                result = await top_products_service.update_top_products(db, limit=10)
+
+            success = result.get("success", False)
+            duration = (datetime.now(UTC) - start_time).total_seconds() * 1000
+            self.metrics.record_execution(job_name, duration, success)
+
+            if success:
+                logger.info(
+                    f"[TopProducts] ✅ Оновлено {result.get('products_updated', 0)} продуктів "
+                    f"з {result.get('coins_processed', 0)} монет"
+                )
+            else:
+                logger.warning(f"[TopProducts] ⚠️ Оновлення не виконано: {result.get('message')}")
+
+        except Exception as e:
+            duration = (datetime.now(UTC) - start_time).total_seconds() * 1000
+            self.metrics.record_execution(job_name, duration, False)
+            logger.error(f"[TopProducts] ❌ Помилка оновлення: {e}", exc_info=True)
     
     def _job_listener(self, event):
         """
@@ -654,6 +683,7 @@ class DataScheduler:
         - health_check_job: кожні 8 годин
         - update_popular_symbols_job: кожні 6 годин
         - update_coingecko_job: раз на добу (о 00:00 UTC)
+        - update_top_products_job: кожні 12 годин
         """
         try:
             logger.info("🚀 Запуск scheduler...")
@@ -721,6 +751,17 @@ class DataScheduler:
                 max_instances=1
             )
             logger.info("✅ Додано задачу: Оновлення CoinGecko рейтингу (раз на добу о 00:00 UTC)")
+
+            # Задача 6: Оновлення TOP products кожні 12 годин
+            self.scheduler.add_job(
+                self.update_top_products_job,
+                trigger=IntervalTrigger(hours=12),
+                id="update_top_products",
+                name="Оновлення TOP products",
+                replace_existing=True,
+                max_instances=1
+            )
+            logger.info("✅ Додано задачу: Оновлення TOP products (кожні 12 годин)")
             
             # Запускаємо scheduler
             self.scheduler.start()

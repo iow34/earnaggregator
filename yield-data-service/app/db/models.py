@@ -341,6 +341,33 @@ class PriorityProductDB(Base):
         return f"<PriorityProductDB(id={self.id}, exchange='{self.exchange}', symbol='{self.symbol}', apy={self.apy})>"
 
 
+class TopProductDB(Base):
+    """
+    Таблиця TOP 10 трендових монет з CoinGecko + найкращий flexible APY по біржах.
+    """
+    __tablename__ = "top_products"
+
+    id = Column(Integer, primary_key=True, autoincrement=True, comment="Унікальний ідентифікатор")
+    rank = Column(Integer, nullable=False, unique=True, comment="Позиція в топі (1-10)")
+    symbol = Column(String(20), nullable=False, index=True, comment="Символ монети")
+    coin_name = Column(String(100), nullable=True, comment="Назва монети")
+    market_cap_rank = Column(Integer, nullable=True, comment="Ранг за ринковою капіталізацією")
+    best_apy = Column(Float, nullable=False, default=0.0, comment="Найкращий flexible APY")
+    best_exchange = Column(String(50), nullable=True, comment="Біржа з найкращим APY")
+    product_id = Column(String(100), nullable=True, comment="ID продукту в yield_products")
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None), comment="Час створення")
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None), onupdate=lambda: datetime.now(UTC).replace(tzinfo=None), comment="Час оновлення")
+
+    __table_args__ = (
+        Index('idx_top_products_rank', 'rank'),
+        Index('idx_top_products_symbol', 'symbol'),
+        Index('idx_top_products_updated_at', 'updated_at'),
+    )
+
+    def __repr__(self):
+        return f"<TopProductDB(rank={self.rank}, symbol='{self.symbol}', apy={self.best_apy})>"
+
+
 # Утилітарні функції для роботи з моделями
 
 def get_table_names():
@@ -354,6 +381,7 @@ def get_table_names():
         CoinsPopularityDB.__tablename__,
         APILogsDB.__tablename__,
         PriorityProductDB.__tablename__,
+        TopProductDB.__tablename__,
         TrackingUser.__tablename__,
         TrackingClick.__tablename__,
         SimpleClick.__tablename__,
@@ -374,6 +402,7 @@ def get_model_by_table_name(table_name: str):
         CoinsPopularityDB.__tablename__: CoinsPopularityDB,
         APILogsDB.__tablename__: APILogsDB,
         PriorityProductDB.__tablename__: PriorityProductDB,
+        TopProductDB.__tablename__: TopProductDB,
         TrackingUser.__tablename__: TrackingUser,
         TrackingClick.__tablename__: TrackingClick,
         SimpleClick.__tablename__: SimpleClick,

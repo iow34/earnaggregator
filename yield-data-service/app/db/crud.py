@@ -6,7 +6,7 @@ CRUD операції для роботи з базою даних.
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, func, and_, or_, desc, asc
+from sqlalchemy import select, update, delete, func, and_, or_, desc, asc, insert
 from sqlalchemy.orm import selectinload
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, timedelta, UTC
@@ -15,7 +15,7 @@ import json
 from app.db.models import (
     YieldProductDB, ExchangeDataDB, CacheMetadataDB,
     UserAnalyticsDB, SystemMetricsDB, APILogsDB, CoinsPopularityDB,
-    PriorityProductDB
+    PriorityProductDB, TopProductDB
 )
 from app.db.database import get_database_session
 from sqlalchemy import case
@@ -1433,6 +1433,80 @@ class CoinsPopularityCRUD:
         except Exception as e:
             logger.error(f"Помилка очищення старих даних популярності: {e}")
             return 0
+
+
+class TopProductCRUD:
+    """CRUD для таблиці top_products."""
+
+    @staticmethod
+    async def upsert_top_product(
+        db: AsyncSession,
+        rank: int,
+        symbol: str,
+        coin_name: Optional[str],
+        market_cap_rank: Optional[int],
+        best_apy: float,
+        best_exchange: Optional[str],
+        product_id: Optional[str]
+    ) -> TopProductDB:
+        """Оновлює або створює запис top_products за рангом."""
+        now = datetime.now(UTC).replace(tzinfo=None)
+        stmt = (
+            insert(TopProductDB)
+            .values(
+                rank=rank,
+                symbol=symbol,
+                coin_name=coin_name,
+                market_cap_rank=market_cap_rank,
+                best_apy=best_apy,
+                best_exchange=best_exchange,
+                product_id=product_id,
+                created_at=now,
+                updated_at=now,
+            )
+            .on_conflict_do_update(
+                index_elements=[TopProductDB.rank],
+                set_=dict(
+                    symbol=symbol,
+                    coin_name=coin_name,
+                    market_cap_rank=market_cap_rank,
+                    best_apy=best_apy,
+                    best_exchange=best_exchange,
+                    product_id=product_id,
+                    updated_at=now,
+                ),
+            )
+            .returning(TopProductDB)
+        )
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one()
+
+    @staticmethod
+    async def get_top_products(db: AsyncSession, limit: int = 10) -> List[TopProductDB]:
+        """Повертає TOP продукти, відсортовані за рангом."""
+        result = await db.execute(
+            select(TopProductDB).order_by(TopProductDB.rank).limit(limit)
+        )
+        return result.scalars().all()
+
+    @staticmethod
+    async def get_best_flexible_product(
+        db: AsyncSession,
+        symbol: str
+    ) -> Optional[YieldProductDB]:
+        """
+        Повертає найкращий flexible продукт (lock_period_days=0, is_active) по символу.
+        """
+        result = await db.execute(
+            select(YieldProductDB)
+            .where(YieldProductDB.symbol == symbol.upper())
+            .where(YieldProductDB.is_active == True)
+            .where(YieldProductDB.lock_period_days == 0)
+            .order_by(desc(YieldProductDB.apy))
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
 
 
 # =============================================================================
