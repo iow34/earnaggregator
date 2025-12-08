@@ -687,28 +687,18 @@ async def health_check_detailed() -> HealthResponse:
         HealthResponse: Стан сервісу
     """
     try:
-        # Перевіряємо БД
+        # Перевіряємо БД через стандартну сесію
         db_status = "unhealthy"
+        db_health = None
         try:
-            # Використовуємо власну сесію для health check
-            from app.db.database import db_manager
-            if hasattr(db_manager, 'session_factory') and db_manager.session_factory:
-                db = db_manager.session_factory()
-                try:
-                    db_health = await get_database_stats(db)
-                    # Перевіряємо чи є дані та чи можна підключитися
-                    if db_health and isinstance(db_health.get("total_products"), int):
-                        db_status = "healthy"
-                        logger.info(f"✅ БД healthy: {db_health.get('total_products')} продуктів")
-                    else:
-                        db_status = "unhealthy"
-                        logger.warning("⚠️ БД не містить даних або недоступна")
-                finally:
-                    await db.close()
-            else:
-                db_health = None
-                db_status = "unavailable"  # БД не ініціалізована
-                logger.info("ℹ️ БД ще не ініціалізована")
+            async with get_database_session() as db:
+                db_health = await get_database_stats(db)
+                if db_health and isinstance(db_health.get("total_products"), int):
+                    db_status = "healthy"
+                    logger.info(f"✅ БД healthy: {db_health.get('total_products')} продуктів")
+                else:
+                    db_status = "unhealthy"
+                    logger.warning("⚠️ БД не містить даних або недоступна")
         except Exception as e:
             logger.warning(f"⚠️ Помилка перевірки БД: {e}")
             db_status = "unhealthy"
