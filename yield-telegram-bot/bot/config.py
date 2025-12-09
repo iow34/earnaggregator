@@ -1,11 +1,12 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field, AnyUrl, field_validator
+from pydantic import Field, AnyUrl, field_validator, FieldValidationInfo
 from typing import Dict, Optional, List
 
 
 class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str = Field(..., alias="BOT_TOKEN")
     DATA_SERVICE_URL: AnyUrl = Field("http://yield-api:8000")
+    DEPLOY_ENV: str = Field("prod", alias="DEPLOY_ENV")
     # Railway автоматично генерований URL для data service
     RAILWAY_SERVICE_EARNAGGREGATOR_URL: Optional[str] = Field(None, alias="RAILWAY_SERVICE_EARNAGGREGATOR_URL")
     # Актуальний public URL для data service (з RAILWAY_PUBLIC_DOMAIN earnaggregator)
@@ -88,7 +89,25 @@ class Settings(BaseSettings):
     TRACK_NEXO_PAGE1: str = Field("", alias="TRACK_NEXO_PAGE1")
     TRACK_NEXO_PAGE2: str = Field("", alias="TRACK_NEXO_PAGE2")
     TRACK_NEXO_PAGE3: str = Field("", alias="TRACK_NEXO_PAGE3")
-    
+
+    @field_validator("TRACKING_REDIRECT_URL", "DATA_SERVICE_URL", mode="before")
+    @classmethod
+    def _ensure_public_urls(cls, value: str | AnyUrl | None, info: FieldValidationInfo):
+        """
+        Prevent internal/localhost URLs in production to avoid broken links during ads review.
+        """
+        if value is None:
+            return value
+
+        env = (info.data.get("DEPLOY_ENV") or "prod").lower() if hasattr(info, "data") else "prod"
+        url_str = str(value)
+
+        if env == "prod":
+            forbidden_hosts = ("localhost", "127.0.0.1", "yield-api")
+            if any(host in url_str for host in forbidden_hosts):
+                raise ValueError("Public URL required: tracking/data endpoints must be reachable outside the cluster")
+        return value
+
     @field_validator("BROADCAST_ADMIN_ALLOWED_ORIGINS", mode="before")
     @classmethod
     def _split_origins(cls, value):
