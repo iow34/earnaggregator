@@ -11,14 +11,8 @@ This bot aggregates publicly available Simple Earn data from major centralized e
 1. Tap the menu icon (☰) at the bottom left of your keyboard
 2. Select "Menu" to see all available commands
 
-<b>🎯 Available Commands:</b>
-• /main - Show main menu with product data
-• /help - Detailed guide on using the bot
-• /recommendations - Educational materials about products
-• /exchanges - Browse products by exchange
-
 <b>💡 Getting Started:</b>
-Type /main to explore available product information.
+Type /start to explore ChainAdvisor Bot information.
 
-Need help? Type /help anytime.
+Need help? Type /help to get detailed information about this bot.
 

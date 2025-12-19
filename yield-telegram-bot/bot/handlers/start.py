@@ -14,7 +14,7 @@ import asyncio
 import time
 from aiogram import Router, F
 from aiogram.filters import CommandStart, CommandObject
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 from sqlalchemy import select

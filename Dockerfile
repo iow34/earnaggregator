@@ -37,6 +37,7 @@ FROM python:3.11-slim as runtime
 RUN apt-get update && apt-get install -y \
     libpq5 \
     curl \
+    redis-server \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
