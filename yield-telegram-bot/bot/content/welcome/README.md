@@ -1,6 +1,6 @@
 # Welcome Messages
 
-This directory contains welcome messages that are shown to first-time users before they execute the `/main` command.
+This directory contains welcome messages that are shown to first-time users. These messages introduce the bot as a crypto analytics tool and include important disclaimers for compliance with advertising platform policies.
 
 ## Structure
 
@@ -28,17 +28,31 @@ The welcome message serves as a **first contact point** for new users. It is aut
 Each welcome message should include:
 
 1. **Greeting** - Friendly welcome to the bot
-2. **Purpose** - Brief explanation of what the bot does
-3. **Menu Instructions** - How to enable the command menu in Telegram:
+2. **Purpose** - Clear explanation that this is a crypto analytics tool that aggregates publicly available data
+3. **Disclaimer** - Important legal disclaimer about:
+   - No financial advice provided
+   - Information for educational purposes only
+   - Users make independent decisions
+4. **Menu Instructions** - How to enable the command menu in Telegram:
    - Tap the menu icon (☰) at the bottom left
-   - Select "Menu" to see available commands
-4. **Available Commands** - List of main commands:
-   - `/main` - Show main menu
-   - `/help` - Detailed help
-   - `/recommendations` - Personalized strategies
-   - `/exchanges` - Browse by exchange
-5. **Quick Start** - Simple call-to-action (type `/main`)
-6. **Support** - How to get help (type `/help`)
+   - Select "Menu" to see all available commands
+5. **Available Commands** - List of main commands:
+   - `/main` - Show main menu with product data
+   - `/help` - Detailed guide on using the bot
+   - `/recommendations` - Educational materials about products
+   - `/exchanges` - Browse products by exchange
+6. **Getting Started** - Simple call-to-action (type `/main`)
+7. **Support** - How to get help (type `/help`)
+
+## Compliance Requirements
+
+Welcome messages must comply with advertising platform policies (Google Ads, Meta Ads, X Ads):
+
+- ❌ Avoid words like "income", "earnings", "returns", "profits"
+- ❌ Avoid phrases like "best opportunities", "passive income", "investment strategies"
+- ✅ Use terms like "analytics", "data aggregation", "educational purposes"
+- ✅ Include clear disclaimers about no financial advice
+- ✅ Focus on information and education, not financial outcomes
 
 ## Formatting
 

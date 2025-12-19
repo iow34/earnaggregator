@@ -1,19 +1,24 @@
 👋 <b>Welcome to ChainAdvisor Bot!</b>
 
-I help you find the best passive income opportunities across crypto exchanges.
+This bot aggregates publicly available Simple Earn data from major centralized exchanges.
+
+<b>⚠️ Disclaimer:</b>
+• No financial advice provided
+• Information for educational purposes only
+• Users make independent decisions
 
 <b>📱 How to enable the command menu:</b>
 1. Tap the menu icon (☰) at the bottom left of your keyboard
 2. Select "Menu" to see all available commands
 
 <b>🎯 Available Commands:</b>
-• /main - Show main menu with top yields
+• /main - Show main menu with product data
 • /help - Detailed guide on using the bot
-• /recommendations - Personalized earning strategies
+• /recommendations - Educational materials about products
 • /exchanges - Browse products by exchange
 
-<b>💡 Quick Start:</b>
-Just type /main to see the best earning opportunities right now!
+<b>💡 Getting Started:</b>
+Type /main to explore available product information.
 
 Need help? Type /help anytime.
 
