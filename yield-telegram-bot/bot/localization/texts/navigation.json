@@ -16,7 +16,7 @@
     "nav.of": "з",
     "nav.exchanges": "бірж",
     "nav.cancel": "❌ Скасувати",
-    "nav.go_to_main": "Go to main"
+    "nav.go_to_main": "Перейти на головну"
   },
   "ru": {
     "nav.back_to_list": "⬅️ Назад к списку",
@@ -35,7 +35,7 @@
     "nav.of": "из",
     "nav.exchanges": "бирж",
     "nav.cancel": "❌ Отмена",
-    "nav.go_to_main": "Перейти к основному"
+    "nav.go_to_main": "Перейти на главную"
   },
   "en": {
     "nav.back_to_list": "⬅️ Back to List",

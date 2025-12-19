@@ -24,11 +24,11 @@
     "loading.main_page": "🔄 Завантаження головної сторінки...",
     "disclaimer.title": "Chain Advisor",
     "disclaimer.subtitle": "crypto analytics bot",
-    "disclaimer.description": "This bot aggregates publicly available Simple Earn data from major centralized exchanges.",
-    "disclaimer.bullet1": "• No financial advice",
-    "disclaimer.bullet2": "• Informational and educational use only",
-    "disclaimer.bullet3": "• Users make independent decisions",
-    "disclaimer.cta": "Choose an option below to explore data."
+    "disclaimer.description": "Цей бот збирає загальнодоступні дані Simple Earn продуктівз основних централізованих бірж.",
+    "disclaimer.bullet1": "• Без фінансових порад",
+    "disclaimer.bullet2": "• Тільки для інформаційного та освітнього використання",
+    "disclaimer.bullet3": "• Користувачі приймають самостійні рішення",
+    "disclaimer.cta": "Виберіть опцію нижче, щоб переглянути дані."
   },
   "ru": {
     "loading.main_menu": "🔄 Загрузка главного меню, подождите...",
