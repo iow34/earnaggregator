@@ -71,7 +71,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Відкриваємо порт (Railway надає PORT через змінну середовища)
 EXPOSE 8000
 
-# Створюємо entrypoint.sh скрипт для Railway compatibility
+# Створюємо docker-entrypoint.sh скрипт для Railway compatibility
 RUN echo '#!/bin/bash\n\
 if [ "$SERVICE_NAME" = "yield-api" ]; then\n\
     echo "🚀 Запуск yield-api сервісу..."\n\
@@ -89,7 +89,7 @@ else\n\
     echo "❌ Невідомий SERVICE_NAME: $SERVICE_NAME"\n\
     echo "📋 Доступні сервіси: yield-api, telegram-bot"\n\
     exit 1\n\
-fi' > /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
+fi' > /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
 # Встановлюємо entrypoint
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
