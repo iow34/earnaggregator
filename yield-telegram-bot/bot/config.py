@@ -5,14 +5,14 @@ from typing import Dict, Optional, List
 
 class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str = Field(..., alias="BOT_TOKEN")
-    DATA_SERVICE_URL: AnyUrl = Field("http://yield-api:8000")
+    DATA_SERVICE_URL: AnyUrl = Field("https://go-to-the-exchange.up.railway.app")
     DEPLOY_ENV: str = Field("prod", alias="DEPLOY_ENV")
     # Railway автоматично генерований URL для data service
     RAILWAY_SERVICE_EARNAGGREGATOR_URL: Optional[str] = Field(None, alias="RAILWAY_SERVICE_EARNAGGREGATOR_URL")
     # Актуальний public URL для data service (з RAILWAY_PUBLIC_DOMAIN earnaggregator)
     DATA_SERVICE_PUBLIC_URL: Optional[str] = Field(None, alias="DATA_SERVICE_PUBLIC_URL")
     # Публічна адреса для трекінгових посилань (для HTML посилань в Telegram)
-    TRACKING_REDIRECT_URL: AnyUrl = Field("http://localhost:8000", alias="TRACKING_REDIRECT_URL")
+    TRACKING_REDIRECT_URL: AnyUrl = Field("https://go-to-the-exchange.up.railway.app", alias="TRACKING_REDIRECT_URL")
     REDIS_URL: str = Field("redis://redis:6379/1")
     DATABASE_URL: str = Field(...)
 
