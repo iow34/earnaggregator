@@ -179,14 +179,14 @@ async def language_back_to_main(callback: CallbackQuery, state: FSMContext) -> N
         loading_task = asyncio.create_task(show_loading_indicator())
 
         from bot.keyboards.reply import main_menu
-        from bot.handlers.main_menu import show_main_menu
+        from bot.handlers.main_menu import show_main_page
 
         try:
             await callback.message.answer(
                 localization.get_text("menu.main.placeholder", lang),
                 reply_markup=main_menu(lang),
             )
-            await show_main_menu(callback.message, state, lang=lang)
+            await show_main_page(callback.message, state, lang=lang)
         finally:
             # Скасовуємо індикатор завантаження, якщо він ще не запустився
             if loading_task and not loading_task.done():

@@ -219,7 +219,7 @@ async def main() -> None:
     async with lifespan_context():
         try:
             logger.info("✅ Бот запущено і готовий до роботи!")
-            logger.info("📋 Доступні команди: /start, /yield <SYMBOL>, /top, /help, /recommendations, /rec1-rec10, /exchanges")
+            logger.info("📋 Доступні команди: /main, /yield <SYMBOL>, /top, /help, /recommendations, /rec1-rec10, /exchanges")
 
             # Запуск polling
             await dp.start_polling(

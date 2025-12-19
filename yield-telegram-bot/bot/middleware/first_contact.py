@@ -2,7 +2,7 @@
 First Contact Middleware - показує привітальне повідомлення новим користувачам.
 
 Це middleware спрацьовує один раз для нового користувача при першому повідомленні,
-включно з командою /start.
+включно з командою /main.
 """
 
 from typing import Any, Callable, Dict, Awaitable

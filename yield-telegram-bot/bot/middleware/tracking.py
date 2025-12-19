@@ -123,7 +123,7 @@ class TrackingMiddleware(BaseMiddleware):
     def _get_message_action_type(self, message: Message) -> str:
         """Визначити тип дії для повідомлення."""
         if message.text:
-            if message.text.startswith("/start"):
+            if message.text.startswith("/main"):
                 return "command_start"
             elif message.text.startswith("/yield"):
                 return "command_yield"

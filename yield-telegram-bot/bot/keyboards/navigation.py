@@ -294,3 +294,23 @@ def refresh_button_keyboard(callback_data: str = "refresh_data", lang: str = "ua
             )
         ]
     ])
+
+
+def disclaimer_keyboard(lang: str = "en") -> InlineKeyboardMarkup:
+    """
+    Створити клавіатуру для disclaimer сторінки.
+
+    Args:
+        lang: Код мови
+
+    Returns:
+        Клавіатура з кнопкою "Go to main"
+    """
+    buttons = [
+        [InlineKeyboardButton(
+            text=localization.get_text("nav.go_to_main", lang),
+            callback_data="go_to_main"
+        )]
+    ]
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)

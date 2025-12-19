@@ -1,6 +1,6 @@
 # Welcome Messages
 
-This directory contains welcome messages that are shown to first-time users before they execute the `/start` command.
+This directory contains welcome messages that are shown to first-time users before they execute the `/main` command.
 
 ## Structure
 
@@ -33,11 +33,11 @@ Each welcome message should include:
    - Tap the menu icon (☰) at the bottom left
    - Select "Menu" to see available commands
 4. **Available Commands** - List of main commands:
-   - `/start` - Show main menu
+   - `/main` - Show main menu
    - `/help` - Detailed help
    - `/recommendations` - Personalized strategies
    - `/exchanges` - Browse by exchange
-5. **Quick Start** - Simple call-to-action (type `/start`)
+5. **Quick Start** - Simple call-to-action (type `/main`)
 6. **Support** - How to get help (type `/help`)
 
 ## Formatting

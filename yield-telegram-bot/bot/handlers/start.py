@@ -165,7 +165,7 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
         )
 
         # Встановити постійну клавіатуру (ReplyKeyboard)
-        # Для нових користувачів НЕ показуємо коротке привітання 
+        # Для нових користувачів НЕ показуємо коротке привітання
         # (вони вже отримали детальне welcome message з middleware)
         if is_existing_user:
             await message.answer(
@@ -179,10 +179,9 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
                 "📊",  # Просто емодзі щоб встановити клавіатуру
                 reply_markup=main_menu(lang)
             )
-        
-        # Показати головне меню
-        from bot.handlers.main_menu import show_main_menu
-        await show_main_menu(message, state, lang=lang)
+
+        # Показати disclaimer сторінку замість головного меню
+        await show_disclaimer_page(message, state, lang=lang)
         
         # Скасувати задачу індикатора якщо вона ще не виконалась
         if loading_task and not loading_task.done():
@@ -213,3 +212,85 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
         await message.answer(
             localization.get_error_text("error.general", temp_lang)
         )
+
+
+async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = "en") -> None:
+    """
+    Показати disclaimer сторінку з кнопкою "Go to main".
+
+    Args:
+        message: Повідомлення від користувача
+        state: Стан FSM
+        lang: Мова користувача
+    """
+    try:
+        # Формуємо текст disclaimer
+        title = localization.get_text("disclaimer.title", lang)
+        subtitle = localization.get_text("disclaimer.subtitle", lang)
+        description = localization.get_text("disclaimer.description", lang)
+        bullet1 = localization.get_text("disclaimer.bullet1", lang)
+        bullet2 = localization.get_text("disclaimer.bullet2", lang)
+        bullet3 = localization.get_text("disclaimer.bullet3", lang)
+        cta = localization.get_text("disclaimer.cta", lang)
+
+        text = f"🔍 <b>{title}</b>\n"
+        text += f"<i>{subtitle}</i>\n\n"
+        text += f"{description}\n\n"
+        text += f"{bullet1}\n{bullet2}\n{bullet3}\n\n"
+        text += f"<b>{cta}</b>"
+
+        # Імпортуємо клавіатуру
+        from bot.keyboards.navigation import disclaimer_keyboard
+
+        # Відправляємо повідомлення з клавіатурою
+        await message.answer(
+            text=text,
+            reply_markup=disclaimer_keyboard(lang),
+            parse_mode="HTML"
+        )
+
+        # Оновлюємо стан
+        await state.update_data(current_page="disclaimer", lang=lang)
+
+    except Exception as e:
+        logger.error(f"Помилка в show_disclaimer_page: {e}", exc_info=True)
+        # Fallback
+        fallback_text = localization.get_text("error.general", lang)
+        await message.answer(text=fallback_text)
+
+
+@router.callback_query(F.data == "go_to_main")
+async def go_to_main_handler(callback: CallbackQuery, state: FSMContext) -> None:
+    """
+    Обробник кнопки "Go to main" з disclaimer сторінки.
+    Переводить користувача на головну сторінку з фінансовими даними.
+    """
+    try:
+        await callback.answer()
+
+        user_data = await state.get_data()
+        lang = user_data.get("lang", "en")
+
+        # Показуємо індикатор завантаження
+        loading_text = localization.get_text("loading.main_page", lang)
+        loading_message = await callback.message.answer(loading_text)
+
+        # Імпортуємо та викликаємо функцію головної сторінки
+        from bot.handlers.main_menu import show_main_page
+
+        # Створюємо об'єкт Message для сумісності з show_main_page
+        # Використовуємо message з callback
+        await show_main_page(callback.message, state, lang)
+
+        # Видаляємо індикатор завантаження
+        try:
+            await loading_message.delete()
+        except Exception:
+            pass  # Повідомлення вже могло бути видалено
+
+    except Exception as e:
+        logger.error(f"Помилка в go_to_main_handler: {e}", exc_info=True)
+        # Fallback
+        lang = "en"  # fallback
+        fallback_text = localization.get_text("error.general", lang)
+        await callback.message.answer(text=fallback_text)

@@ -7,13 +7,13 @@ I help you find the best passive income opportunities across crypto exchanges.
 2. Select "Menu" to see all available commands
 
 <b>🎯 Available Commands:</b>
-• /start - Show main menu with top yields
+• /main - Show main menu with top yields
 • /help - Detailed guide on using the bot
 • /recommendations - Personalized earning strategies
 • /exchanges - Browse products by exchange
 
 <b>💡 Quick Start:</b>
-Just type /start to see the best earning opportunities right now!
+Just type /main to see the best earning opportunities right now!
 
 Need help? Type /help anytime.
 

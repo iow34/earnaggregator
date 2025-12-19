@@ -322,6 +322,142 @@ async def show_main_menu(
         await message.answer(text=fallback_text, reply_markup=main_menu_navigation(lang))
 
 
+async def show_main_page(
+    message: Message,
+    state: FSMContext,
+     lang: str = "ua") -> None:
+    """
+    Показати головну сторінку з топ продуктами та біржами.
+    Це основна функціональна сторінка, доступна через /main.
+    """
+    start_time = time.time()
+
+    try:
+        # Update language in state if passed
+        await state.update_data(lang=lang)
+
+        await cache_manager.initialize()
+        telegram_id = message.from_user.id
+
+        # 🔥 Використовуємо language_cache для мультимовного кешування
+        from bot.utils.language_cache import language_cache
+
+        async def refresh_main_menu():
+            api_client = APIClient()
+            try:
+                return await generate_main_menu_content(api_client, 0, lang)
+            finally:
+                await api_client.close()
+
+        cached_menu = await language_cache.get_localized_data(
+            key_prefix="main_menu",
+            lang=lang,
+            refresh_func=refresh_main_menu,
+            ttl=settings.MAIN_MENU_TTL
+        )
+
+        if cached_menu:
+            logger.info(f"🎯 Головна сторінка отримана з кешу ({lang})")
+            cached_text = cached_menu["text"]
+
+            # 🔄 Динамічна заміна прямих посилань на трекінгові для кожного користувача
+            try:
+                exchanges = [
+            "binance",
+            "bybit",
+            "bitmart",
+            "okx",
+            "mexc",
+            "gate",
+            "bitget",
+            "kraken",
+            "kucoin",
+             "htx"]
+
+                async def generate_tracking_link(exchange: str):
+                    try:
+                        tracking_url = await referral_link_generator.generate_link(
+                            telegram_id=telegram_id,
+                            exchange=exchange,
+                            page="1"
+                        )
+                        if tracking_url and tracking_url.startswith('http'):
+                            if 'localhost' not in tracking_url and '127.0.0.1' not in tracking_url and 'yield-api' not in tracking_url:
+                                return exchange, tracking_url
+                    except Exception as e:
+                        logger.warning(
+                            f"⚠️ Не вдалося згенерувати трекінгове посилання для {exchange}: {e}")
+                    return exchange, None
+
+                tracking_tasks = [generate_tracking_link(
+                    exchange) for exchange in exchanges]
+                tracking_results = await asyncio.gather(*tracking_tasks)
+
+                for exchange, tracking_url in tracking_results:
+                    if tracking_url:
+                        direct_url = _get_referral_url(exchange)
+                        if direct_url and direct_url != "#":
+                            escaped_direct = direct_url.replace('&', '&amp;')
+                            escaped_tracking = tracking_url.replace(
+                                '&', '&amp;')
+                            if escaped_direct in cached_text:
+                                cached_text = cached_text.replace(
+                                    escaped_direct, escaped_tracking)
+                                logger.debug(f"🔗 Замінено пряме посилання на трекінгове для {exchange}")
+            except Exception as e:
+                logger.error(
+    f"❌ Помилка заміни посилань в кешованому меню: {e}",
+     exc_info=True)
+
+            await message.answer(
+                text=cached_text,
+                # Assuming main_menu_navigation accepts lang
+                reply_markup=main_menu_navigation(lang),
+                parse_mode="HTML",
+                link_preview_options=LinkPreviewOptions(is_disabled=True)
+            )
+            await state.clear()
+            # Restore lang after clear
+            await state.update_data(current_page="main_menu", lang=lang)
+            return
+
+        logger.info("🔄 Генерація головної сторінки (кеш відсутній)")
+        await state.clear()
+        await state.update_data(current_page="main_menu", lang=lang)
+
+        api_client = APIClient()
+        try:
+            menu_data = await generate_main_menu_content(api_client, telegram_id, lang)
+            text = menu_data["text"]
+        except Exception as e:
+            logger.error(
+    f"❌ Критична помилка генерації меню: {e}",
+     exc_info=True)
+            text = (f"💰 <b>{localization.get_text('section.main_title', lang)}</b>\n\n"
+                   f"⚠️ {localization.get_text('error.system_unavailable', lang)}\n\n"
+                   f"{localization.get_text('error.try_different_criteria', lang)}")
+        finally:
+            await api_client.close()
+
+        await message.answer(
+            text=text,
+            reply_markup=main_menu_navigation(lang),
+            parse_mode="HTML",
+            link_preview_options=LinkPreviewOptions(is_disabled=True)
+        )
+
+        duration = time.time() - start_time
+        logger.info(
+            f"✅ Головна сторінка згенеровано та показано за {duration:.3f}с")
+
+    except Exception as e:
+        logger.error(
+    f"❌ Критична помилка в show_main_page: {e}",
+     exc_info=True)
+        fallback_text = localization.get_text("error.general", lang)
+        await message.answer(text=fallback_text, reply_markup=main_menu_navigation(lang))
+
+
 async def _format_top_10_section(
     api_client: APIClient,
      lang: str = "ua") -> str:
@@ -772,6 +908,36 @@ async def all_exchanges_handler(
             await callback.message.delete()
     except Exception as e:
         logger.error(f"Помилка в all_exchanges_handler: {e}", exc_info=True)
+
+
+@router.message(Command("main"))
+async def main_command_handler(
+    message: Message,
+    state: FSMContext) -> None:
+    """Обробник команди /main - показує головну сторінку з фінансовими даними."""
+    try:
+        user_data = await state.get_data()
+        lang = user_data.get("lang", "ua")
+
+        # Показуємо індикатор завантаження
+        loading_text = localization.get_text("loading.main_menu", lang)
+        loading_message = await message.answer(loading_text)
+
+        # Викликаємо функцію показу головної сторінки
+        await show_main_page(message, state, lang)
+
+        # Видаляємо індикатор завантаження якщо він ще існує
+        try:
+            await loading_message.delete()
+        except Exception:
+            pass  # Повідомлення вже могло бути видалено
+
+    except Exception as e:
+        logger.error(f"Помилка в main_command_handler: {e}", exc_info=True)
+        # Fallback повідомлення
+        lang = "ua"  # fallback
+        fallback_text = localization.get_text("error.general", lang)
+        await message.answer(text=fallback_text)
 
 
 @router.message(Command("exchanges"))

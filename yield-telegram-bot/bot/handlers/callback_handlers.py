@@ -504,8 +504,8 @@ async def select_type_handler(callback: CallbackQuery, state: FSMContext) -> Non
             await _display_locked_products(callback.message, state, page=1, is_callback=True, lang=lang)
         else:
             # Fallback до головного меню
-            from bot.handlers.main_menu import show_main_menu
-            await show_main_menu(callback.message, state, lang=lang)
+            from bot.handlers.main_menu import show_main_page
+            await show_main_page(callback.message, state, lang=lang)
         
     except Exception as e:
         logger.error(f"Помилка в select_type_handler: {e}", exc_info=True)
@@ -726,8 +726,8 @@ async def reset_filters_handler(callback: CallbackQuery, state: FSMContext) -> N
             await _display_all_products(callback.message, state, page=1, is_callback=True, lang=lang)
         else:
             # Fallback - повернутись до головного меню
-            from bot.handlers.main_menu import show_main_menu
-            await show_main_menu(callback.message, state, lang=lang)
+            from bot.handlers.main_menu import show_main_page
+            await show_main_page(callback.message, state, lang=lang)
         
     except Exception as e:
         logger.error(f"Помилка в reset_filters_handler: {e}", exc_info=True)
@@ -762,8 +762,8 @@ async def back_to_exchange_handler(callback: CallbackQuery, state: FSMContext) -
             )
         else:
             # Якщо контекст не знайдено, повернути до головного меню
-            from bot.handlers.main_menu import show_main_menu
-            await show_main_menu(callback.message, state, lang=lang)
+            from bot.handlers.main_menu import show_main_page
+            await show_main_page(callback.message, state, lang=lang)
 
     except Exception as e:
         logger.error(f"Помилка в back_to_exchange_handler: {e}", exc_info=True)
@@ -801,8 +801,8 @@ async def back_from_sort_handler(callback: CallbackQuery, state: FSMContext) -> 
             await _display_exchange_products(callback.message, state, provider, page=1, is_callback=True, lang=lang)
         else:
             # Якщо сторінка не визначена, повернутись до головного меню
-            from bot.handlers.main_menu import show_main_menu
-            await show_main_menu(callback.message, state, lang=lang)
+            from bot.handlers.main_menu import show_main_page
+            await show_main_page(callback.message, state, lang=lang)
 
     except Exception as e:
         logger.error(f"Помилка в back_from_sort_handler: {e}", exc_info=True)
@@ -837,8 +837,8 @@ async def back_to_filters_handler(callback: CallbackQuery, state: FSMContext) ->
             await _display_locked_products(callback.message, state, page=1, is_callback=True, lang=lang)
         else:
             # Якщо сторінка не визначена, повернутись до головного меню
-            from bot.handlers.main_menu import show_main_menu
-            await show_main_menu(callback.message, state, lang=lang)
+            from bot.handlers.main_menu import show_main_page
+            await show_main_page(callback.message, state, lang=lang)
 
     except Exception as e:
         logger.error(f"Помилка в back_to_filters_handler: {e}", exc_info=True)
@@ -931,8 +931,8 @@ async def cancel_filter_manual_exchange_input(callback: CallbackQuery, state: FS
             from bot.handlers.filtered_products import _display_all_products
             await _display_all_products(callback.message, state, page=1, is_callback=True, lang=lang)
         else:
-            from bot.handlers.main_menu import show_main_menu
-            await show_main_menu(callback.message, state, lang=lang)
+            from bot.handlers.main_menu import show_main_page
+            await show_main_page(callback.message, state, lang=lang)
 
     except Exception as e:
         logger.error(f"Помилка в cancel_filter_manual_exchange_input: {e}", exc_info=True)
@@ -1030,11 +1030,11 @@ async def cancel_filter_manual_product_input(callback: CallbackQuery, state: FSM
                 from bot.handlers.exchange_products import _display_exchange_products
                 await _display_exchange_products(callback.message, state, provider, page=current_page_num, is_callback=True, lang=lang)
             else:
-                from bot.handlers.main_menu import show_main_menu
-                await show_main_menu(callback.message, state, lang=lang)
+                from bot.handlers.main_menu import show_main_page
+                await show_main_page(callback.message, state, lang=lang)
         else:
-            from bot.handlers.main_menu import show_main_menu
-            await show_main_menu(callback.message, state, lang=lang)
+            from bot.handlers.main_menu import show_main_page
+            await show_main_page(callback.message, state, lang=lang)
 
     except Exception as e:
         logger.error(f"Помилка в cancel_filter_manual_product_input: {e}", exc_info=True)

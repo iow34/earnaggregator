@@ -19,7 +19,16 @@
     "messages.popularity_sort_unavailable": "Сортування за популярністю недоступне для цієї біржі, показано продукти відсортовані за APY",
     "error.general": "❌ Сталася помилка. Спробуйте пізніше.",
     "error.loading_products": "❌ Помилка завантаження продуктів. Спробуйте пізніше.",
-    "error.showing_help": "❌ Сталася помилка при показі довідки."
+    "error.showing_help": "❌ Сталася помилка при показі довідки.",
+    "loading.disclaimer": "🔄 Завантаження disclaimer...",
+    "loading.main_page": "🔄 Завантаження головної сторінки...",
+    "disclaimer.title": "Chain Advisor",
+    "disclaimer.subtitle": "crypto analytics bot",
+    "disclaimer.description": "This bot aggregates publicly available Simple Earn data from major centralized exchanges.",
+    "disclaimer.bullet1": "• No financial advice",
+    "disclaimer.bullet2": "• Informational and educational use only",
+    "disclaimer.bullet3": "• Users make independent decisions",
+    "disclaimer.cta": "Choose an option below to explore data."
   },
   "ru": {
     "loading.main_menu": "🔄 Загрузка главного меню, подождите...",
@@ -41,7 +50,16 @@
     "messages.popularity_sort_unavailable": "Сортировка по популярности недоступна для этой биржи, показаны продукты отсортированные по APY",
     "error.general": "❌ Произошла ошибка. Попробуйте позже.",
     "error.loading_products": "❌ Ошибка загрузки продуктов. Попробуйте позже.",
-    "error.showing_help": "❌ Произошла ошибка при показе справки."
+    "error.showing_help": "❌ Произошла ошибка при показе справки.",
+    "loading.disclaimer": "🔄 Загрузка disclaimer...",
+    "loading.main_page": "🔄 Загрузка главной страницы...",
+    "disclaimer.title": "Chain Advisor",
+    "disclaimer.subtitle": "crypto analytics bot",
+    "disclaimer.description": "Этот бот агрегирует общедоступные данные Simple Earn с основных централизованных бирж.",
+    "disclaimer.bullet1": "• Не является финансовой консультацией",
+    "disclaimer.bullet2": "• Только информационное и образовательное использование",
+    "disclaimer.bullet3": "• Пользователи принимают независимые решения",
+    "disclaimer.cta": "Выберите вариант ниже для изучения данных."
   },
   "en": {
     "loading.main_menu": "🔄 Loading main menu, please wait...",
@@ -63,7 +81,16 @@
     "messages.popularity_sort_unavailable": "Popularity sorting is not available for this exchange, products are shown sorted by APY",
     "error.general": "❌ An error occurred. Please try again later.",
     "error.loading_products": "❌ Error loading products. Please try again later.",
-    "error.showing_help": "❌ Error displaying help."
+    "error.showing_help": "❌ Error displaying help.",
+    "loading.disclaimer": "🔄 Loading disclaimer...",
+    "loading.main_page": "🔄 Loading main page...",
+    "disclaimer.title": "Chain Advisor",
+    "disclaimer.subtitle": "crypto analytics bot",
+    "disclaimer.description": "This bot aggregates publicly available Simple Earn data from major centralized exchanges.",
+    "disclaimer.bullet1": "• No financial advice",
+    "disclaimer.bullet2": "• Informational and educational use only",
+    "disclaimer.bullet3": "• Users make independent decisions",
+    "disclaimer.cta": "Choose an option below to explore data."
   }
 }
 

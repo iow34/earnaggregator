@@ -6,6 +6,8 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from bot.handlers.main_menu import (
     show_main_menu,
+    show_main_page,
+    main_command_handler,
     _format_top_10_section,
     _format_exchanges_quick_view,
     _format_single_exchange_preview,
@@ -301,3 +303,55 @@ async def test_format_single_exchange_preview_partial_data():
     assert "ETH 5.8%" in text
     assert "SOL" not in text  # SOL немає в даних
     assert "USDT" not in text  # USDT немає в даних
+
+
+@pytest.mark.asyncio
+async def test_main_command_handler():
+    """Тест обробки команди /main."""
+    # Mock message та state
+    message = AsyncMock()
+    message.from_user = AsyncMock()
+    message.from_user.id = 12345
+    message.answer = AsyncMock()
+
+    state = AsyncMock()
+    state.get_data = AsyncMock(return_value={"lang": "ua"})
+
+    # Mock loading message
+    loading_message = AsyncMock()
+    message.answer.return_value = loading_message
+
+    # Mock show_main_page (щоб уникнути складних залежностей)
+    with pytest.mock.patch('bot.handlers.main_menu.show_main_page') as mock_show_main_page:
+        # Викликаємо функцію
+        await main_command_handler(message, state)
+
+        # Перевіряємо що loading message було надіслано
+        message.answer.assert_called_once()
+
+        # Перевіряємо що show_main_page було викликано
+        mock_show_main_page.assert_called_once_with(message, state, "ua")
+
+        # Перевіряємо що loading message було видалено
+        loading_message.delete.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_main_command_handler_error():
+    """Тест обробки помилки в команді /main."""
+    # Mock message та state
+    message = AsyncMock()
+    message.from_user = AsyncMock()
+    message.from_user.id = 12345
+    message.answer = AsyncMock()
+
+    state = AsyncMock()
+    state.get_data = AsyncMock(return_value={"lang": "ua"})
+
+    # Mock show_main_page щоб викликати помилку
+    with pytest.mock.patch('bot.handlers.main_menu.show_main_page', side_effect=Exception("Test error")):
+        # Викликаємо функцію
+        await main_command_handler(message, state)
+
+        # Перевіряємо що було два виклики answer (loading + error)
+        assert message.answer.call_count == 2
