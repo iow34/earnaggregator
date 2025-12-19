@@ -55,10 +55,12 @@ WORKDIR /app
 # - yield-telegram-bot/bot/ -> /app/bot/ (для telegram-bot) - включає static_tracking_links.json
 # - VERSION -> /app/VERSION (для версійності)
 # - yield-data-service/scripts/ -> /app/scripts/ (для міграцій)
+# - docker-entrypoint.sh -> /docker-entrypoint.sh (для Railway)
 COPY yield-data-service/app /app/app
 COPY yield-telegram-bot/bot /app/bot
 COPY VERSION /app/VERSION
 COPY yield-data-service/scripts /app/scripts
+COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 # Створюємо директорії для логів та тестів
 RUN mkdir -p /app/logs /app/tests
@@ -71,25 +73,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Відкриваємо порт (Railway надає PORT через змінну середовища)
 EXPOSE 8000
 
-# Створюємо docker-entrypoint.sh скрипт для Railway compatibility
-RUN echo '#!/bin/bash\n\
-if [ "$SERVICE_NAME" = "yield-api" ]; then\n\
-    echo "🚀 Запуск yield-api сервісу..."\n\
-    echo "📋 SERVICE_NAME: $SERVICE_NAME"\n\
-    echo "🌐 PORT: ${PORT:-8000}"\n\
-    echo "🏠 HOST: ${HOST:-0.0.0.0}"\n\
-    PORT=${PORT:-8000}\n\
-    HOST=${HOST:-0.0.0.0}\n\
-    echo "🔧 Запуск uvicorn з параметрами: --host $HOST --port $PORT"\n\
-    exec python -m uvicorn app.main:app --host $HOST --port $PORT --log-level info\n\
-elif [ "$SERVICE_NAME" = "telegram-bot" ]; then\n\
-    echo "🤖 Запуск telegram-bot сервісу..."\n\
-    exec python -m bot.main\n\
-else\n\
-    echo "❌ Невідомий SERVICE_NAME: $SERVICE_NAME"\n\
-    echo "📋 Доступні сервіси: yield-api, telegram-bot"\n\
-    exit 1\n\
-fi' > /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
+# Встановлюємо права на виконання для entrypoint скрипта
+RUN chmod +x /docker-entrypoint.sh
 
 # Встановлюємо entrypoint
 ENTRYPOINT ["/docker-entrypoint.sh"]
