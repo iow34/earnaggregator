@@ -60,7 +60,7 @@ COPY yield-data-service/app /app/app
 COPY yield-telegram-bot/bot /app/bot
 COPY VERSION /app/VERSION
 COPY yield-data-service/scripts /app/scripts
-COPY entrypoint.sh /entrypoint.sh
+COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 # Створюємо директорії для логів та тестів
 RUN mkdir -p /app/logs /app/tests
@@ -74,7 +74,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 EXPOSE 8000
 
 # Встановлюємо права на виконання для entrypoint скрипта
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 # Використовуємо CMD замість ENTRYPOINT для Railway compatibility
-CMD ["/entrypoint.sh"]
+CMD ["/docker-entrypoint.sh"]
