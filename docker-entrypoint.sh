@@ -4,8 +4,13 @@ SERVICE_NAME=${SERVICE_NAME:-telegram-bot}
 
 if [ "$SERVICE_NAME" = "redis" ]; then
     echo "🔴 Запуск Redis сервісу..."
-    # For Redis service, start Redis server
-    exec redis-server
+    # For Redis service, start Redis server with custom args if provided
+    if [ -n "$REDIS_ARGS" ]; then
+        echo "🔧 Використовуємо REDIS_ARGS: $REDIS_ARGS"
+        exec redis-server $REDIS_ARGS
+    else
+        exec redis-server
+    fi
 elif [ "$SERVICE_NAME" = "yield-api" ]; then
     echo "🚀 Запуск yield-api сервісу..."
     echo "📋 SERVICE_NAME: $SERVICE_NAME"
