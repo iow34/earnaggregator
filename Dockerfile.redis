@@ -1,0 +1,11 @@
+# Dockerfile for Redis service
+FROM redis:7-alpine
+
+# Copy custom redis configuration if needed
+# COPY redis.conf /etc/redis/redis.conf
+
+# Expose Redis port
+EXPOSE 6379
+
+# Use default Redis command
+CMD ["redis-server"]

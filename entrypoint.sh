@@ -2,7 +2,11 @@
 # Default to telegram-bot if SERVICE_NAME is not set (for Railway compatibility)
 SERVICE_NAME=${SERVICE_NAME:-telegram-bot}
 
-if [ "$SERVICE_NAME" = "yield-api" ]; then
+if [ "$SERVICE_NAME" = "redis" ]; then
+    echo "🔴 Запуск Redis сервісу..."
+    # For Redis service, start Redis server
+    exec redis-server
+elif [ "$SERVICE_NAME" = "yield-api" ]; then
     echo "🚀 Запуск yield-api сервісу..."
     echo "📋 SERVICE_NAME: $SERVICE_NAME"
     echo "🌐 PORT: ${PORT:-8000}"
@@ -16,6 +20,6 @@ elif [ "$SERVICE_NAME" = "telegram-bot" ]; then
     exec python -m bot.main
 else
     echo "❌ Невідомий SERVICE_NAME: $SERVICE_NAME"
-    echo "📋 Доступні сервіси: yield-api, telegram-bot"
+    echo "📋 Доступні сервіси: redis, yield-api, telegram-bot"
     exit 1
 fi
