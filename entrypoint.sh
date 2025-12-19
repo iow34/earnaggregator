@@ -1,4 +1,7 @@
 #!/bin/bash
+# Default to telegram-bot if SERVICE_NAME is not set (for Railway compatibility)
+SERVICE_NAME=${SERVICE_NAME:-telegram-bot}
+
 if [ "$SERVICE_NAME" = "yield-api" ]; then
     echo "🚀 Запуск yield-api сервісу..."
     echo "📋 SERVICE_NAME: $SERVICE_NAME"
