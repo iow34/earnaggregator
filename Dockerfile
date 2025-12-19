@@ -76,5 +76,5 @@ EXPOSE 8000
 # Встановлюємо права на виконання для entrypoint скрипта
 RUN chmod +x /entrypoint.sh
 
-# Встановлюємо entrypoint
-ENTRYPOINT ["/entrypoint.sh"]
+# Використовуємо CMD замість ENTRYPOINT для Railway compatibility
+CMD ["/entrypoint.sh"]
