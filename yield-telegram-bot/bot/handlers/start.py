@@ -324,19 +324,8 @@ async def go_to_main_handler(callback: CallbackQuery, state: FSMContext) -> None
         # Використовуємо message з callback
         await show_main_page(callback.message, state, lang)
 
-        # Встановлюємо reply keyboard після успішного показу головного меню
-        # Це робиться окремо з затримкою, щоб уникнути проблем з desktop версією Telegram
-        # при швидкій послідовності повідомлень з різними типами клавіатур
-        # Desktop версія може не встигнути обробити перше повідомлення з inline keyboard
-        await asyncio.sleep(0.5)  # Затримка для desktop версії
-        
-        try:
-            await callback.message.answer(
-                "📊",  # Емодзі для встановлення клавіатури
-                reply_markup=main_menu(lang)
-            )
-        except Exception as e:
-            logger.warning(f"⚠️ Не вдалося встановити reply keyboard: {e}")
+        # Reply keyboard встановлюється через show_main_page
+        # Не відправляємо окреме повідомлення з емодзі
 
         # Видаляємо індикатор завантаження
         try:
