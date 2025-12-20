@@ -375,7 +375,13 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         await show_main_page(callback.message, state, lang)
         logger.info(f"✅ show_main_page успішно виконано для користувача {callback.from_user.id}")
 
-        # Reply keyboard вже встановлено в show_main_page()
+        # Встановити Reply keyboard після переходу до головного меню
+        from bot.keyboards.reply import main_menu
+        await callback.message.answer(
+            text=localization.get_text("menu.main.placeholder", lang),
+            reply_markup=main_menu(lang)
+        )
+        logger.info(f"✅ Reply keyboard встановлено для користувача {callback.from_user.id}")
 
         # Очистити стан обробки
         await state.set_state(None)
