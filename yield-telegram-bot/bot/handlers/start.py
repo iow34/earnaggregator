@@ -189,23 +189,23 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
             await state.clear()
         except Exception as state_error:
             logger.warning(f"⚠️ Не вдалося очистити FSM стан: {state_error}")
-    
-    # Determine initial language from Telegram for loading message (fallback to 'ua')
+
+        # Determine initial language from Telegram for loading message (fallback to 'ua')
         tg_lang = callback.from_user.language_code
-    temp_lang = "ua"  # default
+        temp_lang = "ua"  # default
         logger.info(f"🌐 /main (from start): Telegram language_code='{tg_lang}', determining temp_lang for loading message")
 
-    if tg_lang:
-        tg_lang_lower = tg_lang.lower()
-        if tg_lang_lower.startswith("ru") or tg_lang_lower == "be":  # Russian or Belarusian
-            temp_lang = "ru"
-        elif tg_lang_lower.startswith("en"):
-            temp_lang = "en"
-        elif tg_lang_lower.startswith("uk") or tg_lang_lower == "ua":  # Ukrainian
-            temp_lang = "ua"
-        else:
+        if tg_lang:
+            tg_lang_lower = tg_lang.lower()
+            if tg_lang_lower.startswith("ru") or tg_lang_lower == "be":  # Russian or Belarusian
+                temp_lang = "ru"
+            elif tg_lang_lower.startswith("en"):
+                temp_lang = "en"
+            elif tg_lang_lower.startswith("uk") or tg_lang_lower == "ua":  # Ukrainian
+                temp_lang = "ua"
+            else:
                 logger.warning(f"🌐 /main (from start): Unknown language_code='{tg_lang}', using default 'ua'")
-    else:
+        else:
             logger.info("🌐 /main (from start): No language_code from Telegram, using default 'ua'")
 
         logger.info(f"🌐 /main (from start): Determined temp_lang='{temp_lang}' for loading message, user {callback.from_user.id}")
@@ -258,26 +258,26 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         # Перевірка чи користувач вже існує
         is_existing_user = False
         try:
-        async with get_database_session() as check_session:
+            async with get_database_session() as check_session:
                 stmt_check = select(TelegramUser).where(TelegramUser.telegram_id == callback.from_user.id)
-            result_check = await check_session.execute(stmt_check)
-            is_existing_user = result_check.scalar_one_or_none() is not None
+                result_check = await check_session.execute(stmt_check)
+                is_existing_user = result_check.scalar_one_or_none() is not None
         except Exception as db_error:
             logger.error(f"❌ Помилка перевірки існування користувача в БД: {db_error}", exc_info=True)
             is_existing_user = False
-        
+
         # Реєстрація користувача в БД
         try:
-        async with get_database_session() as session:
-            user = await get_or_create_user(
-                session=session,
+            async with get_database_session() as session:
+                user = await get_or_create_user(
+                    session=session,
                     telegram_id=callback.from_user.id,
                     username=callback.from_user.username,
                     first_name=callback.from_user.first_name,
                     last_name=callback.from_user.last_name,
-                language=temp_lang
-            )
-            lang = user.language
+                    language=temp_lang
+                )
+                lang = user.language
         except Exception as db_create_error:
             logger.error(f"❌ Помилка створення користувача в БД: {db_create_error}", exc_info=True)
             lang = temp_lang
@@ -317,9 +317,9 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
                 loading_message = None
 
         # Видаляємо loading message якщо він був відправлений
-                if loading_message:
+        if loading_message:
             try:
-                    await loading_message.delete()
+                await loading_message.delete()
                 await asyncio.sleep(0.3)
             except Exception as del_error:
                 logger.debug(f"Не вдалось видалити індикатор завантаження: {del_error}")
@@ -359,41 +359,5 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
             logger.error(f"❌ Критична помилка відправки fallback в /main: {fallback_error}")
 
 
-@router.callback_query(F.data == "go_to_main")
-async def go_to_main_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """
-    Обробник кнопки "Go to main" з disclaimer сторінки.
-    Переводить користувача на головну сторінку з фінансовими даними.
-    """
-    try:
-        await callback.answer()
-
-        user_data = await state.get_data()
-        lang = user_data.get("lang", "en")
-
-        # Показуємо індикатор завантаження
-        loading_text = localization.get_text("loading.main_page", lang)
-        loading_message = await callback.message.answer(loading_text)
-
-        # Імпортуємо та викликаємо функцію головної сторінки
-        from bot.handlers.main_menu import show_main_page
-
-        # Створюємо об'єкт Message для сумісності з show_main_page
-        # Використовуємо message з callback
-        await show_main_page(callback.message, state, lang)
-
-        # Reply keyboard встановлюється через show_main_page
-        # Не відправляємо окреме повідомлення з емодзі
-
-        # Видаляємо індикатор завантаження
-        try:
-            await loading_message.delete()
-        except Exception:
-            pass  # Повідомлення вже могло бути видалено
-
-    except Exception as e:
-        logger.error(f"Помилка в go_to_main_handler: {e}", exc_info=True)
-        # Fallback
-        lang = "en"  # fallback
-        fallback_text = localization.get_text("error.general", lang)
-        await callback.message.answer(text=fallback_text)
+# Видалено: звичайний go_to_main handler більше не потрібен,
+# оскільки show_disclaimer_page використовує умовну клавіатуру
