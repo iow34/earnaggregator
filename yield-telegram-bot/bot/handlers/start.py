@@ -113,6 +113,7 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
         # Створюємо клавіатуру залежно від того, звідки викликано
         from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
         from bot.keyboards.reply import main_menu
+        from bot.keyboards.navigation import disclaimer_keyboard  # Імпортуємо тут
 
         if from_start:
             # Для /start використовуємо кнопку з callback_data="go_to_main_from_start"
@@ -123,18 +124,19 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
             keyboard = start_keyboard
         else:
             # Для інших випадків використовуємо звичайну disclaimer клавіатуру
-            from bot.keyboards.navigation import disclaimer_keyboard
             keyboard = disclaimer_keyboard(lang)
 
         # Відправляємо disclaimer з inline keyboard
         # Для нових користувачів reply keyboard буде встановлено після натискання "Go to main"
         # щоб уникнути проблем з desktop версією Telegram при швидкій послідовності повідомлень
+        success = False
         try:
             await message.answer(
                 text=text,
                 reply_markup=keyboard,
                 parse_mode="HTML"
             )
+            success = True
         except Exception as send_error:
             logger.error(f"❌ Помилка відправки disclaimer: {send_error}", exc_info=True)
             # Fallback: спробувати відправити без HTML форматування
@@ -143,18 +145,25 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
                 fallback_text = text.replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", "")
                 await message.answer(
                     text=fallback_text,
-                    reply_markup=disclaimer_keyboard(lang),
+                    reply_markup=keyboard,  # Використовуємо ту саму клавіатуру, що й в основному коді
                     parse_mode=None
                 )
+                success = True
             except Exception as fallback_error:
                 logger.error(f"❌ Помилка fallback відправки disclaimer: {fallback_error}")
                 # Останній fallback - просто текст
-                await message.answer(
-                    text=localization.get_text("error.general", lang)
-                )
+                try:
+                    await message.answer(
+                        text=localization.get_text("error.general", lang),
+                        parse_mode=None
+                    )
+                    success = True
+                except Exception as final_error:
+                    logger.error(f"❌ Критична помилка: не вдалося відправити жодне повідомлення: {final_error}")
 
-        # Оновлюємо стан
-        await state.update_data(current_page="disclaimer", lang=lang)
+        # Оновлюємо стан тільки після успішної відправки
+        if success:
+            await state.update_data(current_page="disclaimer", lang=lang)
 
     except Exception as e:
         logger.error(f"Помилка в show_disclaimer_page: {e}", exc_info=True)
