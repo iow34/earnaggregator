@@ -172,14 +172,14 @@ def create_dispatcher() -> Dispatcher:
 
     # Реєстрація middleware (порядок важливий!)
     dp.update.middleware(LoggingMiddleware())  # Логування всіх апдейтів
-    # dp.update.middleware(TrackingMiddleware())  # ❌ ТИМЧАСОВО ВІДКЛЮЧЕНО - для тестування /start
+    dp.update.middleware(TrackingMiddleware())  # Трекінг всіх апдейтів
     # FirstContactMiddleware видалено - welcome messages більше не відправляються,
     # оскільки disclaimer в /start містить всю необхідну інформацію
-    # dp.message.middleware(ThrottlingMiddleware(  # ❌ ТИМЧАСОВО ВІДКЛЮЧЕНО - для тестування /start
-    #     redis_url=settings.REDIS_URL,
-    #     rate_limit=1,  # 1 повідомлення за 2 секунди
-    #     time_window=2
-    # ))
+    dp.message.middleware(ThrottlingMiddleware(  # Антифлуд тільки для повідомлень
+        redis_url=settings.REDIS_URL,
+        rate_limit=1,  # 1 повідомлення за 2 секунди
+        time_window=2
+    ))
 
     # Реєстрація handlers (порядок важливий - від специфічних до загальних)
     dp.include_router(callback_handlers.router)  # Спочатку callback handlers
