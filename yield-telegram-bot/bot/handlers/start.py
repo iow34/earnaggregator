@@ -44,6 +44,12 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
             await message.answer("❌ Error: Unable to identify user", parse_mode=None)
             return
 
+        # Очищуємо стан на початку щоб уникнути конфліктів з попередніми станами
+        try:
+            await state.clear()
+        except Exception as state_error:
+            logger.warning(f"⚠️ Не вдалося очистити FSM стан: {state_error}")
+
         # Визначаємо мову з Telegram для disclaimer
         tg_lang = message.from_user.language_code
         lang = "ua"  # default
@@ -82,8 +88,6 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
         from_start: Чи викликано з команди /start (для вибору правильної кнопки)
     """
     try:
-        # Імпортуємо функцію екранування HTML
-        from bot.utils.formatters import _escape_html
 
         # Формуємо текст disclaimer з екрануванням HTML
         title = _escape_html(localization.get_text("disclaimer.title", lang))
@@ -124,7 +128,7 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
             keyboard = start_keyboard
         else:
             # Для інших випадків використовуємо звичайну disclaimer клавіатуру
-            keyboard = disclaimer_keyboard(lang)
+            keyboard = disclaimer_keyboard(lang)  # disclaimer_keyboard вже імпортований на початку
 
         # Відправляємо disclaimer з inline keyboard
         # Для нових користувачів reply keyboard буде встановлено після натискання "Go to main"
@@ -264,18 +268,8 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         except Exception as e:
             logger.warning(f"⚠️ Помилка tracking реєстрації в /main: {e}")
         
-        # Перевірка чи користувач вже існує
+        # Реєстрація користувача в БД (з перевіркою існування)
         is_existing_user = False
-        try:
-            async with get_database_session() as check_session:
-                stmt_check = select(TelegramUser).where(TelegramUser.telegram_id == callback.from_user.id)
-                result_check = await check_session.execute(stmt_check)
-                is_existing_user = result_check.scalar_one_or_none() is not None
-        except Exception as db_error:
-            logger.error(f"❌ Помилка перевірки існування користувача в БД: {db_error}", exc_info=True)
-            is_existing_user = False
-        
-        # Реєстрація користувача в БД
         try:
             async with get_database_session() as session:
                 user = await get_or_create_user(
@@ -287,9 +281,13 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
                     language=temp_lang
                 )
                 lang = user.language
+                # Спроба визначити чи користувач вже існував (груба перевірка)
+                # Якщо час створення і оновлення відрізняються, то користувач вже існував
+                is_existing_user = hasattr(user, 'created_at') and hasattr(user, 'updated_at') and user.created_at != user.updated_at
         except Exception as db_create_error:
             logger.error(f"❌ Помилка створення користувача в БД: {db_create_error}", exc_info=True)
             lang = temp_lang
+            is_existing_user = False
             
         # Save language to state
         await state.update_data(language=lang)
@@ -332,10 +330,13 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         if loading_message:
             try:
                 await loading_message.delete()
-                await asyncio.sleep(0.3)
+                await asyncio.sleep(0.5)  # Збільшена затримка для desktop клієнта
             except Exception as del_error:
                 logger.debug(f"Не вдалось видалити індикатор завантаження: {del_error}")
-                await asyncio.sleep(0.3)
+                await asyncio.sleep(0.5)
+
+        # Додаткова затримка перед показом головної сторінки для desktop клієнта
+        await asyncio.sleep(0.3)
 
         # Показати головну сторінку замість disclaimer (бо disclaimer вже був показаний в /start)
         from bot.handlers.main_menu import show_main_page
