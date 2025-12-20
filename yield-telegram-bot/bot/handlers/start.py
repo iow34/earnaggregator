@@ -219,14 +219,17 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
         is_new_user: Чи це новий користувач (для встановлення клавіатури)
     """
     try:
-        # Формуємо текст disclaimer
-        title = localization.get_text("disclaimer.title", lang)
-        subtitle = localization.get_text("disclaimer.subtitle", lang)
-        description = localization.get_text("disclaimer.description", lang)
-        bullet1 = localization.get_text("disclaimer.bullet1", lang)
-        bullet2 = localization.get_text("disclaimer.bullet2", lang)
-        bullet3 = localization.get_text("disclaimer.bullet3", lang)
-        cta = localization.get_text("disclaimer.cta", lang)
+        # Імпортуємо функцію екранування HTML
+        from bot.utils.formatters import _escape_html
+        
+        # Формуємо текст disclaimer з екрануванням HTML
+        title = _escape_html(localization.get_text("disclaimer.title", lang))
+        subtitle = _escape_html(localization.get_text("disclaimer.subtitle", lang))
+        description = _escape_html(localization.get_text("disclaimer.description", lang))
+        bullet1 = _escape_html(localization.get_text("disclaimer.bullet1", lang))
+        bullet2 = _escape_html(localization.get_text("disclaimer.bullet2", lang))
+        bullet3 = _escape_html(localization.get_text("disclaimer.bullet3", lang))
+        cta = _escape_html(localization.get_text("disclaimer.cta", lang))
 
         text = f"🔍 <b>{title}</b>\n"
         text += f"<i>{subtitle}</i>\n\n"
@@ -238,18 +241,28 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
         from bot.keyboards.navigation import disclaimer_keyboard
         from bot.keyboards.reply import main_menu
 
-        # Відправляємо повідомлення з клавіатурою
-        await message.answer(
-            text=text,
-            reply_markup=disclaimer_keyboard(lang),
-            parse_mode="HTML"
-        )
-        
-        # Для нових користувачів встановлюємо reply keyboard
+        # Для нових користувачів об'єднуємо повідомлення з reply keyboard
+        # щоб уникнути проблем з desktop версією Telegram
         if is_new_user:
+            # Відправляємо disclaimer з inline keyboard
+            await message.answer(
+                text=text,
+                reply_markup=disclaimer_keyboard(lang),
+                parse_mode="HTML"
+            )
+            # Невелика затримка перед встановленням reply keyboard
+            await asyncio.sleep(0.3)
+            # Встановлюємо reply keyboard окремим повідомленням
             await message.answer(
                 "📊",  # Емодзі для встановлення клавіатури
                 reply_markup=main_menu(lang)
+            )
+        else:
+            # Для існуючих користувачів просто відправляємо disclaimer
+            await message.answer(
+                text=text,
+                reply_markup=disclaimer_keyboard(lang),
+                parse_mode="HTML"
             )
 
         # Оновлюємо стан
