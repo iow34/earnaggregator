@@ -349,6 +349,10 @@ async def show_main_page(
             finally:
                 await api_client.close()
 
+        # Очищаємо кеш примусово через проблеми з API (тимчасове рішення)
+        logger.info("🧹 Очищення кешу main_menu через проблеми з API")
+        await language_cache.clear_cache("main_menu")
+
         cached_menu = await language_cache.get_localized_data(
             key_prefix="main_menu",
             lang=lang,
