@@ -88,6 +88,8 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
         from_start: Чи викликано з команди /start (для вибору правильної кнопки)
     """
     try:
+        # Імпортуємо функцію екранування HTML
+        from bot.utils.formatters import _escape_html
 
         # Формуємо текст disclaimer з екрануванням HTML
         title = _escape_html(localization.get_text("disclaimer.title", lang))
