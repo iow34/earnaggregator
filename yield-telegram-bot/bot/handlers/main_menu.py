@@ -463,9 +463,15 @@ async def _format_top_10_section(
      lang: str = "ua") -> str:
     """Форматувати секцію з топ 10 trending продуктами."""
     try:
-        trending_data = await api_client.get_trending_coins()
+        try:
+            trending_data = await api_client.get_trending_coins()
+        except Exception as api_error:
+            # Якщо circuit breaker відкритий або інші проблеми з API
+            logger.warning(f"⚠️ API недоступний для trending coins: {api_error}, використовуємо fallback")
+            return f"📭 <b>{localization.get_text('section.trending_top', lang)}</b>\n{localization.get_text('error.data_unavailable', lang)}\n"
+
         if not trending_data.get("success"):
-            return f"📊 <b>{localization.get_text('section.trending_top', lang)}</b>\n{localization.get_text('error.data_unavailable', lang)}\n"
+            return f"📭 <b>{localization.get_text('section.trending_top', lang)}</b>\n{localization.get_text('error.data_unavailable', lang)}\n"
 
         trending_coins = trending_data.get(
     "data", {}).get(
@@ -626,8 +632,13 @@ async def _format_single_exchange_preview(
     """Форматувати попередній перегляд однієї біржі з використанням priority_products."""
     try:
         # Отримуємо priority продукти через оптимізований API
-        priority_data = await api_client.get_priority_products(exchange)
-        
+        try:
+            priority_data = await api_client.get_priority_products(exchange)
+        except Exception as api_error:
+            # Якщо circuit breaker відкритий або інші проблеми з API
+            logger.warning(f"⚠️ API недоступний для {exchange}: {api_error}, використовуємо fallback")
+            return await _format_single_exchange_preview_fallback(api_client, exchange, telegram_id, lang)
+
         if not priority_data.get("success"):
             # Fallback на старий метод якщо priority_products недоступні
             logger.warning(f"⚠️ Priority products недоступні для {exchange}, використовуємо fallback")
@@ -733,7 +744,16 @@ async def _format_single_exchange_preview_fallback(
         priority_products = []
 
         for attempt, limit in enumerate(limit_stages, 1):
-            exchange_data = await api_client.get_exchanges(exchange=exchange, limit=limit)
+            try:
+                exchange_data = await api_client.get_exchanges(exchange=exchange, limit=limit)
+            except Exception as api_error:
+                # Якщо circuit breaker відкритий або інші проблеми з API
+                logger.warning(f"⚠️ API недоступний для {exchange} (fallback): {api_error}")
+                if attempt == len(limit_stages):
+                    display_name = _format_exchange_display_name(exchange)
+                    return f"<b>{display_name}</b>: {localization.get_text('error.data_unavailable', lang)}"
+                continue
+
             if not exchange_data.get("success"):
                 if attempt == len(limit_stages):
                     display_name = _format_exchange_display_name(exchange)
