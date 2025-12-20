@@ -265,7 +265,7 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         except Exception as db_error:
             logger.error(f"❌ Помилка перевірки існування користувача в БД: {db_error}", exc_info=True)
             is_existing_user = False
-
+        
         # Реєстрація користувача в БД
         try:
             async with get_database_session() as session:
@@ -329,15 +329,7 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         from bot.handlers.main_menu import show_main_page
         await show_main_page(callback.message, state, lang)
 
-        # Встановлюємо reply keyboard після успішного показу головного меню
-        await asyncio.sleep(0.5)
-        try:
-            await callback.message.answer(
-                "📊",  # Емодзі для встановлення клавіатури
-                reply_markup=main_menu(lang)
-            )
-        except Exception as e:
-            logger.warning(f"⚠️ Не вдалося встановити reply keyboard: {e}")
+        # Reply keyboard вже встановлено в show_main_page()
         
         duration = time.time() - start_time
         logger.info(f"⏱️ /main (from start) виконано за {duration:.2f}с")
