@@ -24,7 +24,6 @@ from bot.schedulers.log_cleaner import log_cleaner
 from bot.middleware.logging import LoggingMiddleware
 from bot.middleware.throttling import ThrottlingMiddleware
 from bot.middleware.tracking import TrackingMiddleware
-from bot.middleware.first_contact import FirstContactMiddleware
 from bot.services.event_processor import event_processor
 from bot.services.session_manager import session_manager
 from bot.handlers import (
@@ -174,7 +173,8 @@ def create_dispatcher() -> Dispatcher:
     # Реєстрація middleware (порядок важливий!)
     dp.update.middleware(LoggingMiddleware())  # Логування всіх апдейтів
     dp.update.middleware(TrackingMiddleware())  # Трекінг всіх апдейтів
-    dp.message.middleware(FirstContactMiddleware())  # Привітальне повідомлення для нових користувачів
+    # FirstContactMiddleware видалено - welcome messages більше не відправляються,
+    # оскільки disclaimer в /start містить всю необхідну інформацію
     dp.message.middleware(ThrottlingMiddleware(  # Антифлуд тільки для повідомлень
         redis_url=settings.REDIS_URL,
         rate_limit=1,  # 1 повідомлення за 2 секунди

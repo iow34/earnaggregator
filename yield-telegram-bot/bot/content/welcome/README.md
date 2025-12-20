@@ -17,7 +17,7 @@ welcome/
 
 ## Purpose
 
-The welcome message serves as a **first contact point** for new users. It is automatically sent by the `FirstContactMiddleware` when:
+The welcome message serves as a **first contact point** for new users. It is automatically sent by the `go_to_main_from_start_handler` when:
 
 1. A user sends their **first message** to the bot
 2. The user is **not yet registered** in the database
@@ -88,7 +88,7 @@ To add a new language:
 2. Create a `welcome.txt` file in that folder
 3. Create an `__init__.py` file with docstring
 4. Update the `get_welcome_message()` function in `__init__.py` to support the new language
-5. Update the `FirstContactMiddleware` to detect the new language code
+5. Update the `go_to_main_from_start_handler` to detect the new language code
 
 ## Technical Implementation
 

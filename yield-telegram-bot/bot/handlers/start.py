@@ -285,11 +285,14 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         # Save language to state
         await state.update_data(language=lang)
 
+        # Welcome message більше не відправляється - disclaimer в /start містить всю необхідну інформацію
+        # FirstContactMiddleware видалено для уникнення додаткових повідомлень та потенційних помилок
+
         # Логування
         log_message = f"Користувач перейшов до головного меню з /start"
         if not is_existing_user:
             log_message += " (новий користувач)"
-        
+
         logger.info(
             log_message,
             extra={
