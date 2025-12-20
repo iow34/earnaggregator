@@ -34,8 +34,8 @@ router = Router(name="start_handler")
 async def start_handler(message: Message, state: FSMContext, command: CommandObject = None) -> None:
     """
     Простий обробник команди /start.
-    Відправляє привітання з кнопкою для переходу до головного меню.
-    Вся складна логіка (middleware, deep links, реєстрація) перенесена на /main.
+    Показує disclaimer без middleware обробки.
+    Middleware перенесені на /main для уникнення desktop помилок.
     """
     try:
         # Перевірка наявності користувача
@@ -44,7 +44,7 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
             await message.answer("❌ Error: Unable to identify user", parse_mode=None)
             return
 
-        # Визначаємо мову з Telegram для простого привітання
+        # Визначаємо мову з Telegram для disclaimer
         tg_lang = message.from_user.language_code
         lang = "ua"  # default
         if tg_lang:
@@ -56,40 +56,21 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
             elif tg_lang_lower.startswith("uk") or tg_lang_lower == "ua":
                 lang = "ua"
 
-        # Створюємо просте привітання з кнопкою
-        from bot.keyboards.navigation import disclaimer_keyboard
-
-        # Отримуємо локалізований текст для /start
-        welcome_title = localization.get_text("start.welcome_title", lang)
-        welcome_subtitle = localization.get_text("start.welcome_subtitle", lang)
-        go_to_main_text = localization.get_text("nav.go_to_main", lang)
-
-        text = f"👋 <b>{welcome_title}</b>\n\n{welcome_subtitle}"
-
-        # Створюємо кнопку для переходу до головного меню
-        from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-        start_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=go_to_main_text, callback_data="go_to_main_from_start")]
-        ])
-
-        await message.answer(
-            text=text,
-            reply_markup=start_keyboard,
-            parse_mode="HTML"
-        )
+        # Показуємо disclaimer одразу (як було раніше) з кнопкою для /start
+        await show_disclaimer_page(message, state, lang=lang, is_new_user=True, from_start=True)
 
         # Логуємо простий /start
-        logger.info(f"🚀 /start: Користувач {message.from_user.id} отримав привітання, перенаправлено на /main")
+        logger.info(f"🚀 /start: Користувач {message.from_user.id} отримав disclaimer")
 
     except Exception as e:
-        logger.error(f"❌ Помилка в простому start_handler: {e}", exc_info=True)
+        logger.error(f"❌ Помилка в start_handler: {e}", exc_info=True)
         try:
-            await message.answer("👋 Welcome! Use /main to start.", parse_mode=None)
+            await message.answer("❌ An error occurred. Please try again.", parse_mode=None)
         except Exception as fallback_error:
             logger.error(f"❌ Критична помилка відправки fallback в /start: {fallback_error}")
 
 
-async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = "en", is_new_user: bool = False) -> None:
+async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = "en", is_new_user: bool = False, from_start: bool = False) -> None:
     """
     Показати disclaimer сторінку з кнопкою "Go to main".
 
@@ -98,6 +79,7 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
         state: Стан FSM
         lang: Мова користувача
         is_new_user: Чи це новий користувач (для встановлення клавіатури)
+        from_start: Чи викликано з команди /start (для вибору правильної кнопки)
     """
     try:
         # Імпортуємо функцію екранування HTML
@@ -128,9 +110,21 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
             logger.warning(f"⚠️ Disclaimer текст занадто довгий ({len(text)} символів), скорочуємо")
             text = text[:4000] + "..."
 
-        # Імпортуємо клавіатури
-        from bot.keyboards.navigation import disclaimer_keyboard
+        # Створюємо клавіатуру залежно від того, звідки викликано
+        from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
         from bot.keyboards.reply import main_menu
+
+        if from_start:
+            # Для /start використовуємо кнопку з callback_data="go_to_main_from_start"
+            go_to_main_text = localization.get_text("nav.go_to_main", lang)
+            start_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text=go_to_main_text, callback_data="go_to_main_from_start")]
+            ])
+            keyboard = start_keyboard
+        else:
+            # Для інших випадків використовуємо звичайну disclaimer клавіатуру
+            from bot.keyboards.navigation import disclaimer_keyboard
+            keyboard = disclaimer_keyboard(lang)
 
         # Відправляємо disclaimer з inline keyboard
         # Для нових користувачів reply keyboard буде встановлено після натискання "Go to main"
@@ -138,7 +132,7 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
         try:
             await message.answer(
                 text=text,
-                reply_markup=disclaimer_keyboard(lang),
+                reply_markup=keyboard,
                 parse_mode="HTML"
             )
         except Exception as send_error:
@@ -172,13 +166,13 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
 @router.callback_query(F.data == "go_to_main_from_start")
 async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMContext) -> None:
     """
-    Обробник кнопки "Go to main" з /start сторінки.
-    Виконує всю складну логіку: middleware, deep links, реєстрацію, disclaimer.
-    Це основний вхідний пункт для нових користувачів.
+    Обробник кнопки "Go to main" з disclaimer сторінки.
+    Виконує всю складну логіку: deep links, реєстрацію, показ головного меню.
+    Middleware обробка відбувається тут (Logging, Tracking, FirstContact, Throttling).
     """
     loading_message = None
     loading_task = None
-
+    
     try:
         await callback.answer()
 
@@ -195,23 +189,23 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
             await state.clear()
         except Exception as state_error:
             logger.warning(f"⚠️ Не вдалося очистити FSM стан: {state_error}")
-
-        # Determine initial language from Telegram for loading message (fallback to 'ua')
+    
+    # Determine initial language from Telegram for loading message (fallback to 'ua')
         tg_lang = callback.from_user.language_code
-        temp_lang = "ua"  # default
+    temp_lang = "ua"  # default
         logger.info(f"🌐 /main (from start): Telegram language_code='{tg_lang}', determining temp_lang for loading message")
 
-        if tg_lang:
-            tg_lang_lower = tg_lang.lower()
-            if tg_lang_lower.startswith("ru") or tg_lang_lower == "be":  # Russian or Belarusian
-                temp_lang = "ru"
-            elif tg_lang_lower.startswith("en"):
-                temp_lang = "en"
-            elif tg_lang_lower.startswith("uk") or tg_lang_lower == "ua":  # Ukrainian
-                temp_lang = "ua"
-            else:
-                logger.warning(f"🌐 /main (from start): Unknown language_code='{tg_lang}', using default 'ua'")
+    if tg_lang:
+        tg_lang_lower = tg_lang.lower()
+        if tg_lang_lower.startswith("ru") or tg_lang_lower == "be":  # Russian or Belarusian
+            temp_lang = "ru"
+        elif tg_lang_lower.startswith("en"):
+            temp_lang = "en"
+        elif tg_lang_lower.startswith("uk") or tg_lang_lower == "ua":  # Ukrainian
+            temp_lang = "ua"
         else:
+                logger.warning(f"🌐 /main (from start): Unknown language_code='{tg_lang}', using default 'ua'")
+    else:
             logger.info("🌐 /main (from start): No language_code from Telegram, using default 'ua'")
 
         logger.info(f"🌐 /main (from start): Determined temp_lang='{temp_lang}' for loading message, user {callback.from_user.id}")
@@ -232,10 +226,10 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
             except Exception as e:
                 logger.debug(f"Не вдалося відправити loading message: {e}")
                 return None
-
+        
         # Запускаємо індикатор в фоні
         loading_task = asyncio.create_task(show_loading_indicator())
-
+        
         # DEEP LINK: Тут немає deep link, бо ми прийшли з /start
         # Але можна додати підтримку deep link через стан, якщо потрібно
 
@@ -248,46 +242,46 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
                 first_name=callback.from_user.first_name,
                 last_name=callback.from_user.last_name
             )
-
+            
             if tracking_result:
                 source = tracking_result.get('acquisition_source', 'organic')
                 is_new = tracking_result.get('is_new_user', False)
                 campaign_id = tracking_result.get('campaign_id')
-
+                
                 logger.info(
                     f"✅ Tracking реєстрація з /main: user={callback.from_user.id}, "
                     f"source={source}, new={is_new}, campaign={campaign_id}"
                 )
         except Exception as e:
             logger.warning(f"⚠️ Помилка tracking реєстрації в /main: {e}")
-
+        
         # Перевірка чи користувач вже існує
         is_existing_user = False
         try:
-            async with get_database_session() as check_session:
+        async with get_database_session() as check_session:
                 stmt_check = select(TelegramUser).where(TelegramUser.telegram_id == callback.from_user.id)
-                result_check = await check_session.execute(stmt_check)
-                is_existing_user = result_check.scalar_one_or_none() is not None
+            result_check = await check_session.execute(stmt_check)
+            is_existing_user = result_check.scalar_one_or_none() is not None
         except Exception as db_error:
             logger.error(f"❌ Помилка перевірки існування користувача в БД: {db_error}", exc_info=True)
             is_existing_user = False
-
+        
         # Реєстрація користувача в БД
         try:
-            async with get_database_session() as session:
-                user = await get_or_create_user(
-                    session=session,
+        async with get_database_session() as session:
+            user = await get_or_create_user(
+                session=session,
                     telegram_id=callback.from_user.id,
                     username=callback.from_user.username,
                     first_name=callback.from_user.first_name,
                     last_name=callback.from_user.last_name,
-                    language=temp_lang
-                )
-                lang = user.language
+                language=temp_lang
+            )
+            lang = user.language
         except Exception as db_create_error:
             logger.error(f"❌ Помилка створення користувача в БД: {db_create_error}", exc_info=True)
             lang = temp_lang
-
+            
         # Save language to state
         await state.update_data(language=lang)
 
@@ -295,7 +289,7 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         log_message = f"Користувач перейшов до головного меню з /start"
         if not is_existing_user:
             log_message += " (новий користувач)"
-
+        
         logger.info(
             log_message,
             extra={
@@ -323,27 +317,38 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
                 loading_message = None
 
         # Видаляємо loading message якщо він був відправлений
-        if loading_message:
+                if loading_message:
             try:
-                await loading_message.delete()
+                    await loading_message.delete()
                 await asyncio.sleep(0.3)
             except Exception as del_error:
                 logger.debug(f"Не вдалось видалити індикатор завантаження: {del_error}")
                 await asyncio.sleep(0.3)
 
-        # Показати disclaimer сторінку
-        await show_disclaimer_page(callback.message, state, lang=lang, is_new_user=not is_existing_user)
+        # Показати головну сторінку замість disclaimer (бо disclaimer вже був показаний в /start)
+        from bot.handlers.main_menu import show_main_page
+        await show_main_page(callback.message, state, lang)
 
+        # Встановлюємо reply keyboard після успішного показу головного меню
+        await asyncio.sleep(0.5)
+        try:
+            await callback.message.answer(
+                "📊",  # Емодзі для встановлення клавіатури
+                reply_markup=main_menu(lang)
+            )
+        except Exception as e:
+            logger.warning(f"⚠️ Не вдалося встановити reply keyboard: {e}")
+        
         duration = time.time() - start_time
         logger.info(f"⏱️ /main (from start) виконано за {duration:.2f}с")
 
     except Exception as e:
         logger.error(f"Помилка в go_to_main_from_start_handler: {e}", exc_info=True)
-
+        
         # Скасувати індикатор при помилці
         if loading_task and not loading_task.done():
             loading_task.cancel()
-
+        
         # Надіслати fallback повідомлення
         try:
             fallback_text = localization.get_error_text("error.general", "en")
