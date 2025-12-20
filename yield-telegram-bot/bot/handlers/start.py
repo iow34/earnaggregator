@@ -189,6 +189,16 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
     loading_task = None
     
     try:
+        logger.info(f"🔘 Початок обробки кнопки 'Go to main' для користувача {callback.from_user.id if callback.from_user else 'unknown'}")
+
+        # Перевірка на дублювання callback (користувач може натиснути кнопку кілька разів)
+        current_state = await state.get_state()
+        if current_state == "processing_main":
+            logger.warning(f"⚠️ Дублювання обробки для користувача {callback.from_user.id} - ігноруємо")
+            await callback.answer("Обробка вже виконується...", show_alert=False)
+            return
+
+        await state.set_state("processing_main")
         await callback.answer()
 
         # Перевірка наявності користувача
@@ -341,29 +351,42 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         await asyncio.sleep(0.3)
 
         # Показати головну сторінку замість disclaimer (бо disclaimer вже був показаний в /start)
+        logger.info(f"🏠 Викликаємо show_main_page для користувача {callback.from_user.id}")
         from bot.handlers.main_menu import show_main_page
         await show_main_page(callback.message, state, lang)
+        logger.info(f"✅ show_main_page успішно виконано для користувача {callback.from_user.id}")
 
         # Reply keyboard вже встановлено в show_main_page()
-        
+
+        # Очистити стан обробки
+        await state.set_state(None)
+
         duration = time.time() - start_time
         logger.info(f"⏱️ /main (from start) виконано за {duration:.2f}с")
 
     except Exception as e:
-        logger.error(f"Помилка в go_to_main_from_start_handler: {e}", exc_info=True)
-        
+        logger.error(f"❌ ПОМИЛКА в go_to_main_from_start_handler для користувача {callback.from_user.id if callback.from_user else 'unknown'}: {e}", exc_info=True)
+
+        # Очистити стан обробки при помилці
+        try:
+            await state.set_state(None)
+        except:
+            pass
+
         # Скасувати індикатор при помилці
         if loading_task and not loading_task.done():
             loading_task.cancel()
-        
+
         # Надіслати fallback повідомлення
         try:
+            logger.info(f"📤 Надсилаємо fallback повідомлення для користувача {callback.from_user.id if callback.from_user else 'unknown'}")
             fallback_text = localization.get_error_text("error.general", "en")
             if not fallback_text or not fallback_text.strip():
                 fallback_text = "❌ An error occurred. Please try again."
             await callback.message.answer(fallback_text, parse_mode=None)
+            logger.info(f"✅ Fallback повідомлення надіслано успішно")
         except Exception as fallback_error:
-            logger.error(f"❌ Критична помилка відправки fallback в /main: {fallback_error}")
+            logger.error(f"❌ Критична помилка відправки fallback в /main для користувача {callback.from_user.id if callback.from_user else 'unknown'}: {fallback_error}")
 
 
 # Видалено: звичайний go_to_main handler більше не потрібен,
