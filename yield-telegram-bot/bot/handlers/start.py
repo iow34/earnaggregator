@@ -34,8 +34,8 @@ router = Router(name="start_handler")
 async def start_handler(message: Message, state: FSMContext, command: CommandObject = None) -> None:
     """
     Простий обробник команди /start.
-    Показує disclaimer без middleware обробки.
-    Middleware перенесені на /main для уникнення desktop помилок.
+    Показує disclaimer. Middleware працюють автоматично на рівні dispatcher'а.
+    Обробка користувача (реєстрація, трекінг) перенесена на /main для уникнення desktop помилок.
     """
     try:
         # Перевірка наявності користувача
@@ -168,7 +168,7 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
     """
     Обробник кнопки "Go to main" з disclaimer сторінки.
     Виконує всю складну логіку: deep links, реєстрацію, показ головного меню.
-    Middleware обробка відбувається тут (Logging, Tracking, FirstContact, Throttling).
+    Middleware працюють автоматично на рівні dispatcher'а для всіх апдейтів.
     """
     loading_message = None
     loading_task = None
