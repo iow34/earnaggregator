@@ -241,29 +241,14 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
         from bot.keyboards.navigation import disclaimer_keyboard
         from bot.keyboards.reply import main_menu
 
-        # Для нових користувачів об'єднуємо повідомлення з reply keyboard
-        # щоб уникнути проблем з desktop версією Telegram
-        if is_new_user:
-            # Відправляємо disclaimer з inline keyboard
-            await message.answer(
-                text=text,
-                reply_markup=disclaimer_keyboard(lang),
-                parse_mode="HTML"
-            )
-            # Невелика затримка перед встановленням reply keyboard
-            await asyncio.sleep(0.3)
-            # Встановлюємо reply keyboard окремим повідомленням
-            await message.answer(
-                "📊",  # Емодзі для встановлення клавіатури
-                reply_markup=main_menu(lang)
-            )
-        else:
-            # Для існуючих користувачів просто відправляємо disclaimer
-            await message.answer(
-                text=text,
-                reply_markup=disclaimer_keyboard(lang),
-                parse_mode="HTML"
-            )
+        # Відправляємо disclaimer з inline keyboard
+        # Для нових користувачів reply keyboard буде встановлено після натискання "Go to main"
+        # щоб уникнути проблем з desktop версією Telegram при швидкій послідовності повідомлень
+        await message.answer(
+            text=text,
+            reply_markup=disclaimer_keyboard(lang),
+            parse_mode="HTML"
+        )
 
         # Оновлюємо стан
         await state.update_data(current_page="disclaimer", lang=lang)
@@ -297,6 +282,20 @@ async def go_to_main_handler(callback: CallbackQuery, state: FSMContext) -> None
         # Створюємо об'єкт Message для сумісності з show_main_page
         # Використовуємо message з callback
         await show_main_page(callback.message, state, lang)
+
+        # Встановлюємо reply keyboard після успішного показу головного меню
+        # Це робиться окремо з затримкою, щоб уникнути проблем з desktop версією Telegram
+        # при швидкій послідовності повідомлень з різними типами клавіатур
+        # Desktop версія може не встигнути обробити перше повідомлення з inline keyboard
+        await asyncio.sleep(0.5)  # Затримка для desktop версії
+        
+        try:
+            await callback.message.answer(
+                "📊",  # Емодзі для встановлення клавіатури
+                reply_markup=main_menu(lang)
+            )
+        except Exception as e:
+            logger.warning(f"⚠️ Не вдалося встановити reply keyboard: {e}")
 
         # Видаляємо індикатор завантаження
         try:
