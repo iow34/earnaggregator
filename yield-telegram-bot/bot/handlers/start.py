@@ -70,19 +70,25 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
         # Очистити стан на початку /start щоб уникнути конфліктів з попередніми станами
         await state.clear()
 
-        # Створюємо задачу для показу індикатора завантаження через 1 секунду
+        # Створюємо задачу для показу індикатора завантаження через 1.5 секунди
+        # Збільшено час, щоб зменшити ймовірність показу loading message
         async def show_loading_indicator():
-            """Показати індикатор завантаження якщо процес займає >1 сек."""
+            """Показати індикатор завантаження якщо процес займає >1.5 сек."""
             try:
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(1.5)
                 # Якщо ми досі тут - значить завантаження триває
                 # Використовуємо temp_lang для повідомлення завантаження (з Telegram)
                 loading_text = localization.get_text("loading.main_menu", temp_lang)
                 logger.info(f"🌐 /start: Showing loading message in '{temp_lang}' (from Telegram): {loading_text}")
-                return await message.answer(loading_text)
+                # Використовуємо parse_mode=None щоб уникнути проблем з HTML на desktop
+                return await message.answer(loading_text, parse_mode=None)
             except asyncio.CancelledError:
-                # Завантаження завершилось швидше 1 секунди
+                # Завантаження завершилось швидше 1.5 секунди
                 pass
+            except Exception as e:
+                # Якщо не вдалося відправити loading message - не критично
+                logger.debug(f"Не вдалося відправити loading message: {e}")
+                return None
         
         # Запускаємо індикатор в фоні
         loading_task = asyncio.create_task(show_loading_indicator())
@@ -164,34 +170,51 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
             }
         )
 
-        # Встановити постійну клавіатуру (ReplyKeyboard)
-        # Для нових користувачів НЕ показуємо коротке привітання
-        # (disclaimer буде показано нижче з клавіатурою)
-        if is_existing_user:
-            await message.answer(
-                localization.get_text("menu.main.welcome", lang),
-                reply_markup=main_menu(lang)
-            )
-
-        # Показати disclaimer сторінку замість головного меню
-        # Для нових користувачів встановлюємо клавіатуру через disclaimer
-        await show_disclaimer_page(message, state, lang=lang, is_new_user=not is_existing_user)
-        
-        # Скасувати задачу індикатора якщо вона ще не виконалась
+        # Скасувати задачу індикатора ПЕРЕД відправкою повідомлень
+        # щоб уникнути конфліктів на desktop версії Telegram
+        loading_message = None
         if loading_task and not loading_task.done():
+            # Задача ще не виконалась - скасовуємо її
             loading_task.cancel()
             try:
                 await loading_task
             except asyncio.CancelledError:
                 pass
         elif loading_task and loading_task.done():
-            # Індикатор був показаний - видаляємо його
+            # Індикатор був показаний - отримуємо повідомлення та видаляємо його
             try:
                 loading_message = await loading_task
-                if loading_message:
-                    await loading_message.delete()
+            except Exception as e:
+                logger.debug(f"Не вдалось отримати loading message: {e}")
+                loading_message = None
+        
+        # Видаляємо loading message якщо він був відправлений
+        if loading_message:
+            try:
+                await loading_message.delete()
+                # Затримка після видалення loading message
+                # щоб desktop версія встигла обробити видалення перед відправкою disclaimer
+                await asyncio.sleep(0.3)
             except Exception as del_error:
                 logger.debug(f"Не вдалось видалити індикатор завантаження: {del_error}")
+                # Навіть якщо не вдалося видалити - додаємо затримку
+                # щоб уникнути конфлікту з наступним повідомленням
+                await asyncio.sleep(0.3)
+
+        # Встановити постійну клавіатуру (ReplyKeyboard)
+        # Для нових користувачів НЕ показуємо коротке привітання
+        # (disclaimer буде показано нижче з клавіатурою)
+        # Для існуючих користувачів також показуємо disclaimer (без welcome)
+        # щоб уникнути конфлікту між reply та inline клавіатурами на desktop
+        # if is_existing_user:
+        #     await message.answer(
+        #         localization.get_text("menu.main.welcome", lang),
+        #         reply_markup=main_menu(lang)
+        #     )
+
+        # Показати disclaimer сторінку замість головного меню
+        # Для нових користувачів встановлюємо клавіатуру через disclaimer
+        await show_disclaimer_page(message, state, lang=lang, is_new_user=not is_existing_user)
         
         duration = time.time() - start_time
         logger.info(f"⏱️ /start виконано за {duration:.2f}с")
@@ -244,11 +267,29 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
         # Відправляємо disclaimer з inline keyboard
         # Для нових користувачів reply keyboard буде встановлено після натискання "Go to main"
         # щоб уникнути проблем з desktop версією Telegram при швидкій послідовності повідомлень
-        await message.answer(
-            text=text,
-            reply_markup=disclaimer_keyboard(lang),
-            parse_mode="HTML"
-        )
+        try:
+            await message.answer(
+                text=text,
+                reply_markup=disclaimer_keyboard(lang),
+                parse_mode="HTML"
+            )
+        except Exception as send_error:
+            logger.error(f"❌ Помилка відправки disclaimer: {send_error}", exc_info=True)
+            # Fallback: спробувати відправити без HTML форматування
+            try:
+                # Видаляємо HTML теги для fallback
+                fallback_text = text.replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", "")
+                await message.answer(
+                    text=fallback_text,
+                    reply_markup=disclaimer_keyboard(lang),
+                    parse_mode=None
+                )
+            except Exception as fallback_error:
+                logger.error(f"❌ Помилка fallback відправки disclaimer: {fallback_error}")
+                # Останній fallback - просто текст
+                await message.answer(
+                    text=localization.get_text("error.general", lang)
+                )
 
         # Оновлюємо стан
         await state.update_data(current_page="disclaimer", lang=lang)
