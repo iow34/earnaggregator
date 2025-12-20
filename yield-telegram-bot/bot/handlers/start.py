@@ -59,23 +59,10 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
         except Exception as state_error:
             logger.warning(f"⚠️ Не вдалося очистити FSM стан: {state_error}")
 
-        # Визначаємо мову з Telegram для disclaimer (з захисними перевірками)
-        tg_lang = getattr(message.from_user, 'language_code', None)
-        lang = "ua"  # default
-        logger.info(f"🌐 /start: language_code='{tg_lang}', user_id={message.from_user.id}")
-
-        if tg_lang and isinstance(tg_lang, str):
-            tg_lang_lower = tg_lang.lower()
-            if tg_lang_lower.startswith("ru") or tg_lang_lower == "be":
-                lang = "ru"
-            elif tg_lang_lower.startswith("en"):
-                lang = "en"
-            elif tg_lang_lower.startswith("uk") or tg_lang_lower == "ua":
-                lang = "ua"
-            else:
-                logger.warning(f"🌐 /start: Unknown language_code='{tg_lang}', using default 'ua'")
-        else:
-            logger.info("🌐 /start: No language_code from Telegram, using default 'ua'")
+        # Використовуємо англійську мову за замовчуванням для disclaimer
+        # Користувач зможе змінити мову через команду /language
+        lang = "en"
+        logger.info(f"🌐 /start: Using default English language, user_id={message.from_user.id}")
 
         # Показуємо disclaimer одразу (як було раніше) з кнопкою для /start
         await show_disclaimer_page(message, state, lang=lang, is_new_user=True, from_start=True)
@@ -239,23 +226,10 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         except Exception as state_error:
             logger.warning(f"⚠️ Не вдалося очистити FSM стан: {state_error}")
 
-        # Determine initial language from Telegram for loading message (fallback to 'ua')
-        tg_lang = getattr(callback.from_user, 'language_code', None)
-        temp_lang = "ua"  # default
-        logger.info(f"🌐 /main (from start): Telegram language_code='{tg_lang}', user_id={callback.from_user.id}, determining temp_lang for loading message")
-
-        if tg_lang and isinstance(tg_lang, str):
-            tg_lang_lower = tg_lang.lower()
-            if tg_lang_lower.startswith("ru") or tg_lang_lower == "be":  # Russian or Belarusian
-                temp_lang = "ru"
-            elif tg_lang_lower.startswith("en"):
-                temp_lang = "en"
-            elif tg_lang_lower.startswith("uk") or tg_lang_lower == "ua":  # Ukrainian
-                temp_lang = "ua"
-            else:
-                logger.warning(f"🌐 /main (from start): Unknown language_code='{tg_lang}', using default 'ua'")
-        else:
-            logger.info("🌐 /main (from start): No language_code from Telegram, using default 'ua'")
+        # Використовуємо англійську мову за замовчуванням для loading message
+        # Користувач зможе змінити мову через команду /language
+        temp_lang = "en"
+        logger.info(f"🌐 /main (from start): Using default English language for loading, user_id={callback.from_user.id}")
 
         logger.info(f"🌐 /main (from start): Determined temp_lang='{temp_lang}' for loading message, user {callback.from_user.id}")
 
