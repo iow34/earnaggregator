@@ -351,7 +351,7 @@ async def show_main_page(
 
         # Очищаємо кеш примусово через проблеми з API (тимчасове рішення)
         logger.info("🧹 Очищення кешу main_menu через проблеми з API")
-        await language_cache.invalidate_all_language_caches("main_menu")
+        await language_cache.invalidate_all_language_caches("main_menu")  # Fixed: using correct method
 
         cached_menu = await language_cache.get_localized_data(
             key_prefix="main_menu",
