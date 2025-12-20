@@ -9,12 +9,11 @@ from bot.config import settings
 def setup_logger(name: str = "yield_telegram_bot", level: Optional[str] = None) -> logging.Logger:
     log_level = (level or settings.LOG_LEVEL).upper()
 
-    # В продакшені зберігаємо заданий рівень для діагностики проблем
-    # (раніше підвищувався до WARNING, але це заважало бачити INFO логи middleware)
-    # if hasattr(settings, 'ENVIRONMENT') and settings.ENVIRONMENT and settings.ENVIRONMENT.lower() == "production":
-    #     # В продакшені тільки WARNING та вище
-    #     if log_level in ["DEBUG", "INFO"]:
-    #         log_level = "WARNING"
+    # В продакшені тільки WARNING та вище для зменшення шуму в логах
+    if hasattr(settings, 'DEPLOY_ENV') and settings.DEPLOY_ENV and settings.DEPLOY_ENV.lower() == "prod":
+        # В продакшені тільки WARNING та вище
+        if log_level in ["DEBUG", "INFO"]:
+            log_level = "WARNING"
 
     numeric_level = getattr(logging, log_level, logging.INFO)
 
@@ -32,7 +31,11 @@ def setup_logger(name: str = "yield_telegram_bot", level: Optional[str] = None) 
     )
 
     ch = logging.StreamHandler()
-    ch.setLevel(numeric_level)
+    # Для Railway logs: в продакшені підвищуємо рівень до WARNING
+    if hasattr(settings, 'DEPLOY_ENV') and settings.DEPLOY_ENV and settings.DEPLOY_ENV.lower() == "prod":
+        ch.setLevel(logging.WARNING)
+    else:
+        ch.setLevel(numeric_level)
     ch.setFormatter(fmt)
     logger.addHandler(ch)
 
