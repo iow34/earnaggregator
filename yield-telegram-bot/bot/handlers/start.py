@@ -166,22 +166,16 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
 
         # Встановити постійну клавіатуру (ReplyKeyboard)
         # Для нових користувачів НЕ показуємо коротке привітання
-        # (вони вже отримали детальне welcome message з middleware)
+        # (disclaimer буде показано нижче з клавіатурою)
         if is_existing_user:
             await message.answer(
                 localization.get_text("menu.main.welcome", lang),
                 reply_markup=main_menu(lang)
             )
-        else:
-            # Для нових користувачів просто встановлюємо клавіатуру без тексту
-            # або показуємо більш нейтральне повідомлення
-            await message.answer(
-                "📊",  # Просто емодзі щоб встановити клавіатуру
-                reply_markup=main_menu(lang)
-            )
 
         # Показати disclaimer сторінку замість головного меню
-        await show_disclaimer_page(message, state, lang=lang)
+        # Для нових користувачів встановлюємо клавіатуру через disclaimer
+        await show_disclaimer_page(message, state, lang=lang, is_new_user=not is_existing_user)
         
         # Скасувати задачу індикатора якщо вона ще не виконалась
         if loading_task and not loading_task.done():
@@ -214,7 +208,7 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
         )
 
 
-async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = "en") -> None:
+async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = "en", is_new_user: bool = False) -> None:
     """
     Показати disclaimer сторінку з кнопкою "Go to main".
 
@@ -222,6 +216,7 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
         message: Повідомлення від користувача
         state: Стан FSM
         lang: Мова користувача
+        is_new_user: Чи це новий користувач (для встановлення клавіатури)
     """
     try:
         # Формуємо текст disclaimer
@@ -239,8 +234,9 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
         text += f"{bullet1}\n{bullet2}\n{bullet3}\n\n"
         text += f"<b>{cta}</b>"
 
-        # Імпортуємо клавіатуру
+        # Імпортуємо клавіатури
         from bot.keyboards.navigation import disclaimer_keyboard
+        from bot.keyboards.reply import main_menu
 
         # Відправляємо повідомлення з клавіатурою
         await message.answer(
@@ -248,6 +244,13 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
             reply_markup=disclaimer_keyboard(lang),
             parse_mode="HTML"
         )
+        
+        # Для нових користувачів встановлюємо reply keyboard
+        if is_new_user:
+            await message.answer(
+                "📊",  # Емодзі для встановлення клавіатури
+                reply_markup=main_menu(lang)
+            )
 
         # Оновлюємо стан
         await state.update_data(current_page="disclaimer", lang=lang)

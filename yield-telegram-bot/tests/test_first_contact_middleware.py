@@ -102,30 +102,18 @@ class TestFirstContactMiddleware:
         handler.assert_called_once_with(message, data)
     
     @pytest.mark.asyncio
-    async def test_middleware_sends_welcome_for_start_command(self, middleware, mock_message):
-        """Middleware має відправити welcome для нових користувачів навіть при /start."""
+    async def test_middleware_skips_welcome_for_start_command(self, middleware, mock_message):
+        """Middleware НЕ має відправляти welcome для команди /start (disclaimer буде показано в start_handler)."""
         mock_message.text = "/start"
         
         handler = AsyncMock()
         data = {}
         
-        # Mock database session - користувач не існує
-        with patch('bot.middleware.first_contact.get_database_session') as mock_db:
-            mock_session = AsyncMock()
-            mock_session.__aenter__ = AsyncMock(return_value=mock_session)
-            mock_session.__aexit__ = AsyncMock()
-            
-            mock_result = MagicMock()
-            mock_result.scalar_one_or_none.return_value = None  # Користувач не існує
-            mock_session.execute = AsyncMock(return_value=mock_result)
-            
-            mock_db.return_value = mock_session
-            
-            await middleware(handler, mock_message, data)
-            
-            # Handler має бути викликаний і welcome message відправлено
-            handler.assert_called_once_with(mock_message, data)
-            mock_message.answer.assert_called_once()
+        await middleware(handler, mock_message, data)
+        
+        # Handler має бути викликаний, але welcome message НЕ має бути відправлений
+        handler.assert_called_once_with(mock_message, data)
+        mock_message.answer.assert_not_called()
     
     @pytest.mark.asyncio
     async def test_middleware_sends_welcome_for_new_user(

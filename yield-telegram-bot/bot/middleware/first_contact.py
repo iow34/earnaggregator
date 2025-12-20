@@ -52,6 +52,11 @@ class FirstContactMiddleware(BaseMiddleware):
         if not message.from_user:
             return await handler(event, data)
         
+        # Пропускаємо welcome message для команди /start
+        # (disclaimer буде показано в start_handler)
+        if message.text and message.text.strip().startswith("/start"):
+            return await handler(event, data)
+        
         user_id = message.from_user.id
         
         try:
@@ -62,7 +67,7 @@ class FirstContactMiddleware(BaseMiddleware):
                 user = result.scalar_one_or_none()
                 
                 # Якщо користувача немає - це перший контакт
-                # Відправляємо welcome message для будь-якого першого повідомлення
+                # Відправляємо welcome message для будь-якого першого повідомлення (крім /start)
                 if user is None:
                     await self._send_welcome_message(message)
                     logger.info(
@@ -85,6 +90,7 @@ class FirstContactMiddleware(BaseMiddleware):
             message: Вхідне повідомлення від користувача
         """
         from bot.content.welcome import get_welcome_message
+        from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
         
         # Визначаємо мову користувача з Telegram
         tg_lang = message.from_user.language_code if message.from_user else "uk"
@@ -99,13 +105,32 @@ class FirstContactMiddleware(BaseMiddleware):
                 lang = "en"
         
         # Отримуємо та відправляємо привітальне повідомлення
-        welcome_text = get_welcome_message(lang)
-        
         try:
+            welcome_text = get_welcome_message(lang)
+            
+            # Перевірка на порожній текст
+            if not welcome_text or not welcome_text.strip():
+                logger.warning(f"⚠️ Welcome message порожній для мови {lang}")
+                return
+            
             await message.answer(
                 welcome_text,
                 parse_mode="HTML"
             )
+        except (TelegramAPIError, TelegramBadRequest) as e:
+            # Telegram API помилки (невалідний HTML, занадто довгий текст тощо)
+            logger.error(
+                f"❌ Telegram API помилка при відправці welcome message: {e}",
+                exc_info=True
+            )
+            # Не показуємо помилку користувачу - просто пропускаємо welcome
+        except FileNotFoundError as e:
+            # Файл welcome.txt не знайдено
+            logger.error(f"❌ Файл welcome.txt не знайдено для мови {lang}: {e}")
         except Exception as e:
-            logger.error(f"❌ Не вдалося відправити welcome message: {e}")
+            # Інші помилки
+            logger.error(
+                f"❌ Не вдалося відправити welcome message: {e}",
+                exc_info=True
+            )
 
