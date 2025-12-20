@@ -33,237 +33,60 @@ router = Router(name="start_handler")
 @router.message(CommandStart())
 async def start_handler(message: Message, state: FSMContext, command: CommandObject = None) -> None:
     """
-    Обробник команди /start з deep link підтримкою.
-    
-    Обробляє deep link payload для трекінгу джерел входу:
-    - Формат: /start ad_platform_campaignID
-    - Валідує payload
-    - Реєструє користувача через tracking API
-    - Зберігає acquisition_source
+    Простий обробник команди /start.
+    Відправляє привітання з кнопкою для переходу до головного меню.
+    Вся складна логіка (middleware, deep links, реєстрація) перенесена на /main.
     """
-    loading_message = None
-    loading_task = None
-    
-    # Перевірка наявності користувача
-    if not message.from_user:
-        logger.error("❌ Критична помилка: повідомлення без from_user")
-        await message.answer("❌ Error: Unable to identify user", parse_mode=None)
-        return
-
-    # Determine initial language from Telegram for loading message (fallback to 'ua')
-    tg_lang = message.from_user.language_code
-    temp_lang = "ua"  # default
-    logger.info(f"🌐 /start: Telegram language_code='{tg_lang}', determining temp_lang for loading message")
-
-    if tg_lang:
-        tg_lang_lower = tg_lang.lower()
-        if tg_lang_lower.startswith("ru") or tg_lang_lower == "be":  # Russian or Belarusian
-            temp_lang = "ru"
-        elif tg_lang_lower.startswith("en"):
-            temp_lang = "en"
-        elif tg_lang_lower.startswith("uk") or tg_lang_lower == "ua":  # Ukrainian
-            temp_lang = "ua"
-        else:
-            logger.warning(f"🌐 /start: Unknown language_code='{tg_lang}', using default 'ua'")
-    else:
-        logger.info("🌐 /start: No language_code from Telegram, using default 'ua'")
-
-    logger.info(f"🌐 /start: Determined temp_lang='{temp_lang}' for loading message, user {message.from_user.id}")
-    
     try:
-        start_time = time.time()
+        # Перевірка наявності користувача
+        if not message.from_user:
+            logger.error("❌ Критична помилка: повідомлення без from_user")
+            await message.answer("❌ Error: Unable to identify user", parse_mode=None)
+            return
 
-        # Очистити стан на початку /start щоб уникнути конфліктів з попередніми станами
-        try:
-            await state.clear()
-        except Exception as state_error:
-            logger.warning(f"⚠️ Не вдалося очистити FSM стан: {state_error}")
-            # Продовжуємо без очищення стану
+        # Визначаємо мову з Telegram для простого привітання
+        tg_lang = message.from_user.language_code
+        lang = "ua"  # default
+        if tg_lang:
+            tg_lang_lower = tg_lang.lower()
+            if tg_lang_lower.startswith("ru") or tg_lang_lower == "be":
+                lang = "ru"
+            elif tg_lang_lower.startswith("en"):
+                lang = "en"
+            elif tg_lang_lower.startswith("uk") or tg_lang_lower == "ua":
+                lang = "ua"
 
-        # Створюємо задачу для показу індикатора завантаження через 1.5 секунди
-        # Збільшено час, щоб зменшити ймовірність показу loading message
-        async def show_loading_indicator():
-            """Показати індикатор завантаження якщо процес займає >1.5 сек."""
-            try:
-                await asyncio.sleep(1.5)
-                # Якщо ми досі тут - значить завантаження триває
-                # Використовуємо temp_lang для повідомлення завантаження (з Telegram)
-                loading_text = localization.get_text("loading.main_menu", temp_lang)
-                # Перевірка на порожній текст
-                if not loading_text or not loading_text.strip():
-                    logger.warning(f"⚠️ Loading message порожній для мови {temp_lang}")
-                    return None
+        # Створюємо просте привітання з кнопкою
+        from bot.keyboards.navigation import disclaimer_keyboard
 
-                logger.info(f"🌐 /start: Showing loading message in '{temp_lang}' (from Telegram): {loading_text}")
-                # Використовуємо parse_mode=None щоб уникнути проблем з HTML на desktop
-                return await message.answer(loading_text, parse_mode=None)
-            except asyncio.CancelledError:
-                # Завантаження завершилось швидше 1.5 секунди
-                pass
-            except Exception as e:
-                # Якщо не вдалося відправити loading message - не критично
-                logger.debug(f"Не вдалося відправити loading message: {e}")
-                return None
-        
-        # Запускаємо індикатор в фоні
-        loading_task = asyncio.create_task(show_loading_indicator())
-        
-        # DEEP LINK: Отримати payload якщо є
-        payload = None
-        if command and command.args:
-            payload = command.args.strip()
-            logger.info(f"📊 Deep link payload отримано: {payload} від user {message.from_user.id}")
-        
-        # Реєстрація користувача через tracking API (з deep link)
-        # Не блокуємо /start на помилках tracking
-        try:
-            tracking_result = await tracking_client.register_user(
-                telegram_id=message.from_user.id,
-                payload=payload,
-                username=message.from_user.username,
-                first_name=message.from_user.first_name,
-                last_name=message.from_user.last_name
-            )
-            
-            if tracking_result:
-                source = tracking_result.get('acquisition_source', 'organic')
-                is_new = tracking_result.get('is_new_user', False)
-                campaign_id = tracking_result.get('campaign_id')
-                
-                logger.info(
-                    f"✅ Tracking реєстрація: user={message.from_user.id}, "
-                    f"source={source}, new={is_new}, campaign={campaign_id}"
-                )
-            elif not tracking_client.is_tracking_enabled():
-                logger.debug(f"📊 Tracking вимкнений для user {message.from_user.id}")
-            else:
-                logger.debug(f"📊 Tracking реєстрація пропущена для user {message.from_user.id}")
-                
-        except Exception as e:
-            logger.warning(f"⚠️ Помилка tracking реєстрації (не блокує /start): {e}")
-            # Продовжуємо роботу навіть якщо tracking failed
-        
-        # Перевірка чи користувач вже існує (для визначення чи показувати привітання)
-        is_existing_user = False
-        try:
-            async with get_database_session() as check_session:
-                stmt_check = select(TelegramUser).where(TelegramUser.telegram_id == message.from_user.id)
-                result_check = await check_session.execute(stmt_check)
-                is_existing_user = result_check.scalar_one_or_none() is not None
-        except Exception as db_error:
-            logger.error(f"❌ Помилка перевірки існування користувача в БД: {db_error}", exc_info=True)
-            # При помилці БД вважаємо користувача новим
-            is_existing_user = False
-        
-        # Реєстрація користувача в БД (існуюча логіка)
-        try:
-            async with get_database_session() as session:
-                # Використовуємо temp_lang як дефолтну мову для нового користувача
-                user = await get_or_create_user(
-                    session=session,
-                    telegram_id=message.from_user.id,
-                    username=message.from_user.username,
-                    first_name=message.from_user.first_name,
-                    last_name=message.from_user.last_name,
-                    language=temp_lang
-                )
-                lang = user.language
-        except Exception as db_create_error:
-            logger.error(f"❌ Помилка створення користувача в БД: {db_create_error}", exc_info=True)
-            # Fallback: використовуємо temp_lang
-            lang = temp_lang
-            
-        # Save language to state
-        await state.update_data(language=lang)
+        # Отримуємо локалізований текст для /start
+        welcome_title = localization.get_text("start.welcome_title", lang)
+        welcome_subtitle = localization.get_text("start.welcome_subtitle", lang)
+        go_to_main_text = localization.get_text("nav.go_to_main", lang)
 
-        # Логування
-        log_message = "Користувач розпочав роботу з ботом"
-        if payload:
-            log_message += f" (deep link: {payload})"
-        if not is_existing_user:
-            log_message += " (новий користувач)"
-        
-        logger.info(
-            log_message,
-            extra={
-                "user_id": message.from_user.id,
-                "username": message.from_user.username,
-                "first_name": message.from_user.first_name,
-                "deep_link_payload": payload,
-                "language": lang,
-                "is_new_user": not is_existing_user
-            }
+        text = f"👋 <b>{welcome_title}</b>\n\n{welcome_subtitle}"
+
+        # Створюємо кнопку для переходу до головного меню
+        from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+        start_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text=go_to_main_text, callback_data="go_to_main_from_start")]
+        ])
+
+        await message.answer(
+            text=text,
+            reply_markup=start_keyboard,
+            parse_mode="HTML"
         )
 
-        # Скасувати задачу індикатора ПЕРЕД відправкою повідомлень
-        # щоб уникнути конфліктів на desktop версії Telegram
-        loading_message = None
-        if loading_task and not loading_task.done():
-            # Задача ще не виконалась - скасовуємо її
-            loading_task.cancel()
-            try:
-                await loading_task
-            except asyncio.CancelledError:
-                pass
-        elif loading_task and loading_task.done():
-            # Індикатор був показаний - отримуємо повідомлення та видаляємо його
-            try:
-                loading_message = await loading_task
-            except Exception as e:
-                logger.debug(f"Не вдалось отримати loading message: {e}")
-                loading_message = None
-        
-        # Видаляємо loading message якщо він був відправлений
-        if loading_message:
-            try:
-                await loading_message.delete()
-                # Затримка після видалення loading message
-                # щоб desktop версія встигла обробити видалення перед відправкою disclaimer
-                await asyncio.sleep(0.3)
-            except Exception as del_error:
-                logger.debug(f"Не вдалось видалити індикатор завантаження: {del_error}")
-                # Навіть якщо не вдалося видалити - додаємо затримку
-                # щоб уникнути конфлікту з наступним повідомленням
-                await asyncio.sleep(0.3)
-
-        # Встановити постійну клавіатуру (ReplyKeyboard)
-        # Для нових користувачів НЕ показуємо коротке привітання
-        # (disclaimer буде показано нижче з клавіатурою)
-        # Для існуючих користувачів також показуємо disclaimer (без welcome)
-        # щоб уникнути конфлікту між reply та inline клавіатурами на desktop
-        # if is_existing_user:
-        #     await message.answer(
-        #         localization.get_text("menu.main.welcome", lang),
-        #         reply_markup=main_menu(lang)
-        #     )
-
-        # Показати disclaimer сторінку замість головного меню
-        # Для нових користувачів встановлюємо клавіатуру через disclaimer
-        await show_disclaimer_page(message, state, lang=lang, is_new_user=not is_existing_user)
-        
-        duration = time.time() - start_time
-        logger.info(f"⏱️ /start виконано за {duration:.2f}с")
+        # Логуємо простий /start
+        logger.info(f"🚀 /start: Користувач {message.from_user.id} отримав привітання, перенаправлено на /main")
 
     except Exception as e:
-        logger.error(f"Помилка в start_handler: {e}", exc_info=True)
-
-        # Скасувати індикатор при помилці
-        if loading_task and not loading_task.done():
-            loading_task.cancel()
-
-        # Надіслати fallback повідомлення з мінімальною інформацією
+        logger.error(f"❌ Помилка в простому start_handler: {e}", exc_info=True)
         try:
-            fallback_text = localization.get_error_text("error.general", temp_lang)
-            if not fallback_text or not fallback_text.strip():
-                fallback_text = "❌ An error occurred. Please try again."
-            await message.answer(fallback_text, parse_mode=None)
+            await message.answer("👋 Welcome! Use /main to start.", parse_mode=None)
         except Exception as fallback_error:
-            logger.error(f"❌ Критична помилка відправки fallback повідомлення: {fallback_error}")
-            # Останній шанс - просте повідомлення без форматування
-            try:
-                await message.answer("❌ Error occurred. Please contact support.", parse_mode=None)
-            except Exception as final_error:
-                logger.error(f"❌ Фінальна помилка: неможливо відправити повідомлення: {final_error}")
+            logger.error(f"❌ Критична помилка відправки fallback в /start: {fallback_error}")
 
 
 async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = "en", is_new_user: bool = False) -> None:
@@ -344,6 +167,191 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
         # Fallback
         fallback_text = localization.get_text("error.general", lang)
         await message.answer(text=fallback_text)
+
+
+@router.callback_query(F.data == "go_to_main_from_start")
+async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMContext) -> None:
+    """
+    Обробник кнопки "Go to main" з /start сторінки.
+    Виконує всю складну логіку: middleware, deep links, реєстрацію, disclaimer.
+    Це основний вхідний пункт для нових користувачів.
+    """
+    loading_message = None
+    loading_task = None
+
+    try:
+        await callback.answer()
+
+        # Перевірка наявності користувача
+        if not callback.from_user:
+            logger.error("❌ Критична помилка: callback без from_user")
+            await callback.message.answer("❌ Error: Unable to identify user", parse_mode=None)
+            return
+
+        start_time = time.time()
+
+        # Очистити стан на початку щоб уникнути конфліктів з попередніми станами
+        try:
+            await state.clear()
+        except Exception as state_error:
+            logger.warning(f"⚠️ Не вдалося очистити FSM стан: {state_error}")
+
+        # Determine initial language from Telegram for loading message (fallback to 'ua')
+        tg_lang = callback.from_user.language_code
+        temp_lang = "ua"  # default
+        logger.info(f"🌐 /main (from start): Telegram language_code='{tg_lang}', determining temp_lang for loading message")
+
+        if tg_lang:
+            tg_lang_lower = tg_lang.lower()
+            if tg_lang_lower.startswith("ru") or tg_lang_lower == "be":  # Russian or Belarusian
+                temp_lang = "ru"
+            elif tg_lang_lower.startswith("en"):
+                temp_lang = "en"
+            elif tg_lang_lower.startswith("uk") or tg_lang_lower == "ua":  # Ukrainian
+                temp_lang = "ua"
+            else:
+                logger.warning(f"🌐 /main (from start): Unknown language_code='{tg_lang}', using default 'ua'")
+        else:
+            logger.info("🌐 /main (from start): No language_code from Telegram, using default 'ua'")
+
+        logger.info(f"🌐 /main (from start): Determined temp_lang='{temp_lang}' for loading message, user {callback.from_user.id}")
+
+        # Створюємо задачу для показу індикатора завантаження через 1.5 секунди
+        async def show_loading_indicator():
+            """Показати індикатор завантаження якщо процес займає >1.5 сек."""
+            try:
+                await asyncio.sleep(1.5)
+                loading_text = localization.get_text("loading.main_menu", temp_lang)
+                if not loading_text or not loading_text.strip():
+                    logger.warning(f"⚠️ Loading message порожній для мови {temp_lang}")
+                    return None
+                logger.info(f"🌐 /main (from start): Showing loading message in '{temp_lang}'")
+                return await callback.message.answer(loading_text, parse_mode=None)
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                logger.debug(f"Не вдалося відправити loading message: {e}")
+                return None
+
+        # Запускаємо індикатор в фоні
+        loading_task = asyncio.create_task(show_loading_indicator())
+
+        # DEEP LINK: Тут немає deep link, бо ми прийшли з /start
+        # Але можна додати підтримку deep link через стан, якщо потрібно
+
+        # Реєстрація користувача через tracking API
+        try:
+            tracking_result = await tracking_client.register_user(
+                telegram_id=callback.from_user.id,
+                payload=None,  # немає deep link
+                username=callback.from_user.username,
+                first_name=callback.from_user.first_name,
+                last_name=callback.from_user.last_name
+            )
+
+            if tracking_result:
+                source = tracking_result.get('acquisition_source', 'organic')
+                is_new = tracking_result.get('is_new_user', False)
+                campaign_id = tracking_result.get('campaign_id')
+
+                logger.info(
+                    f"✅ Tracking реєстрація з /main: user={callback.from_user.id}, "
+                    f"source={source}, new={is_new}, campaign={campaign_id}"
+                )
+        except Exception as e:
+            logger.warning(f"⚠️ Помилка tracking реєстрації в /main: {e}")
+
+        # Перевірка чи користувач вже існує
+        is_existing_user = False
+        try:
+            async with get_database_session() as check_session:
+                stmt_check = select(TelegramUser).where(TelegramUser.telegram_id == callback.from_user.id)
+                result_check = await check_session.execute(stmt_check)
+                is_existing_user = result_check.scalar_one_or_none() is not None
+        except Exception as db_error:
+            logger.error(f"❌ Помилка перевірки існування користувача в БД: {db_error}", exc_info=True)
+            is_existing_user = False
+
+        # Реєстрація користувача в БД
+        try:
+            async with get_database_session() as session:
+                user = await get_or_create_user(
+                    session=session,
+                    telegram_id=callback.from_user.id,
+                    username=callback.from_user.username,
+                    first_name=callback.from_user.first_name,
+                    last_name=callback.from_user.last_name,
+                    language=temp_lang
+                )
+                lang = user.language
+        except Exception as db_create_error:
+            logger.error(f"❌ Помилка створення користувача в БД: {db_create_error}", exc_info=True)
+            lang = temp_lang
+
+        # Save language to state
+        await state.update_data(language=lang)
+
+        # Логування
+        log_message = f"Користувач перейшов до головного меню з /start"
+        if not is_existing_user:
+            log_message += " (новий користувач)"
+
+        logger.info(
+            log_message,
+            extra={
+                "user_id": callback.from_user.id,
+                "username": callback.from_user.username,
+                "first_name": callback.from_user.first_name,
+                "language": lang,
+                "is_new_user": not is_existing_user
+            }
+        )
+
+        # Скасувати loading task
+        loading_message = None
+        if loading_task and not loading_task.done():
+            loading_task.cancel()
+            try:
+                await loading_task
+            except asyncio.CancelledError:
+                pass
+        elif loading_task and loading_task.done():
+            try:
+                loading_message = await loading_task
+            except Exception as e:
+                logger.debug(f"Не вдалось отримати loading message: {e}")
+                loading_message = None
+
+        # Видаляємо loading message якщо він був відправлений
+        if loading_message:
+            try:
+                await loading_message.delete()
+                await asyncio.sleep(0.3)
+            except Exception as del_error:
+                logger.debug(f"Не вдалось видалити індикатор завантаження: {del_error}")
+                await asyncio.sleep(0.3)
+
+        # Показати disclaimer сторінку
+        await show_disclaimer_page(callback.message, state, lang=lang, is_new_user=not is_existing_user)
+
+        duration = time.time() - start_time
+        logger.info(f"⏱️ /main (from start) виконано за {duration:.2f}с")
+
+    except Exception as e:
+        logger.error(f"Помилка в go_to_main_from_start_handler: {e}", exc_info=True)
+
+        # Скасувати індикатор при помилці
+        if loading_task and not loading_task.done():
+            loading_task.cancel()
+
+        # Надіслати fallback повідомлення
+        try:
+            fallback_text = localization.get_error_text("error.general", "en")
+            if not fallback_text or not fallback_text.strip():
+                fallback_text = "❌ An error occurred. Please try again."
+            await callback.message.answer(fallback_text, parse_mode=None)
+        except Exception as fallback_error:
+            logger.error(f"❌ Критична помилка відправки fallback в /main: {fallback_error}")
 
 
 @router.callback_query(F.data == "go_to_main")
