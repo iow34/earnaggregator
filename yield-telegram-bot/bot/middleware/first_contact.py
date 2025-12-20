@@ -51,10 +51,10 @@ class FirstContactMiddleware(BaseMiddleware):
         # Перевірка чи є from_user (на всякий випадок)
         if not message.from_user:
             return await handler(event, data)
-        
-        # Пропускаємо welcome message для команди /start
-        # (disclaimer буде показано в start_handler)
-        if message.text and message.text.strip().startswith("/start"):
+
+        # Пропускаємо welcome message для всіх команд (починаються з /)
+        # (disclaimer буде показано в відповідних handlers)
+        if message.text and message.text.strip().startswith("/"):
             return await handler(event, data)
         
         user_id = message.from_user.id

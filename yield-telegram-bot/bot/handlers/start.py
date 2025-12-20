@@ -44,8 +44,14 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
     loading_message = None
     loading_task = None
     
+    # Перевірка наявності користувача
+    if not message.from_user:
+        logger.error("❌ Критична помилка: повідомлення без from_user")
+        await message.answer("❌ Error: Unable to identify user", parse_mode=None)
+        return
+
     # Determine initial language from Telegram for loading message (fallback to 'ua')
-    tg_lang = message.from_user.language_code if message.from_user else None
+    tg_lang = message.from_user.language_code
     temp_lang = "ua"  # default
     logger.info(f"🌐 /start: Telegram language_code='{tg_lang}', determining temp_lang for loading message")
 
@@ -68,7 +74,11 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
         start_time = time.time()
 
         # Очистити стан на початку /start щоб уникнути конфліктів з попередніми станами
-        await state.clear()
+        try:
+            await state.clear()
+        except Exception as state_error:
+            logger.warning(f"⚠️ Не вдалося очистити FSM стан: {state_error}")
+            # Продовжуємо без очищення стану
 
         # Створюємо задачу для показу індикатора завантаження через 1.5 секунди
         # Збільшено час, щоб зменшити ймовірність показу loading message
@@ -79,6 +89,11 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
                 # Якщо ми досі тут - значить завантаження триває
                 # Використовуємо temp_lang для повідомлення завантаження (з Telegram)
                 loading_text = localization.get_text("loading.main_menu", temp_lang)
+                # Перевірка на порожній текст
+                if not loading_text or not loading_text.strip():
+                    logger.warning(f"⚠️ Loading message порожній для мови {temp_lang}")
+                    return None
+
                 logger.info(f"🌐 /start: Showing loading message in '{temp_lang}' (from Telegram): {loading_text}")
                 # Використовуємо parse_mode=None щоб уникнути проблем з HTML на desktop
                 return await message.answer(loading_text, parse_mode=None)
@@ -130,23 +145,33 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
         
         # Перевірка чи користувач вже існує (для визначення чи показувати привітання)
         is_existing_user = False
-        async with get_database_session() as check_session:
-            stmt_check = select(TelegramUser).where(TelegramUser.telegram_id == message.from_user.id)
-            result_check = await check_session.execute(stmt_check)
-            is_existing_user = result_check.scalar_one_or_none() is not None
+        try:
+            async with get_database_session() as check_session:
+                stmt_check = select(TelegramUser).where(TelegramUser.telegram_id == message.from_user.id)
+                result_check = await check_session.execute(stmt_check)
+                is_existing_user = result_check.scalar_one_or_none() is not None
+        except Exception as db_error:
+            logger.error(f"❌ Помилка перевірки існування користувача в БД: {db_error}", exc_info=True)
+            # При помилці БД вважаємо користувача новим
+            is_existing_user = False
         
         # Реєстрація користувача в БД (існуюча логіка)
-        async with get_database_session() as session:
-            # Використовуємо temp_lang як дефолтну мову для нового користувача
-            user = await get_or_create_user(
-                session=session,
-                telegram_id=message.from_user.id,
-                username=message.from_user.username,
-                first_name=message.from_user.first_name,
-                last_name=message.from_user.last_name,
-                language=temp_lang
-            )
-            lang = user.language
+        try:
+            async with get_database_session() as session:
+                # Використовуємо temp_lang як дефолтну мову для нового користувача
+                user = await get_or_create_user(
+                    session=session,
+                    telegram_id=message.from_user.id,
+                    username=message.from_user.username,
+                    first_name=message.from_user.first_name,
+                    last_name=message.from_user.last_name,
+                    language=temp_lang
+                )
+                lang = user.language
+        except Exception as db_create_error:
+            logger.error(f"❌ Помилка створення користувача в БД: {db_create_error}", exc_info=True)
+            # Fallback: використовуємо temp_lang
+            lang = temp_lang
             
         # Save language to state
         await state.update_data(language=lang)
@@ -221,14 +246,24 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
 
     except Exception as e:
         logger.error(f"Помилка в start_handler: {e}", exc_info=True)
-        
+
         # Скасувати індикатор при помилці
         if loading_task and not loading_task.done():
             loading_task.cancel()
-        
-        await message.answer(
-            localization.get_error_text("error.general", temp_lang)
-        )
+
+        # Надіслати fallback повідомлення з мінімальною інформацією
+        try:
+            fallback_text = localization.get_error_text("error.general", temp_lang)
+            if not fallback_text or not fallback_text.strip():
+                fallback_text = "❌ An error occurred. Please try again."
+            await message.answer(fallback_text, parse_mode=None)
+        except Exception as fallback_error:
+            logger.error(f"❌ Критична помилка відправки fallback повідомлення: {fallback_error}")
+            # Останній шанс - просте повідомлення без форматування
+            try:
+                await message.answer("❌ Error occurred. Please contact support.", parse_mode=None)
+            except Exception as final_error:
+                logger.error(f"❌ Фінальна помилка: неможливо відправити повідомлення: {final_error}")
 
 
 async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = "en", is_new_user: bool = False) -> None:
@@ -244,7 +279,7 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
     try:
         # Імпортуємо функцію екранування HTML
         from bot.utils.formatters import _escape_html
-        
+
         # Формуємо текст disclaimer з екрануванням HTML
         title = _escape_html(localization.get_text("disclaimer.title", lang))
         subtitle = _escape_html(localization.get_text("disclaimer.subtitle", lang))
@@ -254,11 +289,21 @@ async def show_disclaimer_page(message: Message, state: FSMContext, lang: str = 
         bullet3 = _escape_html(localization.get_text("disclaimer.bullet3", lang))
         cta = _escape_html(localization.get_text("disclaimer.cta", lang))
 
+        # Перевірка на порожні тексти після екранування
+        if not title or not description or not cta:
+            logger.error(f"❌ Критична помилка: порожні тексти disclaimer для мови {lang}")
+            raise ValueError("Empty disclaimer texts")
+
         text = f"🔍 <b>{title}</b>\n"
         text += f"<i>{subtitle}</i>\n\n"
         text += f"{description}\n\n"
         text += f"{bullet1}\n{bullet2}\n{bullet3}\n\n"
         text += f"<b>{cta}</b>"
+
+        # Перевірка довжини повідомлення (Telegram ліміт ~4096 символів)
+        if len(text) > 4000:
+            logger.warning(f"⚠️ Disclaimer текст занадто довгий ({len(text)} символів), скорочуємо")
+            text = text[:4000] + "..."
 
         # Імпортуємо клавіатури
         from bot.keyboards.navigation import disclaimer_keyboard
