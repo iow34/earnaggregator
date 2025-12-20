@@ -38,11 +38,20 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
     Обробка користувача (реєстрація, трекінг) перенесена на /main для уникнення desktop помилок.
     """
     try:
-        # Перевірка наявності користувача
+        # Перевірка наявності користувача та його даних
         if not message.from_user:
             logger.error("❌ Критична помилка: повідомлення без from_user")
             await message.answer("❌ Error: Unable to identify user", parse_mode=None)
             return
+
+        # Додаткові перевірки полів користувача для desktop клієнта
+        user_id = getattr(message.from_user, 'id', None)
+        if not user_id:
+            logger.error("❌ Критична помилка: користувач без id")
+            await message.answer("❌ Error: Invalid user data", parse_mode=None)
+            return
+
+        logger.info(f"👤 /start: користувач id={user_id}, має всі необхідні поля")
 
         # Очищуємо стан на початку щоб уникнути конфліктів з попередніми станами
         try:
@@ -50,10 +59,12 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
         except Exception as state_error:
             logger.warning(f"⚠️ Не вдалося очистити FSM стан: {state_error}")
 
-        # Визначаємо мову з Telegram для disclaimer
-        tg_lang = message.from_user.language_code
+        # Визначаємо мову з Telegram для disclaimer (з захисними перевірками)
+        tg_lang = getattr(message.from_user, 'language_code', None)
         lang = "ua"  # default
-        if tg_lang:
+        logger.info(f"🌐 /start: language_code='{tg_lang}', user_id={message.from_user.id}")
+
+        if tg_lang and isinstance(tg_lang, str):
             tg_lang_lower = tg_lang.lower()
             if tg_lang_lower.startswith("ru") or tg_lang_lower == "be":
                 lang = "ru"
@@ -61,6 +72,10 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
                 lang = "en"
             elif tg_lang_lower.startswith("uk") or tg_lang_lower == "ua":
                 lang = "ua"
+            else:
+                logger.warning(f"🌐 /start: Unknown language_code='{tg_lang}', using default 'ua'")
+        else:
+            logger.info("🌐 /start: No language_code from Telegram, using default 'ua'")
 
         # Показуємо disclaimer одразу (як було раніше) з кнопкою для /start
         await show_disclaimer_page(message, state, lang=lang, is_new_user=True, from_start=True)
@@ -201,11 +216,20 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         await state.set_state("processing_main")
         await callback.answer()
 
-        # Перевірка наявності користувача
+        # Перевірка наявності користувача та його даних
         if not callback.from_user:
             logger.error("❌ Критична помилка: callback без from_user")
             await callback.message.answer("❌ Error: Unable to identify user", parse_mode=None)
             return
+
+        # Додаткові перевірки полів користувача для desktop клієнта
+        user_id = getattr(callback.from_user, 'id', None)
+        if not user_id:
+            logger.error("❌ Критична помилка: callback користувач без id")
+            await callback.message.answer("❌ Error: Invalid user data", parse_mode=None)
+            return
+
+        logger.info(f"👤 Go to main: користувач id={user_id}, має всі необхідні поля")
 
         start_time = time.time()
 
@@ -216,11 +240,11 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
             logger.warning(f"⚠️ Не вдалося очистити FSM стан: {state_error}")
 
         # Determine initial language from Telegram for loading message (fallback to 'ua')
-        tg_lang = callback.from_user.language_code
+        tg_lang = getattr(callback.from_user, 'language_code', None)
         temp_lang = "ua"  # default
-        logger.info(f"🌐 /main (from start): Telegram language_code='{tg_lang}', determining temp_lang for loading message")
+        logger.info(f"🌐 /main (from start): Telegram language_code='{tg_lang}', user_id={callback.from_user.id}, determining temp_lang for loading message")
 
-        if tg_lang:
+        if tg_lang and isinstance(tg_lang, str):
             tg_lang_lower = tg_lang.lower()
             if tg_lang_lower.startswith("ru") or tg_lang_lower == "be":  # Russian or Belarusian
                 temp_lang = "ru"
@@ -258,14 +282,22 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         # DEEP LINK: Тут немає deep link, бо ми прийшли з /start
         # Але можна додати підтримку deep link через стан, якщо потрібно
 
-        # Реєстрація користувача через tracking API
+        # Реєстрація користувача через tracking API (з захисними перевірками)
         try:
+            # Захисні перевірки для полів користувача
+            user_id = callback.from_user.id
+            username = getattr(callback.from_user, 'username', None)
+            first_name = getattr(callback.from_user, 'first_name', None)
+            last_name = getattr(callback.from_user, 'last_name', None)
+
+            logger.info(f"👤 Дані користувача для tracking: id={user_id}, username={username}, first_name={first_name}, last_name={last_name}")
+
             tracking_result = await tracking_client.register_user(
-                telegram_id=callback.from_user.id,
+                telegram_id=user_id,
                 payload=None,  # немає deep link
-                username=callback.from_user.username,
-                first_name=callback.from_user.first_name,
-                last_name=callback.from_user.last_name
+                username=username,
+                first_name=first_name,
+                last_name=last_name
             )
             
             if tracking_result:
@@ -280,19 +312,28 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         except Exception as e:
             logger.warning(f"⚠️ Помилка tracking реєстрації в /main: {e}")
         
-        # Реєстрація користувача в БД (з перевіркою існування)
+        # Реєстрація користувача в БД (з перевіркою існування та захисними перевірками)
         is_existing_user = False
         try:
+            # Повторно отримуємо дані користувача з захисними перевірками
+            user_id = callback.from_user.id
+            username = getattr(callback.from_user, 'username', None)
+            first_name = getattr(callback.from_user, 'first_name', None)
+            last_name = getattr(callback.from_user, 'last_name', None)
+
+            logger.info(f"🗄️ Реєстрація користувача в БД: id={user_id}, username={username}, first_name={first_name}, last_name={last_name}, lang={temp_lang}")
+
             async with get_database_session() as session:
                 user = await get_or_create_user(
                     session=session,
-                    telegram_id=callback.from_user.id,
-                    username=callback.from_user.username,
-                    first_name=callback.from_user.first_name,
-                    last_name=callback.from_user.last_name,
+                    telegram_id=user_id,
+                    username=username,
+                    first_name=first_name,
+                    last_name=last_name,
                     language=temp_lang
                 )
                 lang = user.language
+                logger.info(f"✅ Користувач зареєстрований в БД: id={user_id}, final_lang={lang}")
                 # Спроба визначити чи користувач вже існував (груба перевірка)
                 # Якщо час створення і оновлення відрізняються, то користувач вже існував
                 is_existing_user = hasattr(user, 'created_at') and hasattr(user, 'updated_at') and user.created_at != user.updated_at
@@ -352,6 +393,10 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
 
         # Показати головну сторінку замість disclaimer (бо disclaimer вже був показаний в /start)
         logger.info(f"🏠 Викликаємо show_main_page для користувача {callback.from_user.id}")
+
+        # Додаткова затримка для desktop клієнта перед показом головного меню
+        await asyncio.sleep(0.2)
+
         from bot.handlers.main_menu import show_main_page
         await show_main_page(callback.message, state, lang)
         logger.info(f"✅ show_main_page успішно виконано для користувача {callback.from_user.id}")
