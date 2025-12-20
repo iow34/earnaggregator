@@ -4,6 +4,7 @@
 
 import asyncio
 from aiogram import Router, F
+from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -74,17 +75,52 @@ async def language_handler(message: Message, state: FSMContext) -> None:
 
         # Save current language to state if not set
         await state.update_data(language=current_lang)
-        
+
         text = localization.get_text("language.select_prompt", current_lang)
-        
+
         await message.answer(
             text=text,
             reply_markup=get_language_keyboard(current_lang)
         )
         await state.set_state(LanguageSelection.waiting_for_language)
-        
+
     except Exception as e:
         logger.error(f"Помилка в language_handler: {e}", exc_info=True)
+        await message.answer(
+            localization.get_error_text("error.general", "ua") # Fallback to UA if unknown
+        )
+
+
+@router.message(Command("language"))
+async def language_command_handler(message: Message, state: FSMContext) -> None:
+    """Обробник команди /language."""
+    try:
+        user_id = message.from_user.id
+
+        # Get current language from DB to mark selected
+        async with db_manager.get_session() as session:
+            user = await get_or_create_user(
+                session,
+                telegram_id=user_id,
+                username=message.from_user.username,
+                first_name=message.from_user.first_name,
+                last_name=message.from_user.last_name
+            )
+            current_lang = user.language
+
+        # Save current language to state if not set
+        await state.update_data(language=current_lang)
+
+        text = localization.get_text("language.select_prompt", current_lang)
+
+        await message.answer(
+            text=text,
+            reply_markup=get_language_keyboard(current_lang)
+        )
+        await state.set_state(LanguageSelection.waiting_for_language)
+
+    except Exception as e:
+        logger.error(f"Помилка в language_command_handler: {e}", exc_info=True)
         await message.answer(
             localization.get_error_text("error.general", "ua") # Fallback to UA if unknown
         )

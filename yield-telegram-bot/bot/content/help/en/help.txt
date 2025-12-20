@@ -69,11 +69,15 @@ Binance, Bybit, OKX, MEXC, Gate.io, BitMart, Bitget, Kraken, KuCoin, HTX, Nexo
    • Consider risk level: Stablecoins (lower APY, safer) vs Altcoins (higher APY, riskier)
 
 🌐 <b>Language</b>
+   • /language - Show language selection menu
+   • Click the "🌐 Language" button in the menu
+   • Supports: Ukrainian, Russian, English
    • Language selection feature (coming soon)
    • Currently supporting Ukrainian, Russian and English
 
 ⚡ <b>Quick Commands:</b>
    • /main - Show main menu with trending coins
+   • /language - Show language selection menu
    • /help - Show this guide
    • /recommendations - View all recommendations
    • /exchanges - Show list of all exchanges
