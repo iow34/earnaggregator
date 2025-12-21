@@ -30,6 +30,35 @@ from bot.localization import localization
 router = Router(name="start_handler")
 
 
+def detect_user_language(message: Message) -> str:
+    """
+    Визначає мову користувача на основі Telegram language_code.
+
+    Args:
+        message: Повідомлення від користувача
+
+    Returns:
+        Код мови: "ua", "ru", або "en" (default)
+    """
+    if not message.from_user or not hasattr(message.from_user, 'language_code'):
+        return "en"
+
+    tg_lang = message.from_user.language_code
+    if not tg_lang:
+        return "en"
+
+    # Мапінг Telegram мов на наші підтримувані мови
+    if tg_lang.startswith("uk"):
+        return "ua"
+    elif tg_lang.startswith("ru"):
+        return "ru"
+    elif tg_lang.startswith("en"):
+        return "en"
+    else:
+        # Для інших мов використовуємо англійську
+        return "en"
+
+
 @router.message(CommandStart())
 async def start_handler(message: Message, state: FSMContext, command: CommandObject = None) -> None:
     """
@@ -59,10 +88,9 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
         except Exception as state_error:
             logger.warning(f"⚠️ Не вдалося очистити FSM стан: {state_error}")
 
-        # Використовуємо англійську мову за замовчуванням для disclaimer
-        # Користувач зможе змінити мову через команду /language
-        lang = "en"
-        logger.info(f"🌐 /start: Using default English language, user_id={message.from_user.id}")
+        # Визначаємо мову користувача з Telegram
+        lang = detect_user_language(message)
+        logger.info(f"🌐 /start: Detected language '{lang}' from Telegram, user_id={message.from_user.id}")
 
         # Показуємо disclaimer одразу (як було раніше) з кнопкою для /start
         await show_disclaimer_page(message, state, lang=lang, is_new_user=True, from_start=True)
@@ -226,10 +254,9 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         except Exception as state_error:
             logger.warning(f"⚠️ Не вдалося очистити FSM стан: {state_error}")
 
-        # Використовуємо англійську мову за замовчуванням для loading message
-        # Користувач зможе змінити мову через команду /language
-        temp_lang = "en"
-        logger.info(f"🌐 /main (from start): Using default English language for loading, user_id={callback.from_user.id}")
+        # Визначаємо мову користувача з Telegram для loading message
+        temp_lang = detect_user_language(callback.message)
+        logger.info(f"🌐 /main (from start): Detected language '{temp_lang}' from Telegram for loading, user_id={callback.from_user.id}")
 
         logger.info(f"🌐 /main (from start): Determined temp_lang='{temp_lang}' for loading message, user {callback.from_user.id}")
 
@@ -326,7 +353,7 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         log_message = f"Користувач перейшов до головного меню з /start"
         if not is_existing_user:
             log_message += " (новий користувач)"
-
+        
         logger.info(
             log_message,
             extra={
@@ -385,7 +412,7 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
 
         # Очистити стан обробки
         await state.set_state(None)
-
+        
         duration = time.time() - start_time
         logger.info(f"⏱️ /main (from start) виконано за {duration:.2f}с")
 
@@ -397,11 +424,11 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
             await state.set_state(None)
         except:
             pass
-
+        
         # Скасувати індикатор при помилці
         if loading_task and not loading_task.done():
             loading_task.cancel()
-
+        
         # Надіслати fallback повідомлення
         try:
             logger.info(f"📤 Надсилаємо fallback повідомлення для користувача {callback.from_user.id if callback.from_user else 'unknown'}")
