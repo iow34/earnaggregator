@@ -2,9 +2,9 @@
 Менеджер сесій для групування дій користувачів.
 """
 import uuid
-from datetime import datetime, timedelta, UTC
 from typing import Optional
 import redis.asyncio as redis
+from redis.exceptions import ConnectionError as RedisConnectionError
 from bot.config import settings
 from bot.utils.logger import logger
 
@@ -19,6 +19,10 @@ class SessionManager:
 
     async def initialize(self):
         """Ініціалізація Redis клієнта."""
+        if self.redis:
+            logger.debug("SessionManager вже ініціалізований")
+            return
+
         try:
             self.redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
             # Перевірка з'єднання
@@ -27,6 +31,16 @@ class SessionManager:
         except Exception as e:
             logger.error(f"❌ Помилка ініціалізації SessionManager: {e}")
             raise
+
+    async def is_available(self) -> bool:
+        """Перевірити чи SessionManager готовий до роботи."""
+        if not self.redis:
+            return False
+        try:
+            await self.redis.ping()
+            return True
+        except Exception:
+            return False
 
     async def get_or_create_session(self, user_id: int) -> str:
         """
@@ -38,6 +52,16 @@ class SessionManager:
         Returns:
             UUID сесії
         """
+        # Валідація user_id
+        if not isinstance(user_id, int) or user_id <= 0:
+            logger.error(f"❌ Неправильний user_id для сесії: {user_id}")
+            return str(uuid.uuid4())
+
+        # Перевірка ініціалізації Redis
+        if not self.redis:
+            logger.warning("⚠️ SessionManager не ініціалізований, використовую fallback для user {user_id}")
+            return str(uuid.uuid4())
+
         key = f"session:{user_id}"
 
         try:
@@ -56,8 +80,11 @@ class SessionManager:
             logger.info(f"🆕 Нова сесія створена: {new_session_id} для user {user_id}")
             return new_session_id
 
+        except RedisConnectionError as e:
+            logger.warning(f"⚠️ Redis недоступний для user {user_id}: {e}")
+            return str(uuid.uuid4())
         except Exception as e:
-            logger.error(f"❌ Помилка в get_or_create_session: {e}")
+            logger.error(f"❌ Неочікувана помилка в get_or_create_session для user {user_id}: {e}", exc_info=True)
             # Fallback - генеруємо UUID без збереження в Redis
             return str(uuid.uuid4())
 
