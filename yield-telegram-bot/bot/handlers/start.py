@@ -92,6 +92,20 @@ async def start_handler(message: Message, state: FSMContext, command: CommandObj
         lang = detect_user_language(message)
         logger.info(f"🌐 /start: Detected language '{lang}' from Telegram, user_id={message.from_user.id}")
 
+        # Обробка deep link параметра для Desktop Telegram compatibility
+        deep_link_param = None
+        if command and command.args:
+            deep_link_param = command.args.strip()
+            logger.info(f"🔗 /start: Отриманий deep link параметр: '{deep_link_param}' для user_id={user_id}")
+            # Зберігаємо параметр в state для подальшої обробки
+            await state.update_data(deep_link_param=deep_link_param)
+        else:
+            # Desktop Telegram може не надіслати параметр одразу - позначаємо для deferred обробки
+            logger.info(f"📱 /start: Deep link параметр не отримано (можливо Desktop client), user_id={user_id}")
+            await state.update_data(deferred_deep_link=True)
+            # Зберігаємо інформацію про те, що користувач прийшов через deep link
+            await state.update_data(from_deep_link=True)
+
         # Показуємо disclaimer одразу (як було раніше) з кнопкою для /start
         await show_disclaimer_page(message, state, lang=lang, is_new_user=True, from_start=True)
 
@@ -280,8 +294,23 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
         # Запускаємо індикатор в фоні
         loading_task = asyncio.create_task(show_loading_indicator())
         
-        # DEEP LINK: Тут немає deep link, бо ми прийшли з /start
-        # Але можна додати підтримку deep link через стан, якщо потрібно
+        # DEEP LINK: Обробка відкладеного deep link для Desktop Telegram
+        deep_link_param = None
+
+        # Перевіряємо, чи є збережений deep link параметр з /start
+        state_data = await state.get_data()
+        if state_data.get('deep_link_param'):
+            deep_link_param = state_data['deep_link_param']
+            logger.info(f"🔗 /main: Знайдений збережений deep link параметр: '{deep_link_param}' для user_id={user_id}")
+        elif state_data.get('deferred_deep_link'):
+            # Якщо позначка deferred_deep_link є, але параметра немає - це нормально для Desktop
+            logger.info(f"📱 /main: Deferred deep link обробка для Desktop client, user_id={user_id}")
+            # Можна додати логіку для повторного запиту deep link або fallback поведінки
+
+        if deep_link_param:
+            logger.info(f"🎯 /main: Обробляємо deep link: '{deep_link_param}' для user_id={user_id}")
+            # Тут можна додати специфічну логіку обробки deep link параметра
+            # Наприклад, перенаправлення на конкретну сторінку або активація промокоду
 
         # Реєстрація користувача через tracking API (з захисними перевірками)
         try:
@@ -295,7 +324,7 @@ async def go_to_main_from_start_handler(callback: CallbackQuery, state: FSMConte
 
             tracking_result = await tracking_client.register_user(
                 telegram_id=user_id,
-                payload=None,  # немає deep link
+                payload=deep_link_param,  # передаємо deep link параметр
                 username=username,
                 first_name=first_name,
                 last_name=last_name
