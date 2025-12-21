@@ -221,15 +221,15 @@ async def main() -> None:
             logger.info("✅ Бот запущено і готовий до роботи!")
             logger.info("📋 Доступні команди: /main, /yield <SYMBOL>, /top, /help, /recommendations, /rec1-rec10, /exchanges")
 
-            # Запуск polling з збільшеним інтервалом для зменшення мережевих помилок
+            # Запуск polling з оптимізованим інтервалом для кращої реакції на deep links
             await dp.start_polling(
                 bot,
                 allowed_updates=dp.resolve_used_update_types(),
                 close_bot_session=True,
-                # Збільшуємо інтервал між запитами з 0.2 сек до 1 сек для зменшення навантаження на Telegram API
-                interval=1.0,  # секунди між запитами (замість 0.2 за замовчуванням)
-                timeout=30,    # таймаут на отримання відповіді від Telegram
-                request_timeout=25  # таймаут на HTTP запит
+                # Оптимізуємо інтервал для кращої реакції на deep links
+                interval=0.5,  # секунди між запитами (оптимізовано для швидкої реакції)
+                timeout=20,    # таймаут на отримання відповіді від Telegram
+                request_timeout=15  # таймаут на HTTP запит
             )
 
         except Exception as e:
