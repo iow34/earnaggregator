@@ -14,7 +14,7 @@ async def require_service_key(key: str | None = Depends(service_key)) -> None:
     """Fail closed when a service key has not been configured."""
     if not settings.service_api_key:
         raise HTTPException(status_code=503, detail="Service authorization is not configured")
-    if not key or not secrets.compare_digest(key, settings.service_api_key):
+    if not key or not secrets.compare_digest(key.encode(), settings.service_api_key.encode()):
         raise HTTPException(status_code=401, detail="Invalid service API key")
 
 

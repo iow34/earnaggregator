@@ -168,7 +168,7 @@ class UserAnalyticsDB(Base):
         Index("idx_user_timestamp", "user_id", "timestamp"),
         Index("idx_action_type", "action_type", "timestamp"),
         Index("idx_symbol_provider", "symbol", "provider"),
-        Index("idx_timestamp", "timestamp"),
+        Index("idx_user_analytics_timestamp", "timestamp"),
     )
 
     def __repr__(self):
@@ -196,7 +196,7 @@ class SystemMetricsDB(Base):
     __table_args__ = (
         Index("idx_metric_name_timestamp", "metric_name", "timestamp"),
         Index("idx_metric_type", "metric_type"),
-        Index("idx_timestamp", "timestamp"),
+        Index("idx_system_metrics_timestamp", "timestamp"),
     )
 
     def __repr__(self):

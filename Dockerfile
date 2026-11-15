@@ -4,7 +4,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt && useradd --create-home --uid 10001 appuser
 COPY yield-data-service/app /app/app
-COPY yield-data-service/scripts /app/scripts
 COPY yield-telegram-bot/bot /app/bot
 COPY yield-telegram-bot/alembic /app/alembic
 COPY yield-telegram-bot/alembic.ini /app/alembic.ini

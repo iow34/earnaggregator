@@ -14,7 +14,7 @@ from bot.db.database import db_manager
 async def create() -> None:
     email = input("Administrator email: ").strip()
     password = getpass("Password (at least 12 characters): ")
-    if len(password) < 12 or "@" not in email:
+    if len(password) < 12 or len(password.encode()) > 72 or "@" not in email:
         raise ValueError("Provide a valid email and a password of at least 12 characters")
     if not await db_manager.initialize():
         raise RuntimeError("Database initialization failed")

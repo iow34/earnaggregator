@@ -69,7 +69,11 @@ class DatabaseManager:
                     logger.warning(
                         "⚠️ Не вдалося підключитися до 'postgres'. Пробуємо fallback на 127.0.0.1"
                     )
-                    fallback_url = str(make_url(self._db_url).set(host="127.0.0.1"))
+                    fallback_url = (
+                        make_url(self._db_url)
+                        .set(host="127.0.0.1")
+                        .render_as_string(hide_password=False)
+                    )
 
                     if self.engine:
                         await self.engine.dispose()

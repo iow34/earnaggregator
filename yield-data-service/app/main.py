@@ -90,7 +90,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="EarnAggregator Data Service",
-    description="",
+    description="Normalized exchange Earn catalogue and private operational endpoints",
     version=__version__,
     lifespan=lifespan,
     docs_url="/docs",
