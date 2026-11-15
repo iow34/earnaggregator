@@ -1,5 +1,3 @@
-# Prometheus configuration для EarnAggregator Data Service
-# РОЗДІЛ 3.3: Моніторинг scheduler та метрик
 
 global:
   scrape_interval: 30s # Збір метрик кожні 30 секунд
@@ -15,29 +13,24 @@ alerting:
         - targets:
             - "alertmanager:9093"
 
-# Правила для alerting
 rule_files:
   - "alert_rules.yml"
 
 # Scrape configurations
 scrape_configs:
-  # Job для EarnAggregator Data Service - Prometheus метрики
   - job_name: "earnaggregator-metrics"
     static_configs:
       - targets: ["yield-api:8000"] # Docker service name
 
-    # Основний endpoint з Prometheus метриками
     metrics_path: "/metrics"
     scrape_interval: 30s
     scrape_timeout: 10s
 
-    # Додаткові мітки
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: "earnaggregator-api"
 
-  # cAdvisor (метрики ресурсів контейнерів)
   - job_name: "cadvisor"
     static_configs:
       - targets: ["cadvisor:8080"]

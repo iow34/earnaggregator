@@ -13,7 +13,9 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_metrics_endpoint_prometheus_text():
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
         resp = await client.get("/metrics")
         assert resp.status_code == 200
         ctype = resp.headers.get("content-type", "")

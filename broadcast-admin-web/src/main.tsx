@@ -25,7 +25,7 @@ createRoot(document.getElementById("root")!).render(
           <App />
         </BrowserRouter>
       </ApiKeyProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
+      {import.meta.env.DEV && import.meta.env.VITE_PREVIEW_MODE !== "true" && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   </StrictMode>,
 );

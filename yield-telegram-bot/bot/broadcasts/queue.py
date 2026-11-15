@@ -1,7 +1,3 @@
-"""
-Redis-черга для ручних розсилок.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -15,8 +11,6 @@ from bot.utils.metrics import BROADCAST_QUEUE_DEPTH
 
 
 class BroadcastQueue:
-    """Асинхронна черга для постановки розсилок у обробку."""
-
     def __init__(
         self,
         *,
@@ -32,7 +26,6 @@ class BroadcastQueue:
         )
 
     async def enqueue_broadcast(self, broadcast_id: int, delay: Optional[float] = None) -> None:
-        """Поставити broadcast у чергу з опціональною затримкою."""
         if delay and delay > 0:
             asyncio.create_task(self._delayed_enqueue(broadcast_id, delay))
             return
@@ -48,7 +41,6 @@ class BroadcastQueue:
         logger.debug("Broadcast %s повторно поставлено після затримки %s", broadcast_id, delay)
 
     async def dequeue(self, timeout: int = 5) -> Optional[int]:
-        """Взяти наступний broadcast з черги."""
         result = await self._redis.brpop(self.queue_name, timeout=timeout)
         if not result:
             return None
@@ -66,4 +58,3 @@ class BroadcastQueue:
     async def close(self) -> None:
         if self._redis:
             await self._redis.close()
-

@@ -1,14 +1,4 @@
-"""
-CRUD операції для Telegram бота.
-
-Функції:
-- get_or_create_user: створення/отримання користувача
-- add_user_query: додавання запиту користувача
-- add_referral_click: додавання кліку по реферальному посиланню
-- get_user_action_stats: статистика дій користувача
-- get_popular_actions: популярні дії
-- get_referral_stats: статистика реферальних кліків
-"""
+import hashlib
 
 from datetime import datetime, timedelta, UTC
 from typing import Optional
@@ -37,24 +27,12 @@ async def get_or_create_user(
     last_name: Optional[str] = None,
     language: str = "ua",
 ) -> TelegramUser:
-    """
-    Отримати існуючого користувача або створити нового.
 
-    :param session: сесія БД
-    :param telegram_id: Telegram ID користувача
-    :param username: username користувача
-    :param first_name: ім'я користувача
-    :param last_name: прізвище користувача
-    :param language: мова користувача
-    :return: об'єкт TelegramUser
-    """
-    # Спробуємо знайти існуючого користувача
     stmt = select(TelegramUser).where(TelegramUser.telegram_id == telegram_id)
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
 
     if user:
-        # Оновимо last_seen та інші поля, якщо вони змінились
         update_data = {"last_seen": datetime.utcnow()}
         if username != user.username:
             update_data["username"] = username
@@ -63,15 +41,8 @@ async def get_or_create_user(
         if last_name != user.last_name:
             update_data["last_name"] = last_name
 
-        # Ми не оновлюємо language тут автоматично, бо користувач може його змінити вручну
-        # Але якщо користувача створювали давно без мови (хоча є дефолт), можна було б
-        
-        if len(update_data) > 1:  # більше ніж last_seen
-            stmt = (
-                update(TelegramUser)
-                .where(TelegramUser.id == user.id)
-                .values(**update_data)
-            )
+        if len(update_data) > 1:
+            stmt = update(TelegramUser).where(TelegramUser.id == user.id).values(**update_data)
             await session.execute(stmt)
             await session.commit()
             await session.refresh(user)
@@ -79,7 +50,6 @@ async def get_or_create_user(
         logger.info(f"Існуючий користувач: {user}")
         return user
 
-    # Створимо нового користувача
     new_user = TelegramUser(
         telegram_id=telegram_id,
         username=username,
@@ -96,19 +66,7 @@ async def get_or_create_user(
     return new_user
 
 
-async def update_user_language(
-    session: AsyncSession,
-    telegram_id: int,
-    language: str
-) -> bool:
-    """
-    Оновити мову користувача.
-
-    :param session: сесія БД
-    :param telegram_id: Telegram ID користувача
-    :param language: нова мова ('ua', 'ru', 'en')
-    :return: True якщо успішно
-    """
+async def update_user_language(session: AsyncSession, telegram_id: int, language: str) -> bool:
     stmt = (
         update(TelegramUser)
         .where(TelegramUser.telegram_id == telegram_id)
@@ -126,16 +84,6 @@ async def add_user_query(
     symbol: Optional[str] = None,
     limit: Optional[int] = None,
 ) -> UserQuery:
-    """
-    Додати запис про запит користувача.
-
-    :param session: сесія БД
-    :param user_id: ID користувача в БД
-    :param query_type: тип запиту ('yield', 'top', 'help')
-    :param symbol: символ монети (якщо застосовується)
-    :param limit: ліміт результатів
-    :return: об'єкт UserQuery
-    """
     query = UserQuery(
         user_id=user_id,
         query_type=query_type,
@@ -156,15 +104,6 @@ async def add_referral_click(
     exchange: str,
     symbol: Optional[str] = None,
 ) -> ReferralClick:
-    """
-    Додати запис про клік по реферальному посиланню.
-
-    :param session: сесія БД
-    :param user_id: ID користувача в БД
-    :param exchange: біржа ('binance', 'bybit', 'nexo')
-    :param symbol: символ монети
-    :return: об'єкт ReferralClick
-    """
     click = ReferralClick(
         user_id=user_id,
         exchange=exchange,
@@ -183,7 +122,6 @@ async def update_user_subscription(
     telegram_id: int,
     is_subscribed: bool,
 ) -> bool:
-    """Оновити статус розсилок для користувача."""
     stmt = (
         update(TelegramUser)
         .where(TelegramUser.telegram_id == telegram_id)
@@ -199,7 +137,6 @@ async def add_user_tags(
     telegram_id: int,
     tags: list[str],
 ) -> Optional[TelegramUser]:
-    """Додати теги користувачу."""
     stmt = select(TelegramUser).where(TelegramUser.telegram_id == telegram_id)
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
@@ -220,7 +157,6 @@ async def filter_users_for_broadcast(
     limit: int = 500,
     offset: int = 0,
 ) -> list[TelegramUser]:
-    """Отримати список користувачів під конкретний сегмент."""
     stmt = select(TelegramUser).where(TelegramUser.is_active.is_(True))
 
     if (is_subscribed := filters.get("is_subscribed")) is not None:
@@ -233,11 +169,7 @@ async def filter_users_for_broadcast(
         stmt = stmt.where(TelegramUser.tags.contains(tags_all))
 
     if tags_any := filters.get("tags_any"):
-        expressions = [
-            TelegramUser.tags.contains([tag])
-            for tag in tags_any
-            if tag
-        ]
+        expressions = [TelegramUser.tags.contains([tag]) for tag in tags_any if tag]
         if expressions:
             stmt = stmt.where(or_(*expressions))
 
@@ -359,9 +291,8 @@ async def get_broadcast_events(
     per_page: int,
 ):
     offset = (page - 1) * per_page
-    total_stmt = (
-        select(func.count(BroadcastEvent.id))
-        .where(BroadcastEvent.broadcast_id == broadcast_id)
+    total_stmt = select(func.count(BroadcastEvent.id)).where(
+        BroadcastEvent.broadcast_id == broadcast_id
     )
     total = (await session.execute(total_stmt)).scalar() or 0
 
@@ -397,13 +328,11 @@ async def get_broadcast_recipients(
                 BroadcastRecipient.error_code.ilike(f"%{search}%"),
             )
         )
-    total = (await session.execute(select(func.count()).select_from(base_stmt.subquery()))).scalar() or 0
+    total = (
+        await session.execute(select(func.count()).select_from(base_stmt.subquery()))
+    ).scalar() or 0
 
-    stmt = (
-        base_stmt.order_by(BroadcastRecipient.id)
-        .offset(offset)
-        .limit(per_page)
-    )
+    stmt = base_stmt.order_by(BroadcastRecipient.id).offset(offset).limit(per_page)
     rows = (await session.execute(stmt)).scalars().all()
     return rows, total
 
@@ -443,19 +372,11 @@ async def get_dashboard_metrics(session: AsyncSession):
 
 
 async def get_user_stats(session: AsyncSession, user_id: int) -> dict:
-    """
-    Отримати статистику користувача.
 
-    :param session: сесія БД
-    :param user_id: ID користувача в БД
-    :return: словник зі статистикою
-    """
-    # Кількість запитів
     stmt = select(UserQuery).where(UserQuery.user_id == user_id)
     result = await session.execute(stmt)
     queries = result.scalars().all()
 
-    # Кількість реферальних кліків
     stmt = select(ReferralClick).where(ReferralClick.user_id == user_id)
     result = await session.execute(stmt)
     clicks = result.scalars().all()
@@ -468,49 +389,28 @@ async def get_user_stats(session: AsyncSession, user_id: int) -> dict:
     }
 
 
-async def get_user_action_stats(
-    session: AsyncSession,
-    user_id: int,
-    days: int = 7
-) -> dict:
-    """
-    Отримати статистику дій користувача за період.
-
-    Args:
-        session: Сесія БД
-        user_id: Telegram ID користувача
-        days: Період в днях
-
-    Returns:
-        Словник зі статистикою
-    """
+async def get_user_action_stats(session: AsyncSession, user_id: int, days: int = 7) -> dict:
     cutoff_date = datetime.now(UTC) - timedelta(days=days)
 
-    # Загальна кількість дій
     stmt = select(func.count(UserAction.id)).where(
-        UserAction.user_id == user_id,
-        UserAction.timestamp >= cutoff_date
+        UserAction.user_id == user_id, UserAction.timestamp >= cutoff_date
     )
     result = await session.execute(stmt)
     total_actions = result.scalar()
 
-    # Кількість по типах
-    stmt = select(
-        UserAction.action_type,
-        func.count(UserAction.id)
-    ).where(
-        UserAction.user_id == user_id,
-        UserAction.timestamp >= cutoff_date
-    ).group_by(UserAction.action_type)
+    stmt = (
+        select(UserAction.action_type, func.count(UserAction.id))
+        .where(UserAction.user_id == user_id, UserAction.timestamp >= cutoff_date)
+        .group_by(UserAction.action_type)
+    )
 
     result = await session.execute(stmt)
     actions_by_type = dict(result.fetchall())
 
-    # Середня latency
     stmt = select(func.avg(UserAction.latency_ms)).where(
         UserAction.user_id == user_id,
         UserAction.timestamp >= cutoff_date,
-        UserAction.latency_ms.isnot(None)
+        UserAction.latency_ms.isnot(None),
     )
     result = await session.execute(stmt)
     avg_latency = result.scalar()
@@ -519,187 +419,135 @@ async def get_user_action_stats(
         "total_actions": total_actions,
         "actions_by_type": actions_by_type,
         "period_days": days,
-        "avg_latency_ms": round(avg_latency, 2) if avg_latency else None
+        "avg_latency_ms": round(avg_latency, 2) if avg_latency else None,
     }
 
 
-async def get_popular_actions(
-    session: AsyncSession,
-    days: int = 7,
-    limit: int = 10
-) -> list:
-    """
-    Отримати найпопулярніші дії за період.
-
-    Args:
-        session: Сесія БД
-        days: Період в днях
-        limit: Ліміт результатів
-
-    Returns:
-        Список найпопулярніших дій
-    """
+async def get_popular_actions(session: AsyncSession, days: int = 7, limit: int = 10) -> list:
     cutoff_date = datetime.now(UTC) - timedelta(days=days)
 
-    stmt = select(
-        UserAction.action_type,
-        func.count(UserAction.id).label('count')
-    ).where(
-        UserAction.timestamp >= cutoff_date
-    ).group_by(
-        UserAction.action_type
-    ).order_by(
-        desc('count')
-    ).limit(limit)
+    stmt = (
+        select(UserAction.action_type, func.count(UserAction.id).label("count"))
+        .where(UserAction.timestamp >= cutoff_date)
+        .group_by(UserAction.action_type)
+        .order_by(desc("count"))
+        .limit(limit)
+    )
 
     result = await session.execute(stmt)
     return [{"action_type": row[0], "count": row[1]} for row in result.fetchall()]
 
 
 async def get_referral_stats(
-    session: AsyncSession,
-    days: int = 30,
-    exchange: Optional[str] = None
+    session: AsyncSession, days: int = 30, exchange: Optional[str] = None
 ) -> dict:
-    """
-    Отримати статистику реферальних кліків.
-
-    Args:
-        session: Сесія БД
-        days: Період в днях
-        exchange: Фільтр по біржі (опційно)
-
-    Returns:
-        Словник зі статистикою
-    """
     import json
-    
+
     cutoff_date = datetime.now(UTC) - timedelta(days=days)
 
-    # Базовий запит
     base_query = select(UserAction).where(
-        UserAction.action_type == 'referral_click',
-        UserAction.timestamp >= cutoff_date
+        UserAction.action_type == "referral_click", UserAction.timestamp >= cutoff_date
     )
 
-    # Фільтр по біржі якщо вказано
     if exchange:
-        # Потрібно парсити JSON context для фільтрації
         result = await session.execute(base_query)
         all_clicks = result.scalars().all()
-        
-        # Фільтруємо по exchange в context
+
         filtered_clicks = []
         for click in all_clicks:
             if click.context:
                 try:
-                    context = json.loads(click.context) if isinstance(click.context, str) else click.context
-                    if context.get('exchange') == exchange:
+                    context = (
+                        json.loads(click.context)
+                        if isinstance(click.context, str)
+                        else click.context
+                    )
+                    if context.get("exchange") == exchange:
                         filtered_clicks.append(click)
                 except:
                     continue
-        
+
         total_clicks = len(filtered_clicks)
-        
-        # Підраховуємо по символах
+
         symbols_count = {}
         for click in filtered_clicks:
             try:
-                context = json.loads(click.context) if isinstance(click.context, str) else click.context
-                symbol = context.get('symbol', 'unknown')
+                context = (
+                    json.loads(click.context) if isinstance(click.context, str) else click.context
+                )
+                symbol = context.get("symbol", "unknown")
                 symbols_count[symbol] = symbols_count.get(symbol, 0) + 1
             except:
                 continue
     else:
-        # Всі кліки
         result = await session.execute(base_query)
         all_clicks = result.scalars().all()
         total_clicks = len(all_clicks)
-        
-        # Підраховуємо по біржах
+
         exchanges_count = {}
         symbols_count = {}
-        
+
         for click in all_clicks:
             if click.context:
                 try:
-                    context = json.loads(click.context) if isinstance(click.context, str) else click.context
-                    exchange_name = context.get('exchange', 'unknown')
-                    symbol = context.get('symbol', 'none')
-                    
+                    context = (
+                        json.loads(click.context)
+                        if isinstance(click.context, str)
+                        else click.context
+                    )
+                    exchange_name = context.get("exchange", "unknown")
+                    symbol = context.get("symbol", "none")
+
                     exchanges_count[exchange_name] = exchanges_count.get(exchange_name, 0) + 1
                     symbols_count[symbol] = symbols_count.get(symbol, 0) + 1
                 except:
                     continue
-    
-    # Унікальні користувачі
+
     unique_users = len(set(click.user_id for click in all_clicks))
-    
+
     result_stats = {
         "total_clicks": total_clicks,
         "unique_users": unique_users,
         "period_days": days,
-        "symbols": symbols_count
+        "symbols": symbols_count,
     }
-    
+
     if not exchange:
         result_stats["exchanges"] = exchanges_count
-    
+
     return result_stats
 
 
 async def get_top_referral_exchanges(
-    session: AsyncSession,
-    days: int = 30,
-    limit: int = 10
+    session: AsyncSession, days: int = 30, limit: int = 10
 ) -> list:
-    """
-    Отримати топ бірж по реферальним клікам.
-
-    Args:
-        session: Сесія БД
-        days: Період в днях
-        limit: Ліміт результатів
-
-    Returns:
-        Список бірж з кількістю кліків
-    """
     import json
-    
+
     cutoff_date = datetime.now(UTC) - timedelta(days=days)
 
-    # Отримуємо всі реферальні кліки
     stmt = select(UserAction).where(
-        UserAction.action_type == 'referral_click',
-        UserAction.timestamp >= cutoff_date
+        UserAction.action_type == "referral_click", UserAction.timestamp >= cutoff_date
     )
-    
+
     result = await session.execute(stmt)
     all_clicks = result.scalars().all()
-    
-    # Підраховуємо по біржах
+
     exchanges_count = {}
-    
+
     for click in all_clicks:
         if click.context:
             try:
-                context = json.loads(click.context) if isinstance(click.context, str) else click.context
-                exchange = context.get('exchange', 'unknown')
+                context = (
+                    json.loads(click.context) if isinstance(click.context, str) else click.context
+                )
+                exchange = context.get("exchange", "unknown")
                 exchanges_count[exchange] = exchanges_count.get(exchange, 0) + 1
             except:
                 continue
-    
-    # Сортуємо і повертаємо топ
-    sorted_exchanges = sorted(
-        exchanges_count.items(),
-        key=lambda x: x[1],
-        reverse=True
-    )[:limit]
-    
-    return [
-        {"exchange": exchange, "count": count}
-        for exchange, count in sorted_exchanges
-    ]
+
+    sorted_exchanges = sorted(exchanges_count.items(), key=lambda x: x[1], reverse=True)[:limit]
+
+    return [{"exchange": exchange, "count": count} for exchange, count in sorted_exchanges]
 
 
 async def get_admin_by_email(session: AsyncSession, email: str) -> Optional[AdminUser]:
@@ -710,7 +558,7 @@ async def get_admin_by_email(session: AsyncSession, email: str) -> Optional[Admi
 
 async def get_admin_by_api_key(session: AsyncSession, api_key: str) -> Optional[AdminUser]:
     stmt = select(AdminUser).where(
-        AdminUser.api_key == api_key,
+        AdminUser.api_key == hashlib.sha256(api_key.encode()).hexdigest(),
         AdminUser.is_active.is_(True),
     )
     result = await session.execute(stmt)
@@ -728,7 +576,7 @@ async def create_admin_user(
     admin = AdminUser(
         email=email,
         password_hash=password_hash,
-        api_key=api_key,
+        api_key=hashlib.sha256(api_key.encode()).hexdigest(),
         role=role,
     )
     session.add(admin)
@@ -738,11 +586,7 @@ async def create_admin_user(
 
 
 async def record_admin_login(session: AsyncSession, admin_id: int) -> None:
-    stmt = (
-        update(AdminUser)
-        .where(AdminUser.id == admin_id)
-        .values(last_login_at=func.now())
-    )
+    stmt = update(AdminUser).where(AdminUser.id == admin_id).values(last_login_at=func.now())
     await session.execute(stmt)
     await session.commit()
 

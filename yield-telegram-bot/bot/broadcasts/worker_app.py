@@ -1,7 +1,3 @@
-"""
-Окремий процес worker для ручних розсилок.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -58,4 +54,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -1,2 +1,1 @@
 """Russian welcome messages."""
-

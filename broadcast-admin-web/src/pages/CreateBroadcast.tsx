@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { createBroadcast } from "../api/broadcasts";
 
@@ -12,10 +12,13 @@ export const CreateBroadcastPage = () => {
   const [requiresApproval, setRequiresApproval] = useState(false);
   const [successId, setSuccessId] = useState<number | null>(null);
 
+  const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: createBroadcast,
     onSuccess: (data) => {
       setSuccessId(data.broadcast_id);
+      void queryClient.invalidateQueries({ queryKey: ["broadcasts"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 
@@ -37,8 +40,9 @@ export const CreateBroadcastPage = () => {
           .filter(Boolean),
         telegram_ids: telegramIds
           .split(",")
+          .filter((id) => id.trim() !== "")
           .map((id) => Number(id.trim()))
-          .filter((id) => !Number.isNaN(id)),
+          .filter((id) => Number.isSafeInteger(id) && id > 0),
       },
       requires_approval: requiresApproval,
       scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,

@@ -1,0 +1,22 @@
+title = "EarnAggregator secret detection"
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Explicitly removed values and nonfunctional documentation examples"
+regexTarget = "secret"
+regexes = ['''^REMOVED_[A-Z_]+$''', '''YOUR_API_KEY''', '''your_api_key''', '''TEST_ONLY_NOT_A_REAL_BOT_TOKEN_000000000''']
+
+[[rules]]
+id = "telegram-bot-token"
+description = "Telegram bot access token"
+regex = '''\b[0-9]{6,12}:[A-Za-z0-9_-]{30,50}\b'''
+
+[[rules]]
+id = "database-url-password"
+description = "Long password embedded in a database connection URL"
+regex = '''(?i)(?:postgres(?:ql)?(?:\+asyncpg)?|redis)://[^\s:/]+:([A-Za-z0-9_+/=-]{20,})@'''
+secretGroup = 1
+[[rules.allowlists]]
+regexTarget = "secret"
+regexes = ['''^your_[a-z_]+$''', '''^yield_secure_password_2024$''']

@@ -1,7 +1,3 @@
-"""
-FastAPI router для керування розсилками.
-"""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -212,4 +208,3 @@ async def list_broadcast_recipients(
         per_page=per_page,
         search=search,
     )
-

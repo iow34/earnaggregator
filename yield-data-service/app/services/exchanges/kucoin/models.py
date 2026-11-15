@@ -18,5 +18,3 @@ class KuCoinSavingsProduct(BaseModel):
     term: Optional[str] = None  # days; '0' for flexible
     redeemType: Optional[str] = None
     advanceRedeemSupport: Optional[bool] = None
-
-

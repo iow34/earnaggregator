@@ -122,14 +122,14 @@ class KuCoinService(BaseExchangeService):
                 currency = (item.get("currency") or "").upper().strip()
                 product_id = str(item.get("id", ""))
 
-                # Пропускаємо продукти без валюти
                 if not currency or len(currency) < 2:
-                    logger.warning(f"⚠️ KuCoin пропускаємо продукт без валюти: {item.get('id', 'unknown')}")
+                    logger.warning(
+                        f"⚠️ KuCoin пропускаємо продукт без валюти: {item.get('id', 'unknown')}"
+                    )
                     continue
 
                 # Status: "ONGOING" means active
-                # Для KuCoin багато продуктів мають product_remain_amount = 0, але вони все ще активні
-                # Тому перевіряємо тільки статус, а не залишок
+
                 status_val = str(item.get("status", ""))
                 is_active = status_val == "ONGOING"
 
@@ -146,16 +146,22 @@ class KuCoinService(BaseExchangeService):
 
                 # Limits: userLowerLimit (min), userUpperLimit (max)
                 min_amount = float(item.get("userLowerLimit") or 0)
-                max_amount = float(item.get("userUpperLimit")) if item.get("userUpperLimit") not in (None, "", "0") else None
+                max_amount = (
+                    float(item.get("userUpperLimit"))
+                    if item.get("userUpperLimit") not in (None, "", "0")
+                    else None
+                )
 
-                risk_level = "Low" if currency in {"USDT", "USDC", "DAI", "BUSD", "FDUSD", "USD"} else "Medium"
+                risk_level = (
+                    "Low"
+                    if currency in {"USDT", "USDC", "DAI", "BUSD", "FDUSD", "USD"}
+                    else "Medium"
+                )
 
                 product_name = f"{currency} {'Flexible' if is_flexible else 'Fixed'} Savings"
                 if not is_flexible:
                     product_name += f" ({duration}d)"
 
-                # Створюємо унікальний ID щоб уникнути дублікатів
-                # KuCoin API може мати продукти з однаковими id
                 unique_suffix = f"{currency}_{item.get('returnRate', '0')}_{duration}"
                 normalized.append(
                     {
@@ -180,10 +186,12 @@ class KuCoinService(BaseExchangeService):
                     }
                 )
             except Exception as e:
-                logger.warning(f"⚠️ KuCoin normalize error for item {item.get('id', 'unknown')}: {e}")
-                logger.warning(f"   Item data: currency={item.get('currency')}, returnRate={item.get('returnRate')}, status={item.get('status')}")
+                logger.warning(
+                    f"⚠️ KuCoin normalize error for item {item.get('id', 'unknown')}: {e}"
+                )
+                logger.warning(
+                    f"   Item data: currency={item.get('currency')}, returnRate={item.get('returnRate')}, status={item.get('status')}"
+                )
                 continue
 
         return normalized
-
-

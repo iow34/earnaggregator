@@ -37,4 +37,3 @@ async def test_dequeue_handles_timeout():
 
     assert result is None
     redis.brpop.assert_called_once_with("broadcasts", timeout=0)
-

@@ -1,13 +1,3 @@
-"""
-Сервіс для формування та оновлення таблиці top_products.
-
-Логіка:
-- Отримує trending монети з CoinGecko.
-- Для кожної монети знаходить найкращий flexible APY у yield_products.
-- Зберігає TOP 10 у таблицю top_products.
-- Не видаляє попередні дані якщо CoinGecko недоступний.
-"""
-
 from typing import Dict, Any
 from datetime import datetime, UTC
 
@@ -19,15 +9,7 @@ from app.utils.logger import logger
 
 
 class TopProductsService:
-    """Сервіс роботи з TOP продуктами."""
-
     async def update_top_products(self, db: AsyncSession, limit: int = 10) -> Dict[str, Any]:
-        """
-        Оновлює таблицю top_products.
-
-        - Якщо CoinGecko недоступний: повертає помилку, старі дані залишаються.
-        - Якщо продукт не знайдено: best_apy = 0.0, best_exchange/product_id = None.
-        """
         start_time = datetime.now(UTC)
         updated = 0
         coins_processed = 0
@@ -94,4 +76,3 @@ class TopProductsService:
 
 
 top_products_service = TopProductsService()
-

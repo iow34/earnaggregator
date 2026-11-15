@@ -1,6 +1,3 @@
-"""
-Scheduler для очистки старих логів трекінгу.
-"""
 import asyncio
 from datetime import datetime, timedelta, UTC
 from sqlalchemy import delete
@@ -11,14 +8,11 @@ from bot.db.models import UserAction
 
 
 class LogCleaner:
-    """Очищення старих логів трекінгу."""
-
     def __init__(self):
         self.running = False
         self.task = None
 
     async def start(self):
-        """Запустити scheduler."""
         if self.running:
             return
 
@@ -27,7 +21,6 @@ class LogCleaner:
         logger.info("🚀 Log cleaner запущений")
 
     async def stop(self):
-        """Зупинити scheduler."""
         self.running = False
         if self.task:
             self.task.cancel()
@@ -38,29 +31,23 @@ class LogCleaner:
         logger.info("🛑 Log cleaner зупинений")
 
     async def _cleanup_loop(self):
-        """Цикл очистки (раз на добу)."""
         while self.running:
             try:
                 await self._cleanup_old_logs()
-                # Чекати 24 години
+
                 await asyncio.sleep(86400)
             except asyncio.CancelledError:
                 break
             except Exception as e:
                 logger.error(f"❌ Помилка в log cleaner: {e}", exc_info=True)
-                await asyncio.sleep(3600)  # Повторити через годину
+                await asyncio.sleep(3600)
 
     async def _cleanup_old_logs(self):
-        """Видалити логи старші за retention period."""
         try:
-            cutoff_date = datetime.now(UTC) - timedelta(
-                days=settings.TRACKING_LOG_RETENTION_DAYS
-            )
+            cutoff_date = datetime.now(UTC) - timedelta(days=settings.TRACKING_LOG_RETENTION_DAYS)
 
             async with get_database_session() as session:
-                stmt = delete(UserAction).where(
-                    UserAction.timestamp < cutoff_date
-                )
+                stmt = delete(UserAction).where(UserAction.timestamp < cutoff_date)
                 result = await session.execute(stmt)
                 await session.commit()
 
@@ -74,6 +61,4 @@ class LogCleaner:
             logger.error(f"❌ Помилка очистки логів: {e}", exc_info=True)
 
 
-# Глобальний екземпляр log cleaner
 log_cleaner = LogCleaner()
-

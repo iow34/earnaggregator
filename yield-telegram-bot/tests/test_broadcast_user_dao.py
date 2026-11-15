@@ -1,7 +1,3 @@
-"""
-Юніт-тести для функцій DAO, що стосуються сегментації користувачів.
-"""
-
 import pytest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
@@ -53,4 +49,3 @@ async def test_filter_users_for_broadcast_returns_rows():
 
     session.execute.assert_called_once()
     assert len(result) == 1
-

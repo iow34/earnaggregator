@@ -1,357 +1,55 @@
-"""
-Тести для головного меню бота.
-"""
-
+from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from bot.handlers.main_menu import (
-    show_main_menu,
-    show_main_page,
-    main_command_handler,
-    _format_top_10_section,
-    _format_exchanges_quick_view,
-    _format_single_exchange_preview,
-    _get_referral_url
-)
+from bot.handlers import main_menu as menu
 
 
-def test_get_referral_url():
-    """Тест отримання реферальних посилань."""
-    # Відомі біржі
-    assert _get_referral_url("binance") == "https://accounts.binance.com/register?ref=YOUR_REF"
-    assert _get_referral_url("bybit") == "https://www.bybit.com/invite?ref=YOUR_REF"
-    assert _get_referral_url("nexo") == "https://nexo.com/ref/YOUR_REF"
-
-    # Невідома біржа
-    assert _get_referral_url("unknown") == "#"
-
-    # Case insensitive
-    assert _get_referral_url("BINANCE") == "https://accounts.binance.com/register?ref=YOUR_REF"
+def test_referral_lookup_uses_configuration():
+    assert menu._get_referral_url("BINANCE") == menu.settings.referral_urls["binance"]
+    assert menu._get_referral_url("unknown") == "#"
 
 
 @pytest.mark.asyncio
-async def test_format_top_10_section_success():
-    """Тест форматування топ 10 секції з успішними даними."""
-    # Mock API client
-    api_client = AsyncMock()
-    api_client.get_top.return_value = {
+async def test_trending_section_uses_aggregated_top_products():
+    api = AsyncMock()
+    api.get_trending_coins.return_value = {
         "success": True,
-        "data": {
-            "binance": [
-                {
-                    "symbol": "BTC",
-                    "provider": "binance",
-                    "apy": 5.2,
-                    "lock_period_days": 0
-                },
-                {
-                    "symbol": "ETH",
-                    "provider": "binance",
-                    "apy": 4.8,
-                    "lock_period_days": 30
-                }
-            ],
-            "bybit": [
-                {
-                    "symbol": "BTC",
-                    "provider": "bybit",
-                    "apy": 6.1,
-                    "lock_period_days": 0
-                }
-            ]
-        }
+        "data": {"trending_coins": [{"symbol": "BTC"}]},
     }
-
-    result = await _format_top_10_section(api_client)
-
-    # Перевірити що API було викликано
-    api_client.get_top.assert_called_once_with(limit=10)
-
-    # Перевірити що результат містить очікувані елементи
-    assert "🔥 <b>ТОП 10 за APY</b>" in result
-    assert "BTC" in result
-    assert "ETH" in result
-    assert "binance" in result
-    assert "bybit" in result
-    assert "5.2%" in result
-    assert "6.1%" in result
-    assert "<pre>" in result
-    assert "</pre>" in result
+    api.get_top_products.return_value = {
+        "success": True,
+        "data": [{"symbol": "BTC", "best_exchange": "Binance", "best_apy": 4.5, "rank": 1}],
+    }
+    text = await menu._format_top_10_section(api, "en")
+    assert "BTC" in text and "Binance" in text and "4.5" in text
+    api.get_top_products.assert_awaited_once_with(limit=10)
 
 
 @pytest.mark.asyncio
-async def test_format_top_10_section_error():
-    """Тест форматування топ 10 секції з помилкою."""
-    # Mock API client з помилкою
-    api_client = AsyncMock()
-    api_client.get_top.return_value = {"success": False}
-
-    result = await _format_top_10_section(api_client)
-
-    assert "📊 <b>Топ продукти недоступні</b>" in result
+async def test_trending_failure_has_localized_fallback():
+    api = AsyncMock()
+    api.get_trending_coins.side_effect = RuntimeError("Unavailable")
+    text = await menu._format_top_10_section(api, "en")
+    assert menu.localization.get_text("error.data_unavailable", "en") in text
 
 
 @pytest.mark.asyncio
-async def test_format_exchanges_quick_view():
-    """Тест форматування огляду по біржам."""
-    # Mock API client з відповідями для обох бірж
-    api_client = AsyncMock()
-
-    # Mock для Binance
-    api_client.get_exchanges.side_effect = [
-        {  # Binance
-            "success": True,
-            "data": [
-                {"symbol": "BTC", "apy": 5.2, "lock_period_days": 0},
-                {"symbol": "ETH", "apy": 4.8, "lock_period_days": 30},
-                {"symbol": "SOL", "apy": 6.1, "lock_period_days": 0},
-                {"symbol": "USDT", "apy": 4.5, "lock_period_days": 15}
-            ]
-        },
-        {  # Bybit
-            "success": True,
-            "data": [
-                {"symbol": "BTC", "apy": 4.9, "lock_period_days": 0},
-                {"symbol": "ETH", "apy": 5.1, "lock_period_days": 45},
-                {"symbol": "SOL", "apy": 5.8, "lock_period_days": 0},
-                {"symbol": "USDT", "apy": 4.2, "lock_period_days": 30}
-            ]
-        }
-    ]
-
-    text = await _format_exchanges_quick_view(api_client)
-
-    assert "🏦 <b>Огляд по біржам</b>" in text
-    assert "<b>Binance</b>" in text
-    assert "<b>Bybit</b>" in text
-    assert "BTC 5.2%" in text
-    assert "ETH 4.8%" in text
-    assert "SOL 6.1%" in text
-    assert "USDT 4.5%" in text
-    assert "<a href=" in text  # Перевірка HTML посилань
-    assert "/all binance products" in text  # Перевірка команд
-
-    # Перевірка викликів API
-    assert api_client.get_exchanges.call_count == 2
-    api_client.get_exchanges.assert_any_call(exchange="binance", limit=100)
-    api_client.get_exchanges.assert_any_call(exchange="bybit", limit=100)
-
-
-@pytest.mark.asyncio
-async def test_show_main_menu():
-    """Тест відображення головного меню."""
-    # Mock message та state
-    message = AsyncMock()
+async def test_main_command_cleans_up_loading_indicator():
+    message = MagicMock()
+    loading = MagicMock(delete=AsyncMock())
+    message.answer = AsyncMock(return_value=loading)
     state = AsyncMock()
-    state.clear = AsyncMock()
-    state.update_data = AsyncMock()
-
-    # Mock API client
-    api_client_mock = AsyncMock()
-    api_client_mock.get_top.return_value = {
-        "success": True,
-        "data": {
-            "binance": [
-                {
-                    "symbol": "BTC",
-                    "provider": "binance",
-                    "apy": 5.2,
-                    "lock_period_days": 0
-                }
-            ]
-        }
-    }
-    api_client_mock.close = AsyncMock()
-
-    # Mock імпорт для тестування
-    import bot.handlers.main_menu as main_menu_module
-    original_api_client = main_menu_module.APIClient
-
-    # Замінити на mock
-    main_menu_module.APIClient = lambda: api_client_mock
-
-    try:
-        await show_main_menu(message, state)
-
-        # Перевірити що state було очищено
-        state.clear.assert_called_once()
-
-        # Перевірити що update_data було викликано
-        state.update_data.assert_called_once_with(current_page="main_menu")
-
-        # Перевірити що message.answer було викликано
-        message.answer.assert_called_once()
-
-        # Перевірити що API було викликано
-        api_client_mock.get_top.assert_called_once_with(limit=10)
-        api_client_mock.close.assert_called_once()
-
-    finally:
-        # Відновити оригінальний клас
-        main_menu_module.APIClient = original_api_client
+    state.get_data.return_value = {"lang": "en"}
+    with patch.object(menu, "show_main_page", AsyncMock()) as show:
+        await menu.main_command_handler(message, state)
+        show.assert_awaited_once_with(message, state, "en")
+    loading.delete.assert_awaited_once()
 
 
 @pytest.mark.asyncio
-async def test_show_main_menu_error():
-    """Тест відображення головного меню з помилкою."""
-    # Mock message та state
-    message = AsyncMock()
+async def test_main_command_handles_render_failure():
+    message = MagicMock(answer=AsyncMock())
     state = AsyncMock()
-
-    # Mock API client з помилкою
-    api_client_mock = AsyncMock()
-    api_client_mock.close = AsyncMock()
-    api_client_mock.get_top.side_effect = Exception("API Error")
-
-    # Mock імпорт
-    import bot.handlers.main_menu as main_menu_module
-    original_api_client = main_menu_module.APIClient
-    main_menu_module.APIClient = lambda: api_client_mock
-
-    try:
-        await show_main_menu(message, state)
-
-        # Перевірити що було надіслано повідомлення про помилку
-        message.answer.assert_called_once()
-        call_args = message.answer.call_args[1]
-        assert "❌ Помилка завантаження даних" in call_args["text"]
-
-    finally:
-        # Відновити оригінальний клас
-        main_menu_module.APIClient = original_api_client
-
-
-@pytest.mark.asyncio
-async def test_format_single_exchange_preview_success():
-    """Тест успішного форматування біржі з пріоритетними продуктами."""
-    # Mock API client
-    api_client_mock = AsyncMock()
-    api_client_mock.get_exchanges.return_value = {
-        "success": True,
-        "data": [
-            {"symbol": "BTC", "apy": 3.25, "lock_period_days": 0},
-            {"symbol": "ETH", "apy": 5.85, "lock_period_days": 30},
-            {"symbol": "SOL", "apy": 4.15, "lock_period_days": 0},
-            {"symbol": "USDT", "apy": 4.25, "lock_period_days": 15},
-            {"symbol": "ADA", "apy": 2.1, "lock_period_days": 0},  # Не пріоритетний
-        ]
-    }
-
-    # Виклик функції
-    text = await _format_single_exchange_preview(api_client_mock, "binance")
-
-    # Перевірки тексту
-    assert "Binance" in text
-    assert "BTC 3.2%" in text
-    assert "ETH 5.8%" in text
-    assert "SOL 4.2%" in text
-    assert "USDT 4.2%" in text
-    assert "📊 BTC 3.2% • ETH 5.8% • SOL 4.2% • USDT 4.2%" in text
-    assert "<a href=" in text  # Перевірка HTML посилання
-    assert "/all binance products" in text  # Перевірка команди
-
-    # Перевірити що API було викликано з правильними параметрами
-    api_client_mock.get_exchanges.assert_called_once_with(exchange="binance", limit=100)
-
-
-@pytest.mark.asyncio
-async def test_format_single_exchange_preview_no_data():
-    """Тест форматування біржі без даних."""
-    # Mock API client з порожніми даними
-    api_client_mock = AsyncMock()
-    api_client_mock.get_exchanges.return_value = {
-        "success": True,
-        "data": []
-    }
-
-    text = await _format_single_exchange_preview(api_client_mock, "bybit")
-
-    assert text == "<b>Bybit</b>: немає даних"
-
-
-@pytest.mark.asyncio
-async def test_format_single_exchange_preview_api_error():
-    """Тест форматування біржі з помилкою API."""
-    # Mock API client з помилкою
-    api_client_mock = AsyncMock()
-    api_client_mock.get_exchanges.return_value = {
-        "success": False
-    }
-
-    text = await _format_single_exchange_preview(api_client_mock, "binance")
-
-    assert text == "<b>Binance</b>: дані недоступні"
-
-
-@pytest.mark.asyncio
-async def test_format_single_exchange_preview_partial_data():
-    """Тест форматування біржі з неповними даними (менше 4 продуктів)."""
-    # Mock API client з неповними даними
-    api_client_mock = AsyncMock()
-    api_client_mock.get_exchanges.return_value = {
-        "success": True,
-        "data": [
-            {"symbol": "BTC", "apy": 3.25, "lock_period_days": 0},
-            {"symbol": "ETH", "apy": 5.85, "lock_period_days": 30},
-            # SOL і USDT відсутні
-        ]
-    }
-
-    text = await _format_single_exchange_preview(api_client_mock, "binance")
-
-    assert "BTC 3.2%" in text
-    assert "ETH 5.8%" in text
-    assert "SOL" not in text  # SOL немає в даних
-    assert "USDT" not in text  # USDT немає в даних
-
-
-@pytest.mark.asyncio
-async def test_main_command_handler():
-    """Тест обробки команди /main."""
-    # Mock message та state
-    message = AsyncMock()
-    message.from_user = AsyncMock()
-    message.from_user.id = 12345
-    message.answer = AsyncMock()
-
-    state = AsyncMock()
-    state.get_data = AsyncMock(return_value={"lang": "ua"})
-
-    # Mock loading message
-    loading_message = AsyncMock()
-    message.answer.return_value = loading_message
-
-    # Mock show_main_page (щоб уникнути складних залежностей)
-    with pytest.mock.patch('bot.handlers.main_menu.show_main_page') as mock_show_main_page:
-        # Викликаємо функцію
-        await main_command_handler(message, state)
-
-        # Перевіряємо що loading message було надіслано
-        message.answer.assert_called_once()
-
-        # Перевіряємо що show_main_page було викликано
-        mock_show_main_page.assert_called_once_with(message, state, "ua")
-
-        # Перевіряємо що loading message було видалено
-        loading_message.delete.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_main_command_handler_error():
-    """Тест обробки помилки в команді /main."""
-    # Mock message та state
-    message = AsyncMock()
-    message.from_user = AsyncMock()
-    message.from_user.id = 12345
-    message.answer = AsyncMock()
-
-    state = AsyncMock()
-    state.get_data = AsyncMock(return_value={"lang": "ua"})
-
-    # Mock show_main_page щоб викликати помилку
-    with pytest.mock.patch('bot.handlers.main_menu.show_main_page', side_effect=Exception("Test error")):
-        # Викликаємо функцію
-        await main_command_handler(message, state)
-
-        # Перевіряємо що було два виклики answer (loading + error)
-        assert message.answer.call_count == 2
+    state.get_data.return_value = {"lang": "en"}
+    with patch.object(menu, "show_main_page", AsyncMock(side_effect=RuntimeError("Unavailable"))):
+        await menu.main_command_handler(message, state)
+    assert message.answer.await_count == 2

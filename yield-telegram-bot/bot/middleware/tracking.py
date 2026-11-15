@@ -1,6 +1,3 @@
-"""
-Middleware для трекінгу дій користувачів.
-"""
 import time
 from typing import Any, Callable, Dict, Awaitable
 from aiogram import BaseMiddleware
@@ -11,54 +8,52 @@ from bot.utils.logger import logger
 
 try:
     from bot.utils.metrics import Counter, Histogram, registry
-    
-    # Метрики для трекінгу
+
     TRACKING_EVENTS_TOTAL = Counter(
-        'telegram_bot_tracking_events_total',
-        'Загальна кількість трекінгових подій',
-        ['action_type'],
-        registry=registry
+        "telegram_bot_tracking_events_total",
+        "Загальна кількість трекінгових подій",
+        ["action_type"],
+        registry=registry,
     )
 
     TRACKING_LATENCY = Histogram(
-        'telegram_bot_tracking_latency_seconds',
-        'Час запису події в чергу',
-        ['action_type'],
-        registry=registry
+        "telegram_bot_tracking_latency_seconds",
+        "Час запису події в чергу",
+        ["action_type"],
+        registry=registry,
     )
     METRICS_AVAILABLE = True
 except:
     METRICS_AVAILABLE = False
-    # Заглушки для випадку коли метрики недоступні
+
     class DummyMetric:
         def labels(self, *args, **kwargs):
             return self
+
         def inc(self, *args, **kwargs):
             pass
+
         def observe(self, *args, **kwargs):
             pass
-    
+
     TRACKING_EVENTS_TOTAL = DummyMetric()
     TRACKING_LATENCY = DummyMetric()
 
 
 class TrackingMiddleware(BaseMiddleware):
-    """Middleware для трекінгу всіх дій користувачів."""
-
-    # Категорії дій для трекінгу
     ACTION_CATEGORIES = {
         "onboarding": ["command_start"],
         "navigation": ["page_view", "button_click"],
         "interaction": ["filter_applied", "search_query"],
         "referral": ["referral_click"],
-        "error": ["error_occurred"]
+        "error": ["error_occurred"],
     }
 
     async def __call__(
         self,
         handler: Callable[[Update, Dict[str, Any]], Awaitable[Any]],
         event: Update,
-        data: Dict[str, Any]
+        data: Dict[str, Any],
     ) -> Any:
         start_time = time.time()
         user_id = None
@@ -66,7 +61,6 @@ class TrackingMiddleware(BaseMiddleware):
         context = {}
 
         try:
-            # Визначити user_id та тип події
             if event.message:
                 user_id = event.message.from_user.id
                 action_type = self._get_message_action_type(event.message)
@@ -77,27 +71,22 @@ class TrackingMiddleware(BaseMiddleware):
                 action_type = "button_click"
                 context = self._extract_callback_context(event.callback_query)
 
-            # Отримати або створити сесію
             if user_id:
                 session_id = await session_manager.get_or_create_session(user_id)
 
-                # Виконати handler та виміряти latency
                 result = await handler(event, data)
 
-                # Розрахувати latency
                 latency_ms = int((time.time() - start_time) * 1000)
 
-                # Додати подію до черги
                 event_data = {
                     "user_id": user_id,
                     "action_type": action_type,
                     "session_id": session_id,
                     "context": context,
                     "platform": "telegram",
-                    "latency_ms": latency_ms
+                    "latency_ms": latency_ms,
                 }
 
-                # Асинхронно додати до черги (не блокує відповідь)
                 success = await event_processor.add_event(event_data)
 
                 if success and METRICS_AVAILABLE:
@@ -109,21 +98,19 @@ class TrackingMiddleware(BaseMiddleware):
                 return result
 
             else:
-                # Якщо не вдалося визначити user - просто викликати handler
                 return await handler(event, data)
 
         except Exception as e:
             logger.error(f"❌ Помилка в tracking middleware: {e}", exc_info=True)
-            # Продовжити виконання навіть при помилці трекінгу
+
             try:
                 return await handler(event, data)
             except:
                 raise
 
     def _get_message_action_type(self, message: Message) -> str:
-        """Визначити тип дії для повідомлення."""
         if message.text:
-            if message.text.startswith("/main"):
+            if message.text.split()[0].split("@")[0] in {"/start", "/main"}:
                 return "command_start"
             elif message.text.startswith("/yield"):
                 return "command_yield"
@@ -144,29 +131,22 @@ class TrackingMiddleware(BaseMiddleware):
         return "message_other"
 
     def _extract_message_context(self, message: Message) -> Dict[str, Any]:
-        """Витягнути контекст з повідомлення."""
         context = {}
 
         if message.text:
-            # Для команд зберігаємо аргументи
             if message.text.startswith("/"):
                 parts = message.text.split(maxsplit=1)
                 context["command"] = parts[0]
                 if len(parts) > 1:
                     context["args"] = parts[1]
             else:
-                # Для звичайного тексту зберігаємо довжину
                 context["text_length"] = len(message.text)
 
         return context
 
     def _extract_callback_context(self, callback: CallbackQuery) -> Dict[str, Any]:
-        """Витягнути контекст з callback query."""
-        context = {
-            "callback_data": callback.data
-        }
+        context = {"callback_data": callback.data}
 
-        # Категоризувати клік
         if callback.data:
             if callback.data.startswith("filter_"):
                 context["category"] = "filter"
@@ -180,4 +160,3 @@ class TrackingMiddleware(BaseMiddleware):
                 context["category"] = "navigation"
 
         return context
-

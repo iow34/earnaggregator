@@ -11,29 +11,26 @@ from bot.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifecycle manager для admin API."""
     # Startup
     try:
-        await db_manager.initialize()
+        if not await db_manager.initialize():
+            raise RuntimeError("Database initialization failed")
         logger.info("✅ Database initialized for Broadcast Admin API")
     except Exception as e:
         logger.error(f"⚠️ Failed to initialize database: {e}")
         raise
-    
+
     yield
-    
+
     # Shutdown
     try:
-        await db_manager.close()
+        await db_manager.close_engine()
         logger.info("✅ Database closed for Broadcast Admin API")
     except Exception as e:
         logger.error(f"⚠️ Error closing database: {e}")
 
 
-app = FastAPI(
-    title="EarnAggregator Broadcast Admin API",
-    lifespan=lifespan
-)
+app = FastAPI(title="EarnAggregator Broadcast Admin API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,4 +40,3 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(broadcast_router)
-

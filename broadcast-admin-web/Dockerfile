@@ -1,12 +1,14 @@
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 
 # If VITE_BROADCAST_API_URL is not provided, will use /api proxy path
+ARG VITE_PREVIEW_MODE=false
+ENV VITE_PREVIEW_MODE=${VITE_PREVIEW_MODE}
 ARG VITE_BROADCAST_API_URL
 ENV VITE_BROADCAST_API_URL=${VITE_BROADCAST_API_URL}
 

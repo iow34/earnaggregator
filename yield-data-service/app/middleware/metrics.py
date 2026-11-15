@@ -1,15 +1,3 @@
-"""
-Prometheus HTTP metrics middleware.
-
-Реєструє базові метрики HTTP-рівня:
-- http_requests_total{method, path, status}
-- http_request_duration_seconds_bucket/sum/count{method, path, status}
-
-Примітка: значення path береться як request.url.path (може спричинити високу кардинальність
-для динамічних маршрутів). За потреби можна нормалізувати path (наприклад, замінювати
-динамічні сегменти на плейсхолдери).
-"""
-
 import time
 from typing import Callable
 
@@ -46,13 +34,14 @@ HTTP_REQUEST_DURATION_SECONDS = Histogram(
 
 
 class PrometheusHTTPMetricsMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Response]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Response]
+    ) -> Response:
         start = time.perf_counter()
         response: Response
         try:
             response = await call_next(request)
         except Exception:
-            # У разі винятку реєструємо як 500 і повторно піднімаємо
             duration = time.perf_counter() - start
             labels = {
                 "method": request.method,
@@ -72,5 +61,3 @@ class PrometheusHTTPMetricsMiddleware(BaseHTTPMiddleware):
         HTTP_REQUESTS_TOTAL.labels(**labels).inc()
         HTTP_REQUEST_DURATION_SECONDS.labels(**labels).observe(duration)
         return response
-
-

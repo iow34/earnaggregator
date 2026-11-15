@@ -9,9 +9,11 @@ from bot.config import settings
 def setup_logger(name: str = "yield_telegram_bot", level: Optional[str] = None) -> logging.Logger:
     log_level = (level or settings.LOG_LEVEL).upper()
 
-    # В продакшені тільки WARNING та вище для зменшення шуму в логах
-    if hasattr(settings, 'DEPLOY_ENV') and settings.DEPLOY_ENV and settings.DEPLOY_ENV.lower() == "prod":
-        # В продакшені тільки WARNING та вище
+    if (
+        hasattr(settings, "DEPLOY_ENV")
+        and settings.DEPLOY_ENV
+        and settings.DEPLOY_ENV.lower() == "prod"
+    ):
         if log_level in ["DEBUG", "INFO"]:
             log_level = "WARNING"
 
@@ -31,8 +33,12 @@ def setup_logger(name: str = "yield_telegram_bot", level: Optional[str] = None) 
     )
 
     ch = logging.StreamHandler()
-    # Для Railway logs: в продакшені підвищуємо рівень до WARNING
-    if hasattr(settings, 'DEPLOY_ENV') and settings.DEPLOY_ENV and settings.DEPLOY_ENV.lower() == "prod":
+
+    if (
+        hasattr(settings, "DEPLOY_ENV")
+        and settings.DEPLOY_ENV
+        and settings.DEPLOY_ENV.lower() == "prod"
+    ):
         ch.setLevel(logging.WARNING)
     else:
         ch.setLevel(numeric_level)
@@ -40,14 +46,24 @@ def setup_logger(name: str = "yield_telegram_bot", level: Optional[str] = None) 
     logger.addHandler(ch)
 
     fh = TimedRotatingFileHandler(
-        filename=str(logs_dir / "bot.log"), when="midnight", interval=1, backupCount=14, encoding="utf-8", utc=True
+        filename=str(logs_dir / "bot.log"),
+        when="midnight",
+        interval=1,
+        backupCount=14,
+        encoding="utf-8",
+        utc=True,
     )
     fh.setLevel(numeric_level)
     fh.setFormatter(fmt)
     logger.addHandler(fh)
 
     eh = TimedRotatingFileHandler(
-        filename=str(logs_dir / "errors.log"), when="midnight", interval=1, backupCount=14, encoding="utf-8", utc=True
+        filename=str(logs_dir / "errors.log"),
+        when="midnight",
+        interval=1,
+        backupCount=14,
+        encoding="utf-8",
+        utc=True,
     )
     eh.setLevel(logging.ERROR)
     eh.setFormatter(fmt)
@@ -57,5 +73,3 @@ def setup_logger(name: str = "yield_telegram_bot", level: Optional[str] = None) 
 
 
 logger = setup_logger()
-
-

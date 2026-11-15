@@ -1,7 +1,3 @@
-"""
-Сервіс роботи з розсилками.
-"""
-
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -324,7 +320,11 @@ class BroadcastService:
             broadcast_id=broadcast.id,
             event_type="approved",
             admin_id=admin.id,
-            payload={"scheduled_at": broadcast.scheduled_at.isoformat() if broadcast.scheduled_at else None},
+            payload={
+                "scheduled_at": broadcast.scheduled_at.isoformat()
+                if broadcast.scheduled_at
+                else None
+            },
         )
 
         if broadcast.status == "queued" and broadcast.total_recipients:
@@ -380,7 +380,11 @@ class BroadcastService:
             content_type=payload.content_type,
         )
         logger.info("Preview sent to %s by %s", payload.preview_chat_id, admin.email)
-        return {"preview_chat_id": payload.preview_chat_id, "message_id": message.message_id, "status": "sent"}
+        return {
+            "preview_chat_id": payload.preview_chat_id,
+            "message_id": message.message_id,
+            "status": "sent",
+        }
 
     async def _get_preview_sender(self) -> BroadcastSender:
         if self._preview_sender:
@@ -433,4 +437,3 @@ class BroadcastService:
 
 
 broadcast_service = BroadcastService()
-

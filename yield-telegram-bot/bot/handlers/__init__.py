@@ -6,5 +6,5 @@ __all__ = [
     "main_menu",
     "exchange_products",
     "filtered_products",
-    "callback_handlers"
+    "callback_handlers",
 ]

@@ -34,12 +34,13 @@ export const DashboardPage = () => {
         <p>Monitor the health of manual broadcasts in real time.</p>
       </header>
 
+      {(metricsQuery.isError || recentQuery.isError) && <p role="alert" className="error">Could not refresh dashboard data. Check your API connection and administrator key.</p>}
       <div className="card-grid">
         {METRIC_FIELDS.map((metric) => (
           <article className="card" key={metric.key}>
             <p className="placeholder">{metric.label}</p>
             <h2>
-              {metricsQuery.isLoading
+              {metricsQuery.isError ? "—" : metricsQuery.isLoading
                 ? "…"
                 : formatNumber(metricsQuery.data?.[metric.key] ?? 0)}
             </h2>

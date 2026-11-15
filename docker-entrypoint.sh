@@ -1,30 +1,10 @@
-#!/bin/bash
-# Default to telegram-bot if SERVICE_NAME is not set (for Railway compatibility)
-SERVICE_NAME=${SERVICE_NAME:-telegram-bot}
-
-if [ "$SERVICE_NAME" = "redis" ]; then
-    echo "🔴 Запуск Redis сервісу..."
-    # For Redis service, start Redis server with custom args if provided
-    if [ -n "$REDIS_ARGS" ]; then
-        echo "🔧 Використовуємо REDIS_ARGS: $REDIS_ARGS"
-        exec redis-server $REDIS_ARGS
-    else
-        exec redis-server
-    fi
-elif [ "$SERVICE_NAME" = "yield-api" ]; then
-    echo "🚀 Запуск yield-api сервісу..."
-    echo "📋 SERVICE_NAME: $SERVICE_NAME"
-    echo "🌐 PORT: ${PORT:-8000}"
-    echo "🏠 HOST: ${HOST:-0.0.0.0}"
-    PORT=${PORT:-8000}
-    HOST=${HOST:-0.0.0.0}
-    echo "🔧 Запуск uvicorn з параметрами: --host $HOST --port $PORT"
-    exec python -m uvicorn app.main:app --host $HOST --port $PORT --log-level info
-elif [ "$SERVICE_NAME" = "telegram-bot" ]; then
-    echo "🤖 Запуск telegram-bot сервісу..."
-    exec python -m bot.main
-else
-    echo "❌ Невідомий SERVICE_NAME: $SERVICE_NAME"
-    echo "📋 Доступні сервіси: redis, yield-api, telegram-bot"
-    exit 1
-fi
+#!/bin/sh
+set -eu
+case "${SERVICE_NAME:-yield-api}" in
+  yield-api) exec python -m uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}" ;;
+  telegram-bot) exec python -m bot.main ;;
+  broadcast-admin) exec python -m uvicorn bot.admin_app:app --host 0.0.0.0 --port "${PORT:-8081}" ;;
+  broadcast-worker) exec python -m bot.broadcasts.worker_app ;;
+  preview) exec python -m uvicorn demo.server:app --host 0.0.0.0 --port "${PORT:-8000}" ;;
+  *) echo "Unknown SERVICE_NAME" >&2; exit 1 ;;
+esac

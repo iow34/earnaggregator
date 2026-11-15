@@ -1,7 +1,3 @@
-"""
-Тести для FastAPI endpoint створення розсилки.
-"""
-
 from typing import Optional
 
 import pytest
@@ -70,7 +66,13 @@ class DummyService:
         return {
             "broadcast": summary,
             "content": {"text": "Hello", "parse_mode": "HTML", "buttons": []},
-            "filters": {"languages": ["ua"], "tags_all": [], "tags_any": [], "telegram_ids": [], "is_subscribed": True},
+            "filters": {
+                "languages": ["ua"],
+                "tags_all": [],
+                "tags_any": [],
+                "telegram_ids": [],
+                "is_subscribed": True,
+            },
             "metadata": {},
             "preview_chat_id": None,
             "batch_size": 100,
@@ -98,7 +100,9 @@ class DummyService:
             "total": 1,
         }
 
-    async def get_broadcast_recipients(self, session, broadcast_id: int, status, page: int, per_page: int, search: Optional[str]):
+    async def get_broadcast_recipients(
+        self, session, broadcast_id: int, status, page: int, per_page: int, search: Optional[str]
+    ):
         return {
             "items": [
                 {
@@ -315,7 +319,8 @@ async def test_list_broadcast_recipients(api_app):
 async def test_metrics_summary(api_app):
     transport = ASGITransport(app=api_app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/broadcasts/metrics/summary", headers={"x-admin-api-key": "test"})
+        response = await client.get(
+            "/broadcasts/metrics/summary", headers={"x-admin-api-key": "test"}
+        )
         assert response.status_code == 200
         assert response.json()["total_broadcasts"] == 10
-

@@ -8,6 +8,7 @@ import { formatDate, formatNumber } from "../utils/format";
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
+  { value: "draft", label: "Draft" },
   { value: "running", label: "Running" },
   { value: "queued", label: "Queued" },
   { value: "scheduled", label: "Scheduled" },
@@ -19,7 +20,8 @@ const STATUS_OPTIONS = [
 export const BroadcastsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const status = searchParams.get("status") ?? "all";
-  const page = Number(searchParams.get("page") ?? "1");
+  const rawPage = Number(searchParams.get("page") ?? "1");
+  const page = Number.isSafeInteger(rawPage) && rawPage > 0 ? rawPage : 1;
 
   const query = useQuery({
     queryKey: ["broadcasts", status, page],
@@ -82,6 +84,7 @@ export const BroadcastsPage = () => {
           </button>
         </div>
 
+        {query.isError && <p role="alert" className="error">Could not load broadcasts. Check your API connection and administrator key.</p>}
         {query.isLoading ? (
           <p className="placeholder">Loading broadcasts…</p>
         ) : (
@@ -99,7 +102,7 @@ export const BroadcastsPage = () => {
               <tbody>
                 {query.data?.items.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.title}</td>
+                    <td><Link to={`/broadcasts/${item.id}`}>{item.title}</Link></td>
                     <td>
                       <StatusBadge status={item.status} />
                     </td>

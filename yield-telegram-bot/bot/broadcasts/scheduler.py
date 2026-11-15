@@ -1,7 +1,3 @@
-"""
-Планувальник запуску розсилок за scheduled_at.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -19,8 +15,6 @@ from bot.utils.logger import logger
 
 
 class BroadcastScheduler:
-    """Періодично перевіряє scheduled розсилки та ставить їх у чергу."""
-
     def __init__(
         self,
         *,
@@ -85,7 +79,10 @@ class BroadcastScheduler:
                     broadcast_id=broadcast.id,
                     event_type="scheduled_enqueued",
                     admin_id=None,
-                    payload={"scheduled_at": broadcast.scheduled_at.isoformat() if broadcast.scheduled_at else None},
+                    payload={
+                        "scheduled_at": broadcast.scheduled_at.isoformat()
+                        if broadcast.scheduled_at
+                        else None
+                    },
                 )
                 await self._queue.enqueue_broadcast(broadcast.id)
-

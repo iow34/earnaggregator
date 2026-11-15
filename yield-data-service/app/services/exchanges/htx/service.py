@@ -1,9 +1,3 @@
-"""
-Сервіс для роботи з HTX Earn продуктами.
-
-Інкапсулює логіку взаємодії з HTXAPI, кешування та синхронізації з БД.
-"""
-
 from typing import List, Dict, Optional, Any
 from datetime import datetime, UTC
 
@@ -15,36 +9,21 @@ from .api import HTXAPI
 
 
 class HTXService(BaseExchangeService):
-    """
-    Сервіс для роботи з продуктами HTX Earn.
-    
-    Агрегує логіку отримання даних, нормалізації,
-    збереження в БД та кешування для HTX.
-    """
-
     def __init__(self):
-        """Ініціалізує HTX сервіс."""
         super().__init__("htx", HTXAPI)
 
     async def test_connection(self) -> Dict[str, Any]:
-        """
-        Тестує підключення до HTX API.
-        
-        Returns:
-            Dict з результатами тестування
-        """
         if not self.is_configured:
             return {
                 "status": "error",
                 "message": "API ключі HTX не налаштовані",
-                "timestamp": datetime.now(UTC).isoformat()
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         try:
             logger.info("🧪 Тестування підключення до HTX API...")
             start_time = datetime.now(UTC)
 
-            # Тестуємо отримання Flexible products (менше даних)
             products = await self.api_client.get_flexible_savings_products(size=1)
 
             response_time = (datetime.now(UTC) - start_time).total_seconds()
@@ -55,7 +34,7 @@ class HTXService(BaseExchangeService):
                 "response_time_ms": round(response_time * 1000, 2),
                 "api_status": "active",
                 "products_found": len(products),
-                "timestamp": datetime.now(UTC).isoformat()
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
@@ -64,19 +43,10 @@ class HTXService(BaseExchangeService):
                 "status": "error",
                 "message": f"Помилка підключення: {str(e)}",
                 "api_status": "inactive",
-                "timestamp": datetime.now(UTC).isoformat()
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
     async def get_products_from_api(self, symbol: Optional[str] = None) -> List[Dict[str, Any]]:
-        """
-        Отримання продуктів безпосередньо з HTX API.
-        
-        Args:
-            symbol: Опціональний символ для фільтрації
-            
-        Returns:
-            List нормалізованих продуктів
-        """
         if not self.api_client:
             logger.error("❌ HTX API клієнт не ініціалізовано")
             return []
@@ -87,7 +57,6 @@ class HTXService(BaseExchangeService):
             else:
                 products = await self.api_client.get_earn_products()
 
-            # Сортуємо продукти за популярністю
             if products:
                 products = await self.sort_products_by_popularity(products)
 
@@ -97,34 +66,22 @@ class HTXService(BaseExchangeService):
             return []
 
     async def get_products_with_cache(self, symbol: Optional[str] = None) -> List[Dict[str, Any]]:
-        """
-        Отримує продукти HTX з кешуванням.
-        
-        Args:
-            symbol: Опціональний символ для фільтрації
-            
-        Returns:
-            List нормалізованих продуктів
-        """
         cache_key = f"exchange:htx:{symbol or 'all'}"
-        
-        # Спробувати отримати з кешу
+
         try:
             cached_data = await self.cache_manager.get_cached_data(cache_key)
             if cached_data:
                 logger.info(f"✅ HTX дані отримано з кешу (key: {cache_key})")
-                # Пересортируємо на випадок, якщо кеш був створений без сортування
+
                 if cached_data:
                     cached_data = await self.sort_products_by_popularity(cached_data)
                 return cached_data
         except Exception as cache_error:
             logger.warning(f"⚠️ Помилка читання кешу HTX: {cache_error}")
 
-        # Якщо кешу немає - отримуємо з API
         logger.info(f"🔄 Отримання HTX даних з API{f' для {symbol}' if symbol else ''}")
         products = await self.get_products_from_api(symbol)
 
-        # Зберігаємо в кеш
         if products:
             try:
                 await self.cache_manager.set_cached_data(cache_key, products, self.cache_ttl)
@@ -134,127 +91,94 @@ class HTXService(BaseExchangeService):
 
         return products
 
-    async def sort_products_by_popularity(self, products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Сортує продукти за популярністю CoinGecko.
-
-        Args:
-            products: Список продуктів для сортування
-
-        Returns:
-            List продуктів відсортований за популярністю
-        """
+    async def sort_products_by_popularity(
+        self, products: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         if not products:
             return []
 
-        # Додаємо рейтинг популярності до кожного продукту
         products_with_popularity = []
         for product in products:
             symbol = product.get("symbol", "").upper()
             if symbol:
-                # Отримуємо рейтинг популярності з CoinGecko
                 popularity_rank = await coingecko_service.get_popularity_rank(symbol)
-                # Якщо немає рейтингу, використовуємо велике число (9999)
+
                 popularity_rank = popularity_rank if popularity_rank is not None else 9999
             else:
                 popularity_rank = 9999
 
-            # Додаємо рейтинг до продукту для сортування
             product_with_rank = product.copy()
             product_with_rank["_popularity_rank"] = popularity_rank
             products_with_popularity.append(product_with_rank)
 
-        # Сортуємо за популярністю (менший rank = популярніший), потім за APY
         sorted_products = sorted(
-            products_with_popularity,
-            key=lambda p: (p["_popularity_rank"], -p.get("apy", 0))
+            products_with_popularity, key=lambda p: (p["_popularity_rank"], -p.get("apy", 0))
         )
 
-        # Видаляємо допоміжне поле _popularity_rank перед поверненням
         for product in sorted_products:
             product.pop("_popularity_rank", None)
 
-        logger.info(f"✅ HTX продукти відсортовані за популярністю: {len(sorted_products)} продуктів")
+        logger.info(
+            f"✅ HTX продукти відсортовані за популярністю: {len(sorted_products)} продуктів"
+        )
         return sorted_products
 
     async def _normalize_products(self, raw_products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Нормалізує сирі дані продуктів HTX та сортує за популярністю CoinGecko.
-
-        Args:
-            raw_products: Список сирих продуктів з API
-
-        Returns:
-            List нормалізованих продуктів відсортований за популярністю
-        """
         if not raw_products:
             return []
 
-        # HTX API вже повертає нормалізовані дані з api.py
-        # Додаємо сортування за популярністю CoinGecko
         products_with_popularity = []
         for product in raw_products:
             symbol = product.get("symbol", "").upper()
             if symbol:
-                # Отримуємо рейтинг популярності з CoinGecko
                 popularity_rank = await coingecko_service.get_popularity_rank(symbol)
-                # Якщо немає рейтингу, використовуємо велике число (9999)
+
                 popularity_rank = popularity_rank if popularity_rank is not None else 9999
             else:
                 popularity_rank = 9999
 
-            # Додаємо рейтинг до продукту для сортування
             product_with_rank = product.copy()
             product_with_rank["_popularity_rank"] = popularity_rank
             products_with_popularity.append(product_with_rank)
 
-        # Сортуємо за популярністю (менший rank = популярніший), потім за APY
         sorted_products = sorted(
-            products_with_popularity,
-            key=lambda p: (p["_popularity_rank"], -p.get("apy", 0))
+            products_with_popularity, key=lambda p: (p["_popularity_rank"], -p.get("apy", 0))
         )
 
-        # Видаляємо допоміжне поле _popularity_rank перед поверненням
         for product in sorted_products:
             product.pop("_popularity_rank", None)
 
-        logger.info(f"✅ HTX продукти відсортовані за популярністю: {len(sorted_products)} продуктів")
+        logger.info(
+            f"✅ HTX продукти відсортовані за популярністю: {len(sorted_products)} продуктів"
+        )
         return sorted_products
 
     async def get_health_status(self) -> Dict[str, Any]:
-        """
-        Повертає статус здоров'я HTX сервісу.
-        
-        Returns:
-            Dict зі статусом здоров'я
-        """
         try:
-            # Перевірка конфігурації
             if not self.is_configured:
                 return {
                     "status": "unhealthy",
                     "exchange": "htx",
                     "reason": "API ключі не налаштовані",
-                    "timestamp": datetime.now(UTC).isoformat()
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
 
-            # Тест підключення
             test_result = await self.test_connection()
-            
+
             if test_result.get("status") == "success":
                 return {
                     "status": "healthy",
                     "exchange": "htx",
                     "api_status": "active",
                     "response_time_ms": test_result.get("response_time_ms"),
-                    "timestamp": datetime.now(UTC).isoformat()
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
             else:
                 return {
                     "status": "degraded",
                     "exchange": "htx",
                     "reason": test_result.get("message"),
-                    "timestamp": datetime.now(UTC).isoformat()
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
 
         except Exception as e:
@@ -263,6 +187,5 @@ class HTXService(BaseExchangeService):
                 "status": "unhealthy",
                 "exchange": "htx",
                 "reason": f"Health check failed: {str(e)}",
-                "timestamp": datetime.now(UTC).isoformat()
+                "timestamp": datetime.now(UTC).isoformat(),
             }
-

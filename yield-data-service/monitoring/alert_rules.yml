@@ -1,15 +1,9 @@
-# Prometheus Alert Rules для EarnAggregator
-# РОЗДІЛ 3.3: Alerting при падінні API бірж
 #
-# ПРИМІТКА: Наші endpoints повертають JSON, а не Prometheus native metrics
-# Для повноцінних alerts потрібно додати Prometheus exporter або змінити endpoints
-# Поки що використовуємо базові правила для перевірки доступності
 
 groups:
   - name: earnaggregator_health
     interval: 30s
     rules:
-      # Alert: Сервіс недоступний
       - alert: ServiceDown
         expr: up{job="earnaggregator-api"} == 0
         for: 2m
@@ -20,7 +14,6 @@ groups:
           summary: "🚨 EarnAggregator Service недоступний"
           description: "Основний сервіс не відповідає більше 2 хвилин"
 
-      # Alert: Повільні відповіді
       - alert: SlowResponse
         expr: probe_duration_seconds{job="earnaggregator-api"} > 5
         for: 5m

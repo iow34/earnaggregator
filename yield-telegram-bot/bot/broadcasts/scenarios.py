@@ -1,7 +1,3 @@
-"""
-Опис сценаріїв ручних розсилок.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -10,8 +6,6 @@ from typing import List, Sequence, Set
 
 @dataclass(frozen=True, slots=True)
 class BroadcastScenario:
-    """Конфігурація сценарію ручної розсилки."""
-
     channel: str
     description: str
     allowed_content_types: Set[str]
@@ -30,7 +24,7 @@ def _build_scenarios() -> List[BroadcastScenario]:
     return [
         BroadcastScenario(
             channel="web_ui",
-            description="Адмін-панель з формою broadcast і розширеною сегментацією.",
+            description="",
             allowed_content_types=set(base_types),
             supports_preview=True,
             requires_approval=True,
@@ -42,7 +36,7 @@ def _build_scenarios() -> List[BroadcastScenario]:
         ),
         BroadcastScenario(
             channel="cli",
-            description="CLI або API сценарій для технічних операторів.",
+            description="",
             allowed_content_types=set(base_types),
             supports_preview=True,
             requires_approval=False,
@@ -54,7 +48,7 @@ def _build_scenarios() -> List[BroadcastScenario]:
         ),
         BroadcastScenario(
             channel="admin_bot",
-            description="Спеціальний адмін-бот з командами /send та /broadcast.",
+            description="",
             allowed_content_types=set(base_types),
             supports_preview=True,
             requires_approval=True,
@@ -69,4 +63,3 @@ def _build_scenarios() -> List[BroadcastScenario]:
 
 
 BROADCAST_SCENARIOS: List[BroadcastScenario] = _build_scenarios()
-

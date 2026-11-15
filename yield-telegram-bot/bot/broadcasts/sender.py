@@ -1,7 +1,3 @@
-"""
-Сервіс надсилання повідомлень для ручних розсилок.
-"""
-
 from __future__ import annotations
 
 from typing import Iterable, Optional
@@ -11,8 +7,6 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 
 
 class BroadcastSender:
-    """Обгортка над Bot для надсилання контенту розсилки."""
-
     def __init__(self, bot: Bot) -> None:
         self._bot = bot
 
@@ -83,4 +77,3 @@ class BroadcastSender:
             return None
 
         return InlineKeyboardMarkup(inline_keyboard=rows)
-

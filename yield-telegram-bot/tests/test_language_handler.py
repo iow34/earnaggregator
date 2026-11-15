@@ -1,60 +1,40 @@
-"""
-Тести для обробника кнопки Мова.
-"""
-
-import pytest
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock
-from aiogram.types import Message, User
-from aiogram.fsm.context import FSMContext
-
-from bot.handlers.language import language_handler
+import pytest
+from bot.handlers import language
 
 
-@pytest.fixture
-def mock_message():
-    """Фікстура для Message."""
-    message = MagicMock(spec=Message)
-    message.from_user = MagicMock(spec=User)
-    message.from_user.id = 12345
-    message.from_user.username = "testuser"
-    message.from_user.first_name = "Test"
-    message.from_user.last_name = "User"
-    message.text = "🌐 Мова"
+@pytest.mark.asyncio
+async def test_language_selection_uses_stored_language(monkeypatch):
+    @asynccontextmanager
+    async def session():
+        yield object()
+
+    monkeypatch.setattr(language.db_manager, "get_session", session)
+    monkeypatch.setattr(
+        language, "get_or_create_user", AsyncMock(return_value=MagicMock(language="en"))
+    )
+    message = MagicMock()
     message.answer = AsyncMock()
-    return message
-
-
-@pytest.fixture
-def mock_state():
-    """Фікстура для FSMContext."""
-    return MagicMock(spec=FSMContext)
-
-
-@pytest.mark.asyncio
-async def test_language_handler_success(mock_message, mock_state):
-    """Тест успішного виклику обробника Мова."""
-    await language_handler(mock_message, mock_state)
-    
-    # Перевірка, що відправлено повідомлення
-    mock_message.answer.assert_called_once()
-    call_args = mock_message.answer.call_args
-    
-    # Перевірка вмісту повідомлення
-    assert "🌐" in call_args[0][0]
-    assert "Вибір мови" in call_args[0][0]
-    assert "функція" in call_args[0][0].lower()
-    assert call_args[1]["parse_mode"] == "HTML"
+    state = AsyncMock()
+    await language.language_handler(message, state)
+    state.update_data.assert_awaited_once_with(language="en")
+    state.set_state.assert_awaited_once_with(language.LanguageSelection.waiting_for_language)
+    assert len(message.answer.call_args.kwargs["reply_markup"].inline_keyboard) == 4
 
 
 @pytest.mark.asyncio
-async def test_language_handler_error(mock_message, mock_state):
-    """Тест обробки помилки в language_handler."""
-    # Симулюємо помилку при відправці повідомлення
-    mock_message.answer = AsyncMock(side_effect=Exception("Test error"))
-    
-    # Виклик має пройти без винятку
-    await language_handler(mock_message, mock_state)
-    
-    # Повідомлення має бути викликане двічі (перший раз з помилкою, другий - з повідомленням про помилку)
-    assert mock_message.answer.call_count >= 1
+async def test_database_failure_returns_localized_error(monkeypatch):
+    @asynccontextmanager
+    async def session():
+        raise RuntimeError("Unavailable")
+        yield
 
+    monkeypatch.setattr(language.db_manager, "get_session", session)
+    message = MagicMock()
+    message.answer = AsyncMock()
+    await language.language_handler(message, AsyncMock())
+    message.answer.assert_awaited_once()
+    assert message.answer.call_args.args[0] == language.localization.get_error_text(
+        "error.general", "ua"
+    )

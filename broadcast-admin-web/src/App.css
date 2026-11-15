@@ -289,3 +289,18 @@
 .data-table tbody tr:hover {
   background: #f8fafc;
 }
+
+.preview-banner { padding: 12px 18px; border: 1px solid #7092ad; border-radius: 8px; background: #eaf3fa; color: #17334a; }
+
+.content, .card { min-width: 0; }
+.card { overflow-x: auto; }
+select, input, textarea, button { font: inherit; }
+@media (max-width: 700px) {
+  .app-shell { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { padding: 1rem; gap: .8rem; }
+  .sidebar nav { display: grid; grid-template-columns: 1fr 1fr; }
+  .sidebar__logout { margin-top: 0; }
+  .content { padding: 1rem; }
+  .page-header { flex-wrap: wrap; gap: .5rem; }
+  .data-table { font-size: .85rem; }
+}

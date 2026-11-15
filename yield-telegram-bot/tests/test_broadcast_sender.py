@@ -46,4 +46,3 @@ async def test_sender_sends_photo(monkeypatch):
 
     bot.send_photo.assert_awaited_once()
     assert result.message_id == 20
-

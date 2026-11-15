@@ -5,7 +5,6 @@ import axios from "axios";
 const API_URL = import.meta.env.VITE_BROADCAST_API_URL || "/api";
 const STORAGE_KEY = "broadcastAdminApiKey";
 
-console.log("[API Client] Using baseURL:", API_URL);
 
 export const apiClient = axios.create({
   baseURL: API_URL,
@@ -13,7 +12,7 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const apiKey = localStorage.getItem(STORAGE_KEY);
+  const apiKey = sessionStorage.getItem(STORAGE_KEY);
   if (apiKey) {
     config.headers = config.headers ?? {};
     config.headers["x-admin-api-key"] = apiKey;

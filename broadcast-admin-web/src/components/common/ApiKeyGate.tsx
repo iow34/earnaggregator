@@ -1,13 +1,13 @@
 import { type FormEvent, useState } from "react";
 
-import { useApiKey } from "../../context/ApiKeyContext";
+import { useApiKey } from "../../context/apiKey";
 
 export const ApiKeyGate = ({ children }: { children: React.ReactNode }) => {
   const { apiKey, setApiKey } = useApiKey();
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  if (apiKey) {
+  if (apiKey || import.meta.env.VITE_PREVIEW_MODE === "true") {
     return <>{children}</>;
   }
 
@@ -26,10 +26,12 @@ export const ApiKeyGate = ({ children }: { children: React.ReactNode }) => {
     <div className="api-key-gate">
       <form className="api-key-form" onSubmit={handleSubmit}>
         <h1>Broadcast Admin</h1>
-        <p>Enter the API key issued in the backend `.env` to continue.</p>
+        <p>Enter your administrator API key to continue.</p>
         <input
           type="password"
-          placeholder="x-admin-api-key"
+          aria-label="Administrator API key"
+          autoComplete="off"
+          placeholder="Administrator API key"
           value={value}
           onChange={(event) => setValue(event.target.value)}
         />

@@ -1,27 +1,10 @@
-"""
-Сервіс авторизації адміністраторів для ручних розсилок.
-"""
-
 from __future__ import annotations
 
 import secrets
 from enum import Enum
 from typing import Optional
 
-try:
-    from passlib.context import CryptContext
-except ImportError:  # pragma: no cover - fallback для середовищ без passlib
-    import hashlib
-
-    class CryptContext:  # type: ignore
-        def __init__(self, *args, **kwargs):
-            self._salt = kwargs.get("salt", "earnaggregator")
-
-        def hash(self, password: str) -> str:
-            return hashlib.sha256((password + self._salt).encode("utf-8")).hexdigest()
-
-        def verify(self, password: str, hashed: str) -> bool:
-            return self.hash(password) == hashed
+import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.db import crud
@@ -34,16 +17,17 @@ class AdminRole(str, Enum):
 
 
 class AdminAuthService:
-    """Інструменти для керування адміністраторами."""
-
     def __init__(self) -> None:
-        self._pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        pass
 
     def hash_password(self, password: str) -> str:
-        return self._pwd_context.hash(password)
+        return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("ascii")
 
     def verify_password(self, password: str, hashed: str) -> bool:
-        return self._pwd_context.verify(password, hashed)
+        try:
+            return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("ascii"))
+        except (ValueError, UnicodeError):
+            return False
 
     def issue_api_key(self) -> str:
         return secrets.token_hex(32)
@@ -80,4 +64,3 @@ class AdminAuthService:
 
 
 admin_auth_service = AdminAuthService()
-

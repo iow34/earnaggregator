@@ -1,18 +1,8 @@
-"""
-Специфічні моделі для Binance інтеграції.
-
-Цей модуль містить моделі та типи даних,
-специфічні для роботи з Binance API.
-"""
-
 from typing import Optional
 from pydantic import BaseModel
 
 
 class BinanceProductConfig(BaseModel):
-    """
-    Конфігурація продукту Binance.
-    """
     product_id: str
     asset: str
     can_purchase: bool
@@ -21,9 +11,6 @@ class BinanceProductConfig(BaseModel):
 
 
 class BinanceFlexibleProduct(BaseModel):
-    """
-    Модель для Flexible продуктів Binance.
-    """
     product_id: str
     asset: str
     latest_annual_percentage_rate: float
@@ -33,9 +20,6 @@ class BinanceFlexibleProduct(BaseModel):
 
 
 class BinanceLockedProduct(BaseModel):
-    """
-    Модель для Locked продуктів Binance.
-    """
     project_id: str
     asset: str
     apr: float

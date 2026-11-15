@@ -1,348 +1,94 @@
-# EarnAggregator - Платформа для пошуку кращих Yield пропозицій
+# EarnAggregator
 
-**Версія:** 1.0.0
+**Cryptocurrency Earn discovery and Telegram broadcast operations.**
 
-Повнофункціональна система для збору, агрегації та моніторингу даних про пасивний дохід (Yield/Earn продукти) з криптобірж.
+[![CI](https://github.com/iow34/earnaggregator/actions/workflows/ci.yml/badge.svg)](https://github.com/iow34/earnaggregator/actions/workflows/ci.yml)
 
-## 🎯 Що це?
+EarnAggregator brings exchange Earn products into a common catalogue, serves them through a REST API and a multilingual Telegram bot, and gives administrators a separate dashboard for targeted broadcasts.
 
-EarnAggregator - це мікросервісна платформа, яка:
+The system combines asynchronous Python services, PostgreSQL persistence, Redis caching and delivery queues, scheduled data refreshes, and a React administration interface.
 
-- 📊 Збирає дані з Binance, Bybit та BitMart про Earn продукти
-- 💾 Зберігає в PostgreSQL базі даних (440+ продукти)
-- ⚡ Кешує в Redis для швидкого доступу
-- 🔄 Автоматично оновлює дані кожну годину
-- 📈 Моніторить стан через Prometheus + Grafana
-- 🤖 Надає REST API для Telegram бота
+## Capabilities
 
-## 🚀 Швидкий старт (1 хвилина)
+- **Exchange aggregation:** adapters for Binance, Bybit, OKX, BitMart, Bitget, Gate, HTX, Kraken, KuCoin and MEXC, with shared product models and a dynamic registry.
+- **Discovery:** asset and exchange filters, flexible/fixed lock periods, APY comparison, trending assets and priority products.
+- **Telegram interface:** English, Ukrainian and Russian content, pagination, language preferences and referral navigation.
+- **Broadcast operations:** recipient filters, previews, owner approval, scheduling, delivery status, retries and event history.
+- **Administration:** React/TypeScript dashboard, broadcast creation, lists and delivery summaries.
+- **Observability:** request metrics, scheduler and queue metrics, structured logs, Prometheus and Grafana configuration.
 
-```bash
-# Клонувати репозиторій
-git clone <repo>
-cd EarnAggregator
+![Earn catalogue with synthetic sample data](docs/images/catalogue.png)
 
-# Запустити всі сервіси через Docker
-docker-compose up -d
+## Explore the product
 
-# Перевірити статус
-./check_system_status.sh
-```
-
-**Готово!** Система працює на:
-
-- 🌐 API: http://localhost:8000/docs
-- 📊 Prometheus: http://localhost:9090
-- 📈 Grafana: http://localhost:3000
-
-Детальніше: [QUICK_START.md](QUICK_START.md)
-
-## 🏗️ Архітектура
-
-```
-┌─────────────────────────────────────────────────────────┐
-│               EarnAggregator Platform                    │
-├─────────────────────────────────────────────────────────┤
-│  🐳 Docker Services                                     │
-│  ├─ PostgreSQL     (База даних - 353 products)          │
-│  ├─ Redis          (Кеш - 1.13M)                        │
-│  ├─ Yield API      (FastAPI - 24 endpoints)             │
-│  ├─ Prometheus     (Metrics collection)                 │
-│  └─ Grafana        (Visualization)                      │
-├─────────────────────────────────────────────────────────┤
-│  📡 API Endpoints                                       │
-│  ├─ GET /api/v1/yield/{symbol}                         │
-│  ├─ GET /api/v1/top                                    │
-│  ├─ GET /api/v1/exchanges                              │
-│  └─ GET /api/v1/health                                 │
-├─────────────────────────────────────────────────────────┤
-│  🔄 Data Flow                                          │
-│  Exchange APIs → Scheduler → PostgreSQL → Redis → API │
-└─────────────────────────────────────────────────────────┘
-```
-
-## 📦 Компоненти
-
-### 1. Yield Data Service (FastAPI)
-
-**Призначення:** REST API для отримання даних про Earn продукти
-
-**Особливості:**
-- 24 API endpoints
-- Кешування через Redis
-- Автоматичне оновлення даних
-- Prometheus метрики
-
-**Документація:** [API_ENDPOINTS_GUIDE.md](docs/API_ENDPOINTS_GUIDE.md)
-
-### 2. Telegram Bot
-
-**Призначення:** Інтерфейс для користувачів
-
-**Особливості:**
-- Пошук продуктів по символу
-- Топ пропозиції за APY
-- Фільтри по біржам
-- Персоналізовані рекомендації
-
-### 3. Monitoring Stack
-
-**Компоненти:**
-- Prometheus - збір метрик
-- Grafana - візуалізація
-- Логування в файли
-
-**Документація:** [PROMETHEUS_GRAFANA_GUIDE.md](docs/PROMETHEUS_GRAFANA_GUIDE.md)
-
-## 🛠️ Технології
-
-- **Backend:** Python 3.13, FastAPI, SQLAlchemy, APScheduler
-- **Database:** PostgreSQL 15
-- **Cache:** Redis 7
-- **Monitoring:** Prometheus, Grafana
-- **Containerization:** Docker, Docker Compose
-- **Bot:** aiogram 3.x
-
-## 📚 Документація
-
-- [Швидкий старт](docs/QUICK_START.md)
-- [Архітектура проекту](docs/PROJECT_ARCHITECTURE.md)
-- [API Endpoints](docs/API_ENDPOINTS_GUIDE.md)
-- [Налаштування Docker](docs/docker-setup.md)
-- [Моніторинг](docs/PROMETHEUS_GRAFANA_GUIDE.md)
-- [Версійність](docs/VERSIONING_GUIDE.md)
-
-## 🔄 Оновлення версії
-
-Версія проекту керується через файл `VERSION` в корені проекту.
-
-**Поточна версія:** 1.0.0
-
-Детальніше: [VERSIONING_GUIDE.md](docs/VERSIONING_GUIDE.md)
-
-## 📝 Ліцензія
-
-MIT License
-
-## 👥 Автори
-
-<<<<<<< HEAD
-### ✅ РОЗДІЛ 3.2: Бізнес-логіка
-
-- Сервіс агрегації даних з 3 стратегіями
-- Об'єднання даних з Binance та Bybit
-- Кешування з fallback логікою
-- Валідація якості даних (quality score)
-
-### ✅ РОЗДІЛ 3.3: Scheduler
-
-- 4 автоматичні задачі
-- Оновлення кешу кожну годину
-- Синхронізація БД кожну годину
-- Health check кожні 15 хв
-- Prometheus metrics
-
-### ✅ Bonus: Моніторинг
-
-- Prometheus для збору метрик
-- Grafana для візуалізації
-- Alert rules для критичних помилок
-- Dashboard template
-
-## 📊 Prometheus та Grafana - Як користуватися
-
-### Prometheus (http://localhost:9090)
-
-**Що це:** Система збору та зберігання метрик
-
-**Як використовувати:**
-
-1. Відкрити http://localhost:9090/targets - перевірити що всі targets UP
-2. Відкрити http://localhost:9090/graph - виконати PromQL запити
-3. Приклад запиту: `up{job="earnaggregator-api"}` - перевірка доступності
-
-**Корисні розділи:**
-
-- **Targets** - статус endpoints які Prometheus моніторить
-- **Alerts** - активні alerts (якщо щось не так)
-- **Graph** - візуалізація метрик
-
-### Grafana (http://localhost:3000)
-
-**Що це:** Платформа для створення dashboards та візуалізації
-
-**Перше налаштування (2 хвилини):**
-
-1. Відкрити http://localhost:3000
-2. Login: `admin` / `admin`
-3. Додати Prometheus data source:
-   - ☰ → Connections → Data sources → Add
-   - Type: **Prometheus**
-   - URL: `http://prometheus:9090`
-   - Save & test
-4. Створити Dashboard:
-   - ☰ → Dashboards → New
-   - Add visualization
-   - Query: `up{job="earnaggregator-api"}`
-   - Apply → Save
-
-**Для візуалізації наших JSON metrics:**
-
-1. Встановити Infinity plugin:
-   ```bash
-   docker exec earn-grafana grafana-cli plugins install yesoreyeram-infinity-datasource
-   docker restart earn-grafana
-   ```
-2. Додати Infinity data source:
-   - URL: `http://yield-api:8000`
-3. Створити панелі з нашими endpoints:
-   - `/api/v1/stats` - Total Products
-   - `/api/v1/cache/stats` - Cache Hit Rate
-   - `/api/v1/scheduler/metrics` - Scheduler Metrics
-
-**Детальний гайд:** [docs/PROMETHEUS_GRAFANA_GUIDE.md](docs/PROMETHEUS_GRAFANA_GUIDE.md)
-
-**Швидке налаштування:** [docs/MONITORING_QUICK_SETUP.md](docs/MONITORING_QUICK_SETUP.md)
-
-### Dashboard моніторингу
-
-**Рекомендовані панелі:**
-
-1. **Service Health** - статус БД, кешу, API бірж
-2. **Total Products** - кількість продуктів в БД
-3. **Cache Hit Rate** - ефективність кешування
-4. **Scheduler Jobs** - виконані/провалені задачі
-5. **API Response Times** - швидкість API
-6. **BitMart Metrics** - `bitmart_products_count`, `bitmart_api_calls_total`, `bitmart_sync_duration_seconds`
-
-**Приклад створення панелі:**
-
-```
-1. New Dashboard → Add visualization
-2. Data source: Infinity (або Prometheus)
-3. URL: /api/v1/stats
-4. JSONPath: $.total_products
-5. Visualization: Stat
-6. Title: "Total Products"
-7. Apply & Save
-```
-
-### Демонстрація
+The interactive preview runs with synthetic rates and no credentials. It contains the catalogue and the administration interface. Broadcasts remain drafts and no messages are delivered. State resets when the preview server restarts.
 
 ```bash
-# Запустити інтерактивну демонстрацію
-./demo_monitoring.sh
+git clone https://github.com/iow34/earnaggregator.git
+cd earnaggregator
+docker compose up --build --wait
 ```
 
-## 📈 Поточний статус системи
-
-```
-✅ Database:     440+ products (healthy)
-✅ Cache:        Redis 1.13M (healthy)
-✅ Binance API:  100 products (success)
-✅ Bybit API:    253 products (success)
-✅ BitMart API:  90 products (success)
-✅ Scheduler:    4 jobs running
-✅ Prometheus:   4 targets UP
-✅ Grafana:      Ready for dashboards
-```
-
-## 🛠️ Корисні команди
-
-### Швидка перевірка
+Open [the interface](http://localhost:5173), choose **Earn catalogue**, and filter by asset. Then open **Create broadcast**, save a draft and inspect its detail page. The API is available at [localhost:8000/docs](http://localhost:8000/docs).
 
 ```bash
-./check_system_status.sh    # Статус всіх систем
-./test_endpoints.sh          # Тест всіх endpoints
-./test_scheduler.sh          # Тест scheduler
-./demo_monitoring.sh         # Демо моніторингу
+# Stop the preview
+docker compose down
 ```
 
-### Docker
+Prefer a local Python/Node setup? See [development](docs/development.md). Deployment of the connected services is covered in [deployment](docs/deployment.md).
 
-```bash
-docker-compose up -d         # Запустити всі сервіси
-docker-compose down          # Зупинити всі сервіси
-docker ps                    # Перевірити статус
-docker logs earn-yield-api   # Переглянути логи
+## Architecture
+
+```mermaid
+flowchart LR
+    X[Exchange APIs / imports] --> A[Adapter registry]
+    A --> S[Aggregation + scheduled refresh]
+    S --> P[(PostgreSQL)]
+    S --> R[(Redis cache)]
+    P --> API[FastAPI data service]
+    R --> API
+    API --> B[aiogram Telegram bot]
+    UI[React admin dashboard] --> ADM[Broadcast admin API]
+    ADM --> P
+    ADM --> Q[(Redis delivery queue)]
+    Q --> W[Broadcast worker]
+    W --> T[Telegram API]
+    API --> M[Prometheus / Grafana]
 ```
 
-### Моніторинг
+The credential-free preview uses an isolated in-memory API. It does not import the connected services or start background exchange, scheduler or Telegram clients.
 
-```bash
-# Prometheus targets
-curl http://localhost:9090/api/v1/targets | python3 -m json.tool
+## Engineering details
 
-# Scheduler metrics
-curl http://localhost:8000/api/v1/scheduler/metrics | python3 -m json.tool
+| Area | Implementation |
+| --- | --- |
+| Backend | Python 3.11, FastAPI, Pydantic, SQLAlchemy, asyncpg |
+| Bot | aiogram, localized content, stateful navigation |
+| Storage | PostgreSQL; Redis cache and broadcast queue |
+| Frontend | React, TypeScript, Vite, TanStack Query |
+| Operations | Docker Compose, APScheduler, Prometheus/Grafana |
+| Verification | Python regression tests, PostgreSQL schema/auth integration, frontend lint/build, dependency and secret scans in CI |
 
-# System health
-curl http://localhost:8000/api/v1/health | python3 -m json.tool
+[Architecture and design decisions](docs/architecture.md) · [API and authorization](docs/api.md) · [Configuration](docs/configuration.md) · [Case study](docs/case-study.md)
+
+## Repository layout
+
+```text
+yield-data-service/   Data API, adapters, models, aggregation and metrics
+yield-telegram-bot/   Telegram UX, broadcast API, worker and localized content
+broadcast-admin-web/ React administration interface
+demo/                Isolated interactive preview
+tests/               Current cross-service regression and integration checks
+scripts/             Schema initialization and administrator provisioning
 ```
 
-## 📖 Документація
+## Operational scope
 
-### Гайди
+This repository contains the completed implementation and its local preview. A hosted production instance is not currently maintained. Exchange endpoints, account entitlements and product availability change independently of this code; verify the relevant adapters and permissions before connecting an account. Historical import fixtures are snapshots, not live market rates. Displayed APY is informational and can change.
 
-- [QUICK_START.md](QUICK_START.md) - Швидкий старт
-- [docs/PULL_REQUEST_GUIDE.md](docs/PULL_REQUEST_GUIDE.md) - Гайд по Pull Requests з прикладами
-- [docs/VERSIONING_GUIDE.md](docs/VERSIONING_GUIDE.md) - Керування версійністю проекту
-- [docs/PROMETHEUS_GRAFANA_GUIDE.md](docs/PROMETHEUS_GRAFANA_GUIDE.md) - Повний гайд моніторингу
-- [docs/MONITORING_QUICK_SETUP.md](docs/MONITORING_QUICK_SETUP.md) - Налаштування за 5 хв
-- [docs/DOCKER_ENDPOINT_ACCESS_GUIDE.md](docs/DOCKER_ENDPOINT_ACCESS_GUIDE.md) - Docker та endpoints
+The frontend preview uses only synthetic data. Connected deployments require their own credentials, administrator provisioning, HTTPS and restricted network access. Read [security](SECURITY.md) before deployment.
 
-### Звіти
+## License and author
 
-- [SECTION_3_FINAL_REPORT.md](SECTION_3_FINAL_REPORT.md) - Підсумок РОЗДІЛУ 3
-- [yield-data-service/SECTION_3_COMPLETE_REPORT.md](yield-data-service/SECTION_3_COMPLETE_REPORT.md) - Детальний звіт
-
-### Компоненти
-
-- [yield-data-service/app/services/README_aggregation.md](yield-data-service/app/services/README_aggregation.md) - Сервіс агрегації
-- [yield-data-service/app/services/README_scheduler.md](yield-data-service/app/services/README_scheduler.md) - Scheduler
-- [yield-data-service/monitoring/README.md](yield-data-service/monitoring/README.md) - Моніторинг
-
-## 🎯 Статус проекту
-
-**РОЗДІЛ 3: API та бізнес-логіка** - ✅ 100% ЗАВЕРШЕНО
-
-- ✅ 3.1 API Routes (24 endpoints)
-- ✅ 3.2 Business Logic (aggregation)
-- ✅ 3.3 Scheduler (automated tasks)
-- ✅ Prometheus + Grafana monitoring
-
-**Наступний:** РОЗДІЛ 4 - Тестування та оптимізація
-
-## 🤝 Контакти
-
-Детальна документація в директорії `/docs`
-
----
-
-# Yield Telegram Bot
-
-Telegram бот для пошуку найкращих пропозицій пасивного доходу.
-
-## Технології
-
-- Aiogram 3.x - Telegram Bot framework
-- httpx - HTTP клієнт
-- PostgreSQL - база даних
-
-## Команди
-
-- /start - початок роботи
-- /yield <SYMBOL> - інформація про монету
-- /top [N] - топ N пропозицій
-- /help - допомога
-
-## Встановлення
-
-1. Клонувати репозиторій
-2. Створити бота через @BotFather
-3. Створити .env файл з токеном
-4. Встановити залежності: `pip install -r requirements.txt`
-5. Запустити: `python -m bot.main`
-=======
-EarnAggregator Team
->>>>>>> 838651ea112ede6673d9ce4f82e973a4b448a2f6
+MIT — see [LICENSE](LICENSE). Developed by [iow34](https://github.com/iow34).

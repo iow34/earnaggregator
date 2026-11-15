@@ -43,10 +43,18 @@ class KuCoinAPI(BaseExchange):
         timestamp_ms = str(int(time.time() * 1000))
         prehash = f"{timestamp_ms}{method.upper()}{path}{query}{body}"
 
-        signature = base64.b64encode(hmac.new(self.api_secret.encode("utf-8"), prehash.encode("utf-8"), hashlib.sha256).digest()).decode()
+        signature = base64.b64encode(
+            hmac.new(
+                self.api_secret.encode("utf-8"), prehash.encode("utf-8"), hashlib.sha256
+            ).digest()
+        ).decode()
 
         passphrase_raw = self.api_passphrase or ""
-        passphrase = base64.b64encode(hmac.new(self.api_secret.encode("utf-8"), passphrase_raw.encode("utf-8"), hashlib.sha256).digest()).decode()
+        passphrase = base64.b64encode(
+            hmac.new(
+                self.api_secret.encode("utf-8"), passphrase_raw.encode("utf-8"), hashlib.sha256
+            ).digest()
+        ).decode()
 
         return {
             "KC-API-KEY": self.api_key or "",
@@ -56,7 +64,9 @@ class KuCoinAPI(BaseExchange):
             "KC-API-KEY-VERSION": self.api_key_version,
         }
 
-    async def _get_request(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def _get_request(
+        self, path: str, params: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Make unsigned GET request for public endpoints."""
         params = params or {}
         query = f"?{urlencode(params)}" if params else ""
@@ -69,14 +79,19 @@ class KuCoinAPI(BaseExchange):
                 return await self._make_request("GET", f"{path}{query}", auth_required=False)
             except Exception as e:
                 msg = str(e)
-                if any(code in msg for code in ["429", "500", "502", "503", "504"]) and attempt < max_attempts - 1:
+                if (
+                    any(code in msg for code in ["429", "500", "502", "503", "504"])
+                    and attempt < max_attempts - 1
+                ):
                     logger.warning(f"[KuCoinAPI] Backoff {backoff}s due to error: {msg}")
                     await asyncio.sleep(backoff)
                     backoff *= 2
                     continue
                 raise
 
-    async def _signed_get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def _signed_get(
+        self, path: str, params: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Make signed GET request for private endpoints."""
         params = params or {}
         # Ensure deterministic ordering for signature
@@ -88,17 +103,24 @@ class KuCoinAPI(BaseExchange):
         backoff = 1.0
         for attempt in range(max_attempts):
             try:
-                return await self._make_request("GET", f"{path}{query}", headers=headers, auth_required=True)
+                return await self._make_request(
+                    "GET", f"{path}{query}", headers=headers, auth_required=True
+                )
             except Exception as e:
                 msg = str(e)
-                if any(code in msg for code in ["429", "500", "502", "503", "504"]) and attempt < max_attempts - 1:
+                if (
+                    any(code in msg for code in ["429", "500", "502", "503", "504"])
+                    and attempt < max_attempts - 1
+                ):
                     logger.warning(f"[KuCoinAPI] Backoff {backoff}s due to error: {msg}")
                     await asyncio.sleep(backoff)
                     backoff *= 2
                     continue
                 raise
 
-    async def get_flexible_savings_products(self, currency: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def get_flexible_savings_products(
+        self, currency: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Fetch current Flexible savings products."""
         try:
             params: Dict[str, Any] = {"fundsType": "FLEXIBLE"}
@@ -113,7 +135,9 @@ class KuCoinAPI(BaseExchange):
             logger.error(f"[KuCoinAPI] Flexible fetch error: {e}")
             return []
 
-    async def get_locked_savings_products(self, currency: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def get_locked_savings_products(
+        self, currency: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Fetch current Fixed savings products."""
         try:
             params: Dict[str, Any] = {"fundsType": "FIXED"}
@@ -137,5 +161,3 @@ class KuCoinAPI(BaseExchange):
         flexible = await self.get_flexible_savings_products(currency=symbol)
         fixed = await self.get_locked_savings_products(currency=symbol)
         return [*flexible, *fixed]
-
-

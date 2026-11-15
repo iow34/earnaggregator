@@ -1,7 +1,3 @@
-"""
-Тести перевіряють структуру моделей БД для розсилок.
-"""
-
 from bot.db import models
 
 
@@ -43,4 +39,3 @@ def test_broadcast_recipient_columns():
 def test_admin_user_has_security_fields():
     admin_columns = {c.name for c in models.AdminUser.__table__.columns}
     assert {"email", "password_hash", "role", "api_key"} <= admin_columns
-

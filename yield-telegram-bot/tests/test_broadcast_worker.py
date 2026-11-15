@@ -32,4 +32,3 @@ def test_backoff_grows_with_attempts():
     assert worker._compute_backoff(1) == 1.0
     assert worker._compute_backoff(2) == pytest.approx(2.0)
     assert worker._compute_backoff(10) <= 30.0
-

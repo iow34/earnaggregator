@@ -12,7 +12,8 @@
     "error.display_results_error": "❌ Неможливо відобразити результати. Спробуйте пізніше.",
     "error.product_input_empty": "❌ Назва продукту не може бути порожньою",
     "error.product_input_invalid_chars": "❌ Назва продукту може містити тільки великі літери, цифри та дефіси",
-    "error.product_input_too_long": "❌ Назва продукту занадто довга (максимум 20 символів)"
+    "error.product_input_too_long": "❌ Назва продукту занадто довга (максимум 20 символів)",
+    "error.data_not_found": "Дані не знайдено"
   },
   "ru": {
     "error.api_unavailable": "⚠️ API временно недоступен",
@@ -27,7 +28,8 @@
     "error.display_results_error": "❌ Невозможно отобразить результаты. Попробуйте позже.",
     "error.product_input_empty": "❌ Название продукта не может быть пустым",
     "error.product_input_invalid_chars": "❌ Название продукта может содержать только заглавные буквы, цифры и дефисы",
-    "error.product_input_too_long": "❌ Название продукта слишком длинное (максимум 20 символов)"
+    "error.product_input_too_long": "❌ Название продукта слишком длинное (максимум 20 символов)",
+    "error.data_not_found": "Данные не найдены"
   },
   "en": {
     "error.api_unavailable": "⚠️ API temporarily unavailable",
@@ -42,7 +44,7 @@
     "error.display_results_error": "❌ Unable to display results. Please try again later.",
     "error.product_input_empty": "❌ Product name cannot be empty",
     "error.product_input_invalid_chars": "❌ Product name can only contain uppercase letters, numbers and hyphens",
-    "error.product_input_too_long": "❌ Product name is too long (maximum 20 characters)"
+    "error.product_input_too_long": "❌ Product name is too long (maximum 20 characters)",
+    "error.data_not_found": "Data not found"
   }
 }
-

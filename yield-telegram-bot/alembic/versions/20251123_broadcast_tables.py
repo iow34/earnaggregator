@@ -4,6 +4,7 @@ Revision ID: 20251123_broadcast_tables
 Revises:
 Create Date: 2025-11-23 12:00:00.000000
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -40,8 +41,12 @@ def upgrade() -> None:
         sa.Column("api_key", sa.String(length=64), nullable=False, unique=True),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")),
         sa.Column("last_login_at", sa.TIMESTAMP(timezone=True), nullable=True),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
     )
     op.create_index("ix_admin_users_email", "admin_users", ["email"], unique=True)
 
@@ -50,12 +55,16 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("title", sa.String(length=255), nullable=False),
         sa.Column("content_type", sa.String(length=20), nullable=False, server_default="text"),
-        sa.Column("content_payload", sa.JSON(), nullable=False, server_default=sa.text("'{}'::json")),
+        sa.Column(
+            "content_payload", sa.JSON(), nullable=False, server_default=sa.text("'{}'::json")
+        ),
         sa.Column("filter_query", sa.JSON(), nullable=False, server_default=sa.text("'{}'::json")),
         sa.Column("status", sa.String(length=20), nullable=False, server_default="draft"),
         sa.Column("author_admin_id", sa.Integer(), sa.ForeignKey("admin_users.id"), nullable=False),
         sa.Column("channel", sa.String(length=50), nullable=False, server_default="web_ui"),
-        sa.Column("requires_approval", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column(
+            "requires_approval", sa.Boolean(), nullable=False, server_default=sa.text("false")
+        ),
         sa.Column("scheduled_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("started_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("completed_at", sa.TIMESTAMP(timezone=True), nullable=True),
@@ -64,8 +73,12 @@ def upgrade() -> None:
         sa.Column("metadata", sa.JSON(), nullable=False, server_default=sa.text("'{}'::json")),
         sa.Column("total_recipients", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("batch_size", sa.Integer(), nullable=False, server_default="100"),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
     )
     op.create_index("ix_broadcasts_status", "broadcasts", ["status"])
     op.create_index("ix_broadcasts_scheduled_at", "broadcasts", ["scheduled_at"])
@@ -82,10 +95,16 @@ def upgrade() -> None:
         sa.Column("message_id", sa.String(length=128), nullable=True),
         sa.Column("error_code", sa.String(length=50), nullable=True),
         sa.Column("last_attempt_at", sa.TIMESTAMP(timezone=True), nullable=True),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
     )
-    op.create_index("ix_recipients_broadcast_status", "broadcast_recipients", ["broadcast_id", "status"])
+    op.create_index(
+        "ix_recipients_broadcast_status", "broadcast_recipients", ["broadcast_id", "status"]
+    )
 
     op.create_table(
         "broadcast_events",
@@ -94,7 +113,9 @@ def upgrade() -> None:
         sa.Column("admin_id", sa.Integer(), sa.ForeignKey("admin_users.id"), nullable=True),
         sa.Column("event_type", sa.String(length=50), nullable=False),
         sa.Column("payload", sa.JSON(), nullable=False, server_default=sa.text("'{}'::json")),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
     )
 
 
@@ -113,4 +134,3 @@ def downgrade() -> None:
     op.drop_column("telegram_users", "last_active_at")
     op.drop_column("telegram_users", "tags")
     op.drop_column("telegram_users", "is_subscribed")
-

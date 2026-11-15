@@ -54,4 +54,3 @@ async def test_scheduler_enqueues_ready_broadcasts(monkeypatch):
     queue.enqueue_broadcast.assert_awaited_once_with(7)
     record_mock.assert_awaited()
     assert broadcast.status == "queued"
-

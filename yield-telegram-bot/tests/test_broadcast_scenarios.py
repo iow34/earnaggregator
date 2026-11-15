@@ -1,7 +1,3 @@
-"""
-Тести для сценаріїв ручних розсилок.
-"""
-
 import pytest
 
 
@@ -35,4 +31,3 @@ def test_each_channel_has_preview_capability(channel: str):
 
     scenario = next(s for s in BROADCAST_SCENARIOS if s.channel == channel)
     assert scenario.supports_preview is True
-

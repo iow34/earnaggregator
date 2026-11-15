@@ -1,7 +1,3 @@
-"""
-Pydantic-схеми для API розсилок.
-"""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -151,4 +147,3 @@ class DashboardMetricsResponse(BaseModel):
     pending_approval: int
     sent_today: int
     failed_today: int
-

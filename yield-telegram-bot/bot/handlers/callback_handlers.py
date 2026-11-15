@@ -1,13 +1,3 @@
-"""
-Централізовані обробники callback запитів.
-
-Керує:
-- Фільтрами (продукт, біржа, тип, APY)
-- Сортуванням
-- Скиданням фільтрів
-- Навігацією
-"""
-
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
@@ -17,7 +7,7 @@ from bot.keyboards.filters import (
     exchange_selection_keyboard,
     type_selection_keyboard,
     sort_options_keyboard,
-    apy_range_keyboard
+    apy_range_keyboard,
 )
 from bot.utils.logger import logger
 from bot.services.filter_state import FilterStateManager, FilterStates
@@ -25,14 +15,24 @@ from bot.localization import localization
 
 router = Router(name="callback_handlers")
 
-# Список доступних продуктів
+
 # "OTHER" is a special key for manual input
 AVAILABLE_PRODUCTS = ["BTC", "ETH", "SOL", "USDT", "USDC", "BNB", "ADA", "DOT", "XRP", "OTHER"]
-AVAILABLE_EXCHANGES = ["binance", "bybit", "okx", "mexc", "gate", "bitget", "kraken", "kucoin", "htx", "OTHER"]
+AVAILABLE_EXCHANGES = [
+    "binance",
+    "bybit",
+    "okx",
+    "mexc",
+    "gate",
+    "bitget",
+    "kraken",
+    "kucoin",
+    "htx",
+    "OTHER",
+]
 
 
 def _format_exchange_display_name(exchange: str) -> str:
-    """Форматувати назву біржі для відображення."""
     display_names = {
         "binance": "Binance",
         "bybit": "Bybit",
@@ -51,78 +51,74 @@ def _format_exchange_display_name(exchange: str) -> str:
 
 @router.callback_query(F.data.startswith("filter_product:"))
 async def filter_exchange_product_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Показати вибір продукту для конкретної біржі."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
-        # Отримати provider з callback data
         provider = callback.data.split(":", 1)[1]
 
         logger.info(f"🎯 Викликано filter_exchange_product_handler для {provider}")
 
         await state.set_state(FilterStates.selecting_product)
-        await state.update_data(provider=provider)  # Зберегти provider для контексту
+        await state.update_data(provider=provider)
 
         filters = await FilterStateManager.get_current_filters(state)
         current_product = filters.get("product")
 
-        # Створюємо кастомну клавіатуру для конкретної біржі
         buttons = []
         row = []
 
-        # Додаємо кнопку "Всі продукти" першою
         all_products_label = localization.get_text("menu.all_products", lang)
-        all_products_text = all_products_label if current_product is None else f"✓ {all_products_label}"
-        row.append(InlineKeyboardButton(
-            text=all_products_text,
-            callback_data=f"select_product:ВСІ_ПРОДУКТИ_{provider}"
-        ))
+        all_products_text = (
+            all_products_label if current_product is None else f"✓ {all_products_label}"
+        )
+        row.append(
+            InlineKeyboardButton(
+                text=all_products_text, callback_data=f"select_product:ВСІ_ПРОДУКТИ_{provider}"
+            )
+        )
 
-        # Додаємо звичайні продукти
         for i, product in enumerate(AVAILABLE_PRODUCTS):
             # Localize "OTHER"
             display_product = product
             if product == "OTHER":
                 display_product = localization.get_text("menu.other_product", lang)
-            elif product == "Інший продукт": # Legacy fallback
+            elif product == "Інший продукт":  # Legacy fallback
                 display_product = localization.get_text("menu.other_product", lang)
                 product = "OTHER"
 
-            # Додаємо галочку якщо це поточний продукт
             text = f"✓ {display_product}" if product == current_product else display_product
 
-            row.append(InlineKeyboardButton(
-                text=text,
-                callback_data=f"select_product:{product}"
-            ))
+            row.append(InlineKeyboardButton(text=text, callback_data=f"select_product:{product}"))
 
-            # Створюємо новий рядок після 3 колонок
             if (i + 1) % 3 == 0:
                 buttons.append(row)
                 row = []
 
-        # Додаємо залишкові кнопки
         if row:
             buttons.append(row)
 
-        # Додаємо кнопку "Назад до біржі" в окремий рядок
         display_name = _format_exchange_display_name(provider)
-        buttons.append([
-            InlineKeyboardButton(
-                text=localization.get_text("nav.back_to_exchange", lang, exchange=display_name),
-                callback_data=f"back_to_exchange:{provider}"
-            )
-        ])
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    text=localization.get_text("nav.back_to_exchange", lang, exchange=display_name),
+                    callback_data=f"back_to_exchange:{provider}",
+                )
+            ]
+        )
 
         keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
 
         display_name = _format_exchange_display_name(provider)
         await callback.message.edit_text(
-            localization.get_text("menu.select_product_for_exchange_title", lang, exchange=display_name) + "\n\n" +
-            localization.get_text("menu.select_product_prompt", lang),
+            localization.get_text(
+                "menu.select_product_for_exchange_title", lang, exchange=display_name
+            )
+            + "\n\n"
+            + localization.get_text("menu.select_product_prompt", lang),
             reply_markup=keyboard,
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
         await callback.answer()
 
@@ -133,10 +129,9 @@ async def filter_exchange_product_handler(callback: CallbackQuery, state: FSMCon
 
 @router.callback_query(F.data == "filter_product")
 async def filter_product_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Показати вибір продукту."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
         await state.set_state(FilterStates.selecting_product)
 
@@ -154,29 +149,29 @@ async def filter_product_handler(callback: CallbackQuery, state: FSMContext) -> 
                 localized_products.append(p)
 
         # Note: product_selection_keyboard receives localized names, so we need to handle mapping back?
-        # Actually product_selection_keyboard uses the list for text AND callback_data. 
-        # If I pass localized text, callback will be "select_product:Інший продукт" (UA) or "select_product:Other product" (EN).
+        # Actually product_selection_keyboard uses the list for text AND callback_data.
+
         # This complicates `select_product_handler`.
         # BETTER: Update `product_selection_keyboard` in `filters.py` to handle this mapping or pass tuples (code, label).
         # But I already updated `filters.py` to take `products: List[str]`.
         # I should rely on `AVAILABLE_PRODUCTS` codes being consistent and handle localization inside `product_selection_keyboard`?
         # No, `product_selection_keyboard` iterates list.
-        
+
         # Let's construct custom keyboard here or pass codes and let `filters.py` localize?
         # I passed `lang` to `product_selection_keyboard` in `filters.py`.
-        # But `filters.py` iterates `products` and uses `text=product`. 
+        # But `filters.py` iterates `products` and uses `text=product`.
         # So if I pass ["BTC", "OTHER"], it shows "OTHER".
         # I need `filters.py` to check for "OTHER" and localize it.
         # I didn't add that check in `filters.py` update. I missed it.
-        
+
         # Workaround: Build keyboard manually here or pass localized strings and map in handler.
         # Or simpler: Pass `lang` to `product_selection_keyboard` (I did) and let IT handle "OTHER".
         # I need to re-update `filters.py` to handle "OTHER" -> localized text.
         # OR I pass a list of objects/tuples.
-        
+
         # Let's stick to modifying `filters.py` later or doing it locally here.
         # For now, I will generate the keyboard manually here to ensure correctness.
-        
+
         buttons = []
         row = []
         for i, product in enumerate(AVAILABLE_PRODUCTS):
@@ -187,34 +182,32 @@ async def filter_product_handler(callback: CallbackQuery, state: FSMContext) -> 
                 code = "OTHER"
             else:
                 code = product
-            
+
             text = f"✓ {display_text}" if code == current_product else display_text
-            
-            row.append(InlineKeyboardButton(
-                text=text,
-                callback_data=f"select_product:{code}"
-            ))
-            
+
+            row.append(InlineKeyboardButton(text=text, callback_data=f"select_product:{code}"))
+
             if (i + 1) % 3 == 0:
                 buttons.append(row)
                 row = []
-        
+
         if row:
             buttons.append(row)
-            
-        buttons.append([
-            InlineKeyboardButton(
-                text=localization.get_text("nav.back", lang),
-                callback_data="back_to_filters"
-            )
-        ])
-        
+
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    text=localization.get_text("nav.back", lang), callback_data="back_to_filters"
+                )
+            ]
+        )
+
         keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
 
         await callback.message.edit_text(
             localization.get_text("menu.select_product_title", lang),
             reply_markup=keyboard,
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
         await callback.answer()
 
@@ -225,73 +218,87 @@ async def filter_product_handler(callback: CallbackQuery, state: FSMContext) -> 
 
 @router.callback_query(F.data.startswith("select_product:"))
 async def select_product_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Застосувати вибір продукту."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
         product = callback.data.split(":", 1)[1]
 
         logger.info(f"🎯 Викликано select_product_handler з продуктом: {product}")
 
         if product.startswith("ВСІ_ПРОДУКТИ_"):
-            # Скинути фільтр продукту для конкретної біржі
-            provider = product.split("_")[-1]  # Отримуємо provider з "ВСІ_ПРОДУКТИ_{provider}"
+            provider = product.split("_")[-1]
             logger.info(f"🎯 Скидаємо фільтр продукту для {provider}")
-            await FilterStateManager.apply_filter(state, "product", None)  # Скидаємо фільтр
+            await FilterStateManager.apply_filter(state, "product", None)
             await callback.answer(localization.get_text("messages.all_products_shown", lang))
 
         elif product == "OTHER" or product == "Інший продукт":
-            # Перейти в стан введення продукту вручну
             await state.set_state(FilterStates.entering_product_manual)
             await callback.answer(localization.get_text("messages.enter_product", lang))
 
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=localization.get_text("nav.cancel", lang), callback_data="cancel_manual_product_input")]
-            ])
+            keyboard = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text=localization.get_text("nav.cancel", lang),
+                            callback_data="cancel_manual_product_input",
+                        )
+                    ]
+                ]
+            )
 
             await callback.message.edit_text(
-                localization.get_text("menu.manual_product_input_title", lang) + "\n\n" +
-                localization.get_text("menu.manual_product_input_prompt", lang) + "\n\n" +
-                localization.get_text("menu.manual_product_input_hint", lang),
+                localization.get_text("menu.manual_product_input_title", lang)
+                + "\n\n"
+                + localization.get_text("menu.manual_product_input_prompt", lang)
+                + "\n\n"
+                + localization.get_text("menu.manual_product_input_hint", lang),
                 reply_markup=keyboard,
-                parse_mode="HTML"
+                parse_mode="HTML",
             )
-            return  # Важливо: не продовжувати виконання після переходу в стан введення
+            return
         else:
-            # Звичайний вибір продукту
             await FilterStateManager.apply_filter(state, "product", product)
-            await callback.answer(localization.get_text("messages.product_selected", lang, product=product))
+            await callback.answer(
+                localization.get_text("messages.product_selected", lang, product=product)
+            )
 
-            # Перевірити поточну сторінку і оновити відповідне відображення
             data = await state.get_data()
             current_page = data.get("current_page")
 
             if current_page == "flexible_products":
-                # Оновити сторінку Flexible products
                 from bot.handlers.filtered_products import _display_flexible_products
-                await _display_flexible_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+                await _display_flexible_products(
+                    callback.message, state, page=1, is_callback=True, lang=lang
+                )
             elif current_page == "locked_products":
-                # Оновити сторінку Locked products
                 from bot.handlers.filtered_products import _display_locked_products
-                await _display_locked_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+                await _display_locked_products(
+                    callback.message, state, page=1, is_callback=True, lang=lang
+                )
             elif current_page == "all_products":
-                # Оновити сторінку All products
                 from bot.handlers.filtered_products import _display_all_products
-                await _display_all_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+                await _display_all_products(
+                    callback.message, state, page=1, is_callback=True, lang=lang
+                )
             elif current_page == "exchange_products":
-                # Оновити сторінку продуктів конкретної біржі
                 provider = data.get("provider")
                 if provider:
                     from bot.handlers.exchange_products import _display_exchange_products
-                    await _display_exchange_products(callback.message, state, provider, page=1, is_callback=True, lang=lang)
+
+                    await _display_exchange_products(
+                        callback.message, state, provider, page=1, is_callback=True, lang=lang
+                    )
                 else:
-                    # Якщо provider не знайдено, повернутись до списку по всіх біржах
                     from bot.handlers.filtered_products import show_product_all_exchanges
+
                     await show_product_all_exchanges(callback.message, state, product, lang=lang)
             else:
-                # Повернутись до списку з застосованим фільтром
                 from bot.handlers.filtered_products import show_product_all_exchanges
+
                 await show_product_all_exchanges(callback.message, state, product, lang=lang)
 
     except Exception as e:
@@ -301,19 +308,17 @@ async def select_product_handler(callback: CallbackQuery, state: FSMContext) -> 
 
 @router.callback_query(F.data == "filter_exchange")
 async def filter_exchange_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Показати вибір біржі."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
         await state.set_state(FilterStates.selecting_exchange)
-        
+
         filters = await FilterStateManager.get_current_filters(state)
         current_exchange = filters.get("exchange")
-        
-        # Отримати provider з state для кнопки "Назад"
+
         provider = data.get("provider")
-        
+
         # Manually build keyboard to handle localization of "OTHER"
         buttons = []
         for exchange in AVAILABLE_EXCHANGES:
@@ -322,46 +327,49 @@ async def filter_exchange_handler(callback: CallbackQuery, state: FSMContext) ->
             if exchange == "OTHER" or exchange == "Інші біржі":
                 display_text = localization.get_text("menu.other_exchange", lang)
                 code = "OTHER"
-            
-            text = f"✓ {display_text}" if code == current_exchange else display_text
-            buttons.append([
-                InlineKeyboardButton(
-                    text=text,
-                    callback_data=f"select_exchange:{code}"
-                )
-            ])
 
-        buttons.append([
-            InlineKeyboardButton(
-                text=localization.get_text("nav.all_exchanges", lang),
-                callback_data="select_exchange:all"
+            text = f"✓ {display_text}" if code == current_exchange else display_text
+            buttons.append(
+                [InlineKeyboardButton(text=text, callback_data=f"select_exchange:{code}")]
             )
-        ])
+
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    text=localization.get_text("nav.all_exchanges", lang),
+                    callback_data="select_exchange:all",
+                )
+            ]
+        )
 
         if provider:
-            buttons.append([
-                InlineKeyboardButton(
-                    text=localization.get_text("nav.back", lang),
-                    callback_data=f"back_to_exchange:{provider}"
-                )
-            ])
+            buttons.append(
+                [
+                    InlineKeyboardButton(
+                        text=localization.get_text("nav.back", lang),
+                        callback_data=f"back_to_exchange:{provider}",
+                    )
+                ]
+            )
         else:
-            buttons.append([
-                InlineKeyboardButton(
-                    text=localization.get_text("nav.back", lang),
-                    callback_data="back_to_filters"
-                )
-            ])
-            
+            buttons.append(
+                [
+                    InlineKeyboardButton(
+                        text=localization.get_text("nav.back", lang),
+                        callback_data="back_to_filters",
+                    )
+                ]
+            )
+
         keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-        
+
         await callback.message.edit_text(
             localization.get_text("menu.select_exchange_title", lang),
             reply_markup=keyboard,
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
         await callback.answer()
-        
+
     except Exception as e:
         logger.error(f"Помилка в filter_exchange_handler: {e}", exc_info=True)
         await callback.answer(localization.get_error_text("error.general", lang), show_alert=True)
@@ -369,61 +377,73 @@ async def filter_exchange_handler(callback: CallbackQuery, state: FSMContext) ->
 
 @router.callback_query(F.data.startswith("select_exchange:"))
 async def select_exchange_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Застосувати вибір біржі."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
         exchange = callback.data.split(":", 1)[1]
-        
+
         if exchange == "all":
             await FilterStateManager.apply_filter(state, "exchange", None)
             await callback.answer(localization.get_text("messages.all_exchanges_shown", lang))
         elif exchange == "OTHER" or exchange == "Інші біржі":
-            # Перейти в стан введення біржі вручну
             await state.set_state(FilterStates.entering_exchange_manual)
             await callback.answer(localization.get_text("messages.enter_exchange", lang))
 
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=localization.get_text("nav.cancel", lang), callback_data="cancel_manual_exchange_input")]
-            ])
+            keyboard = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text=localization.get_text("nav.cancel", lang),
+                            callback_data="cancel_manual_exchange_input",
+                        )
+                    ]
+                ]
+            )
 
             await callback.message.edit_text(
-                localization.get_text("menu.manual_exchange_input_title", lang) + "\n\n" +
-                localization.get_text("menu.manual_exchange_input_prompt", lang) + "\n\n" +
-                localization.get_text("menu.manual_exchange_input_hint", lang),
+                localization.get_text("menu.manual_exchange_input_title", lang)
+                + "\n\n"
+                + localization.get_text("menu.manual_exchange_input_prompt", lang)
+                + "\n\n"
+                + localization.get_text("menu.manual_exchange_input_hint", lang),
                 reply_markup=keyboard,
-                parse_mode="HTML"
+                parse_mode="HTML",
             )
-            return  # Важливо: не продовжувати виконання після переходу в стан введення
+            return
         else:
             await FilterStateManager.apply_filter(state, "exchange", exchange)
             display_name = _format_exchange_display_name(exchange)
-            await callback.answer(localization.get_text("messages.exchange_selected", lang, exchange=display_name))
-        
-        # Перевірити поточну сторінку і оновити відповідне відображення
+            await callback.answer(
+                localization.get_text("messages.exchange_selected", lang, exchange=display_name)
+            )
+
         data = await state.get_data()
         current_page = data.get("current_page")
-        
+
         if current_page == "flexible_products":
-            # Оновити сторінку Flexible products
             from bot.handlers.filtered_products import _display_flexible_products
-            await _display_flexible_products(callback.message, state, page=1, is_callback=True, lang=lang)
-        elif current_page == "locked_products":
-            # Оновити сторінку Locked products
-            from bot.handlers.filtered_products import _display_locked_products
-            await _display_locked_products(callback.message, state, page=1, is_callback=True, lang=lang)
-        elif current_page == "all_products":
-            # Оновити сторінку All products
-            from bot.handlers.filtered_products import _display_all_products
-            await _display_all_products(callback.message, state, page=1, is_callback=True, lang=lang)
-        else:
-            # TODO: Оновити відображення з новим фільтром
-            await callback.message.edit_text(
-                localization.get_text("messages.applying_filter", lang),
-                parse_mode="HTML"
+
+            await _display_flexible_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
             )
-        
+        elif current_page == "locked_products":
+            from bot.handlers.filtered_products import _display_locked_products
+
+            await _display_locked_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
+        elif current_page == "all_products":
+            from bot.handlers.filtered_products import _display_all_products
+
+            await _display_all_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
+        else:
+            await callback.message.edit_text(
+                localization.get_text("messages.applying_filter", lang), parse_mode="HTML"
+            )
+
     except Exception as e:
         logger.error(f"Помилка в select_exchange_handler: {e}", exc_info=True)
         await callback.answer(localization.get_error_text("error.general", lang), show_alert=True)
@@ -431,30 +451,28 @@ async def select_exchange_handler(callback: CallbackQuery, state: FSMContext) ->
 
 @router.callback_query(F.data == "filter_type" or F.data.startswith("filter_type:"))
 async def filter_type_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Показати вибір типу."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
         await state.set_state(FilterStates.selecting_type)
-        
+
         filters = await FilterStateManager.get_current_filters(state)
         current_type = filters.get("type")
-        
-        # Перевірити, чи є provider в callback_data
+
         provider = None
         if ":" in callback.data:
             provider = callback.data.split(":", 1)[1]
-            # Зберегти provider в state для збереження контексту
+
             await state.update_data(provider=provider)
-        
+
         await callback.message.edit_text(
             localization.get_text("menu.select_type_title", lang),
             reply_markup=type_selection_keyboard(current_type, provider=provider, lang=lang),
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
         await callback.answer()
-        
+
     except Exception as e:
         logger.error(f"Помилка в filter_type_handler: {e}", exc_info=True)
         await callback.answer(localization.get_error_text("error.general", lang), show_alert=True)
@@ -462,65 +480,75 @@ async def filter_type_handler(callback: CallbackQuery, state: FSMContext) -> Non
 
 @router.callback_query(F.data.startswith("select_type:"))
 async def select_type_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Застосувати вибір типу."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
-        # Обробляємо формати:
-        # "select_type:flexible" - загальний вибір
-        # "select_type:flexible:binance" - вибір для конкретної біржі
         parts = callback.data.split(":")
         type_value = parts[1]
         provider_from_callback = parts[2] if len(parts) > 2 else None
-        
+
         if type_value == "all":
             await FilterStateManager.apply_filter(state, "type", None)
             await callback.answer(localization.get_text("messages.all_types_shown", lang))
         else:
             await FilterStateManager.apply_filter(state, "type", type_value)
-            await callback.answer(localization.get_text("messages.type_selected", lang, type=type_value.title()))
-        
-        # Оновити відображення продуктів
+            await callback.answer(
+                localization.get_text("messages.type_selected", lang, type=type_value.title())
+            )
+
         data = await state.get_data()
         current_page = data.get("current_page")
-        
-        # Якщо provider вказано в callback, використовуємо його, інакше беремо зі state
+
         provider = provider_from_callback or data.get("provider")
-        
+
         if current_page == "exchange_products" or provider_from_callback:
-            # Якщо вказано provider в callback, це завжди сторінка біржі
             provider = provider or "binance"
             from bot.handlers.exchange_products import _display_exchange_products
-            await _display_exchange_products(callback.message, state, provider, page=1, is_callback=True, lang=lang)
+
+            await _display_exchange_products(
+                callback.message, state, provider, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "all_products":
             from bot.handlers.filtered_products import _display_all_products
-            await _display_all_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_all_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "flexible_products":
             from bot.handlers.filtered_products import _display_flexible_products
-            await _display_flexible_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_flexible_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "locked_products":
             from bot.handlers.filtered_products import _display_locked_products
-            await _display_locked_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_locked_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         else:
-            # Fallback до головного меню
             from bot.handlers.main_menu import show_main_page
+
             await show_main_page(callback.message, state, lang=lang)
-        
+
     except Exception as e:
         logger.error(f"Помилка в select_type_handler: {e}", exc_info=True)
         await callback.answer(localization.get_error_text("error.general", lang), show_alert=True)
 
 
-@router.callback_query(F.data.startswith("sort:") & ~F.data.startswith("sort:apy") & ~F.data.startswith("sort:popularity"))
+@router.callback_query(
+    F.data.startswith("sort:")
+    & ~F.data.startswith("sort:apy")
+    & ~F.data.startswith("sort:popularity")
+)
 async def sort_exchange_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Показати меню сортування для конкретної біржі."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
         provider = callback.data.split(":", 1)[1]
-        await state.update_data(provider=provider)  # Зберегти контекст біржі
+        await state.update_data(provider=provider)
 
         filters = await FilterStateManager.get_current_filters(state)
         current_sort = filters.get("sort_by", "popularity")
@@ -529,7 +557,7 @@ async def sort_exchange_handler(callback: CallbackQuery, state: FSMContext) -> N
         await callback.message.edit_text(
             localization.get_text("menu.select_sort_for_exchange", lang, exchange=display_name),
             reply_markup=sort_options_keyboard(current_sort, provider=provider, lang=lang),
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
         await callback.answer()
 
@@ -540,21 +568,19 @@ async def sort_exchange_handler(callback: CallbackQuery, state: FSMContext) -> N
 
 @router.callback_query(F.data == "sort_options")
 async def sort_options_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Показати опції сортування."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
         filters = await FilterStateManager.get_current_filters(state)
         current_sort = filters.get("sort_by", "popularity")
 
-        # Отримати provider з state для кнопки "Назад"
-        provider = data.get("provider", "binance")  # fallback на binance якщо не збережено
+        provider = data.get("provider", "binance")
 
         await callback.message.edit_text(
             localization.get_text("menu.select_sort_title", lang),
             reply_markup=sort_options_keyboard(current_sort, provider=provider, lang=lang),
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
         await callback.answer()
 
@@ -565,12 +591,10 @@ async def sort_options_handler(callback: CallbackQuery, state: FSMContext) -> No
 
 @router.callback_query(F.data.startswith("sort_options:"))
 async def exchange_sort_options_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Показати опції сортування для конкретної біржі."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
-        # Отримати provider з callback_data
         provider = callback.data.split(":", 1)[1]
 
         filters = await FilterStateManager.get_current_filters(state)
@@ -580,7 +604,7 @@ async def exchange_sort_options_handler(callback: CallbackQuery, state: FSMConte
         await callback.message.edit_text(
             localization.get_text("menu.select_sort_for_exchange", lang, exchange=display_name),
             reply_markup=sort_options_keyboard(current_sort, provider=provider, lang=lang),
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
         await callback.answer()
 
@@ -591,82 +615,62 @@ async def exchange_sort_options_handler(callback: CallbackQuery, state: FSMConte
 
 @router.callback_query(F.data.startswith("sort:"))
 async def apply_sort_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Застосувати сортування."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
         sort_type = callback.data.split(":", 1)[1]
-        
+
         if sort_type.endswith("_disabled"):
-            await callback.answer(localization.get_text("messages.feature_in_dev", lang), show_alert=True)
+            await callback.answer(
+                localization.get_text("messages.feature_in_dev", lang), show_alert=True
+            )
             return
-        
-        # Зберегти сортування та скинути сторінку
+
         await state.update_data(sort_by=sort_type, page=1)
-        
+
         sort_label = localization.get_text(f"menu.sort_{sort_type}", lang)
         # fallback if key missing
-        if "menu.sort_" in sort_label: 
-             sort_label = sort_type
+        if "menu.sort_" in sort_label:
+            sort_label = sort_type
 
         await callback.answer(localization.get_text("messages.sort_applied", lang, sort=sort_label))
-        
-        # Оновити відображення з новим сортуванням
+
         data = await state.get_data()
-        provider = data.get("provider")  # Отримати provider з state
+        provider = data.get("provider")
         current_page = data.get("current_page")
-        
+
         if current_page == "flexible_products":
-            # Оновити сторінку Flexible products
             from bot.handlers.filtered_products import _display_flexible_products
+
             await _display_flexible_products(
-                callback.message,
-                state,
-                page=1,
-                is_callback=True,
-                lang=lang
+                callback.message, state, page=1, is_callback=True, lang=lang
             )
         elif current_page == "locked_products":
-            # Оновити сторінку Locked products
             from bot.handlers.filtered_products import _display_locked_products
+
             await _display_locked_products(
-                callback.message,
-                state,
-                page=1,
-                is_callback=True,
-                lang=lang
+                callback.message, state, page=1, is_callback=True, lang=lang
             )
         elif current_page == "all_products":
-            # Оновити сторінку All products
             from bot.handlers.filtered_products import _display_all_products
+
             await _display_all_products(
-                callback.message,
-                state,
-                page=1,
-                is_callback=True,
-                lang=lang
+                callback.message, state, page=1, is_callback=True, lang=lang
             )
         elif provider:
-            # Користувач на сторінці біржі - оновити список продуктів біржі
             from bot.handlers.exchange_products import _display_exchange_products
+
             await _display_exchange_products(
-                callback.message,
-                state,
-                provider,
-                page=1,
-                is_callback=True,
-                lang=lang
+                callback.message, state, provider, page=1, is_callback=True, lang=lang
             )
         else:
-            # Якщо provider не знайдено в state, спробувати отримати з callback_data
-            # Це може статися, якщо користувач прийшов через старе меню
             logger.warning(f"⚠️ Provider не знайдено в state для сортування {sort_type}")
             await callback.message.edit_text(
                 localization.get_text("messages.sort_applied_select_exchange", lang),
-                parse_mode="HTML"
+                parse_mode="HTML",
             )
-        
+
     except Exception as e:
         logger.error(f"Помилка в apply_sort_handler: {e}", exc_info=True)
         await callback.answer(localization.get_error_text("error.general", lang), show_alert=True)
@@ -674,22 +678,18 @@ async def apply_sort_handler(callback: CallbackQuery, state: FSMContext) -> None
 
 @router.callback_query(F.data == "reset_filters" or F.data.startswith("reset_filters:"))
 async def reset_filters_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Скинути всі фільтри."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-        
+
     try:
-        # Перевірити, чи є provider в callback_data
         provider_from_callback = None
         if ":" in callback.data:
             provider_from_callback = callback.data.split(":", 1)[1]
-        
-        # Визначити provider (з callback або зі state)
+
         provider = provider_from_callback or data.get("provider")
         keep_exchange = provider is not None
         current_page = data.get("current_page")
-        
-        # Зберегти тип фільтру якщо ми на сторінці Flexible, Locked або All products
+
         keep_type = None
         if current_page == "flexible_products":
             keep_type = "flexible"
@@ -697,38 +697,44 @@ async def reset_filters_handler(callback: CallbackQuery, state: FSMContext) -> N
             keep_type = "locked"
         elif current_page == "all_products":
             keep_type = "all"
-        
+
         await FilterStateManager.reset_filters(state, keep_exchange=keep_exchange)
-        
-        # Якщо на сторінці Flexible, зберегти тип
+
         if keep_type:
             await FilterStateManager.apply_filter(state, "type", keep_type, reset_page=False)
-        
+
         await callback.answer(localization.get_text("messages.filters_reset", lang))
-        
-        # Перевірити поточну сторінку і оновити відповідне відображення
+
         if current_page == "exchange_products" or provider_from_callback:
-            # Оновити сторінку конкретної біржі
             provider = provider or "binance"
             from bot.handlers.exchange_products import _display_exchange_products
-            await _display_exchange_products(callback.message, state, provider, page=1, is_callback=True, lang=lang)
+
+            await _display_exchange_products(
+                callback.message, state, provider, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "flexible_products":
-            # Оновити сторінку Flexible products
             from bot.handlers.filtered_products import _display_flexible_products
-            await _display_flexible_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_flexible_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "locked_products":
-            # Оновити сторінку Locked products
             from bot.handlers.filtered_products import _display_locked_products
-            await _display_locked_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_locked_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "all_products":
-            # Оновити сторінку All products
             from bot.handlers.filtered_products import _display_all_products
-            await _display_all_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_all_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         else:
-            # Fallback - повернутись до головного меню
             from bot.handlers.main_menu import show_main_page
+
             await show_main_page(callback.message, state, lang=lang)
-        
+
     except Exception as e:
         logger.error(f"Помилка в reset_filters_handler: {e}", exc_info=True)
         await callback.answer(localization.get_error_text("error.general", lang), show_alert=True)
@@ -736,33 +742,25 @@ async def reset_filters_handler(callback: CallbackQuery, state: FSMContext) -> N
 
 @router.callback_query(F.data.startswith("back_to_exchange:"))
 async def back_to_exchange_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Повернутись до сторінки з продуктами біржі."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
         await callback.answer()
 
-        # Отримати назву біржі з callback_data
         provider = callback.data.split(":", 1)[1].lower()
 
         if provider:
-            # Зберегти provider в state для майбутніх використань
             await state.update_data(provider=provider)
-            
-            # Викликати функцію відображення продуктів біржі
+
             from bot.handlers.exchange_products import _display_exchange_products
+
             await _display_exchange_products(
-                callback.message, 
-                state, 
-                provider, 
-                page=1, 
-                is_callback=True,
-                lang=lang
+                callback.message, state, provider, page=1, is_callback=True, lang=lang
             )
         else:
-            # Якщо контекст не знайдено, повернути до головного меню
             from bot.handlers.main_menu import show_main_page
+
             await show_main_page(callback.message, state, lang=lang)
 
     except Exception as e:
@@ -772,36 +770,42 @@ async def back_to_exchange_handler(callback: CallbackQuery, state: FSMContext) -
 
 @router.callback_query(F.data == "back_from_sort")
 async def back_from_sort_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Повернутись до поточної сторінки після сортування."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
         await callback.answer()
 
-        # Отримати поточну сторінку
         current_page = data.get("current_page")
 
         if current_page == "flexible_products":
-            # Повернутись до сторінки Flexible products
             from bot.handlers.filtered_products import _display_flexible_products
-            await _display_flexible_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_flexible_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "locked_products":
-            # Повернутись до сторінки Locked products
             from bot.handlers.filtered_products import _display_locked_products
-            await _display_locked_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_locked_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "all_products":
-            # Повернутись до сторінки All products
             from bot.handlers.filtered_products import _display_all_products
-            await _display_all_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_all_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "exchange_products":
-            # Повернутись до сторінки продуктів біржі
             provider = data.get("provider", "binance")
             from bot.handlers.exchange_products import _display_exchange_products
-            await _display_exchange_products(callback.message, state, provider, page=1, is_callback=True, lang=lang)
+
+            await _display_exchange_products(
+                callback.message, state, provider, page=1, is_callback=True, lang=lang
+            )
         else:
-            # Якщо сторінка не визначена, повернутись до головного меню
             from bot.handlers.main_menu import show_main_page
+
             await show_main_page(callback.message, state, lang=lang)
 
     except Exception as e:
@@ -811,33 +815,42 @@ async def back_from_sort_handler(callback: CallbackQuery, state: FSMContext) -> 
 
 @router.callback_query(F.data == "back_to_filters")
 async def back_to_filters_handler(callback: CallbackQuery, state: FSMContext) -> None:
-    """Повернутись до поточної сторінки продуктів з меню фільтрів."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
         await callback.answer()
 
-        # Отримати поточну сторінку
         current_page = data.get("current_page")
 
         if current_page == "exchange_products":
-            # Повернутись до сторінки продуктів біржі
             provider = data.get("provider", "binance")
             from bot.handlers.exchange_products import _display_exchange_products
-            await _display_exchange_products(callback.message, state, provider, page=1, is_callback=True, lang=lang)
+
+            await _display_exchange_products(
+                callback.message, state, provider, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "all_products":
             from bot.handlers.filtered_products import _display_all_products
-            await _display_all_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_all_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "flexible_products":
             from bot.handlers.filtered_products import _display_flexible_products
-            await _display_flexible_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_flexible_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "locked_products":
             from bot.handlers.filtered_products import _display_locked_products
-            await _display_locked_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_locked_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         else:
-            # Якщо сторінка не визначена, повернутись до головного меню
             from bot.handlers.main_menu import show_main_page
+
             await show_main_page(callback.message, state, lang=lang)
 
     except Exception as e:
@@ -847,61 +860,61 @@ async def back_to_filters_handler(callback: CallbackQuery, state: FSMContext) ->
 
 @router.callback_query(F.data == "noop")
 async def noop_handler(callback: CallbackQuery) -> None:
-    """Нічого не робити (для неактивних кнопок)."""
     await callback.answer()
 
 
 @router.message(FilterStates.entering_exchange_manual, F.text)
 async def process_filter_manual_exchange_input(message: Message, state: FSMContext) -> None:
-    """Обробити введення біржі вручну в контексті фільтрів."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
         exchange_input = message.text.strip().lower()
 
-        # Базова валідація
         if not exchange_input:
             await message.answer(localization.get_error_text("error.invalid_input", lang))
             return
 
-        # Перевірка на допустимі символи (тільки букви, цифри, дефіси)
         import re
-        if not re.match(r'^[a-z0-9-]+$', exchange_input):
-            await message.answer(localization.get_error_text("error.invalid_input_chars", lang)) # key might be missing, need to ensure it exists or use generic
+
+        if not re.match(r"^[a-z0-9-]+$", exchange_input):
+            await message.answer(
+                localization.get_error_text("error.invalid_input_chars", lang)
+            )  # key might be missing, need to ensure it exists or use generic
             return
 
-        # Перевірка на довжину
         if len(exchange_input) > 20:
             await message.answer(localization.get_error_text("error.input_too_long", lang))
             return
 
-        # Зберегти введену біржу
         await FilterStateManager.apply_filter(state, "exchange", exchange_input)
-        await state.set_state(None)  # Вийти зі стану
+        await state.set_state(None)
 
-        await message.answer(localization.get_text("messages.exchange_selected", lang, exchange=exchange_input))
+        await message.answer(
+            localization.get_text("messages.exchange_selected", lang, exchange=exchange_input)
+        )
 
-        # Перевірити поточну сторінку і оновити відповідне відображення
         data = await state.get_data()
         current_page = data.get("current_page")
 
         if current_page == "flexible_products":
-            # Оновити сторінку Flexible products
             from bot.handlers.filtered_products import _display_flexible_products
+
             await _display_flexible_products(message, state, page=1, is_callback=False, lang=lang)
         elif current_page == "locked_products":
-            # Оновити сторінку Locked products
             from bot.handlers.filtered_products import _display_locked_products
+
             await _display_locked_products(message, state, page=1, is_callback=False, lang=lang)
         elif current_page == "all_products":
-            # Оновити сторінку All products
             from bot.handlers.filtered_products import _display_all_products
+
             await _display_all_products(message, state, page=1, is_callback=False, lang=lang)
         else:
-            # Повернутись до списку з застосованим фільтром
             from bot.handlers.filtered_products import show_product_all_exchanges
-            await show_product_all_exchanges(message, state, data.get("product_filter"), lang=lang) # Assuming product_filter is stored in data or derived
+
+            await show_product_all_exchanges(
+                message, state, data.get("product_filter"), lang=lang
+            )  # Assuming product_filter is stored in data or derived
 
     except Exception as e:
         logger.error(f"Помилка в process_filter_manual_exchange_input: {e}", exc_info=True)
@@ -910,28 +923,36 @@ async def process_filter_manual_exchange_input(message: Message, state: FSMConte
 
 @router.callback_query(F.data == "cancel_manual_exchange_input")
 async def cancel_filter_manual_exchange_input(callback: CallbackQuery, state: FSMContext) -> None:
-    """Скасувати введення біржі вручну в контексті фільтрів."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
-        await state.set_state(None)  # Вийти зі стану
+        await state.set_state(None)
         await callback.answer(localization.get_text("messages.cancelled", lang))
 
-        # Повернутися до поточної сторінки
         current_page = data.get("current_page")
 
         if current_page == "flexible_products":
             from bot.handlers.filtered_products import _display_flexible_products
-            await _display_flexible_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_flexible_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "locked_products":
             from bot.handlers.filtered_products import _display_locked_products
-            await _display_locked_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_locked_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         elif current_page == "all_products":
             from bot.handlers.filtered_products import _display_all_products
-            await _display_all_products(callback.message, state, page=1, is_callback=True, lang=lang)
+
+            await _display_all_products(
+                callback.message, state, page=1, is_callback=True, lang=lang
+            )
         else:
             from bot.handlers.main_menu import show_main_page
+
             await show_main_page(callback.message, state, lang=lang)
 
     except Exception as e:
@@ -941,58 +962,64 @@ async def cancel_filter_manual_exchange_input(callback: CallbackQuery, state: FS
 
 @router.message(FilterStates.entering_product_manual, F.text)
 async def process_filter_manual_product_input(message: Message, state: FSMContext) -> None:
-    """Обробити введення продукту вручну в контексті фільтрів."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
         product_input = message.text.strip().upper()
 
-        # Базова валідація
         if not product_input:
             await message.answer(localization.get_error_text("error.product_input_empty", lang))
             return
 
-        # Перевірка на допустимі символи (тільки букви, цифри, дефіси)
         import re
-        if not re.match(r'^[A-Z0-9-]+$', product_input):
-            await message.answer(localization.get_error_text("error.product_input_invalid_chars", lang))
+
+        if not re.match(r"^[A-Z0-9-]+$", product_input):
+            await message.answer(
+                localization.get_error_text("error.product_input_invalid_chars", lang)
+            )
             return
 
-        # Перевірка на довжину
         if len(product_input) > 20:
             await message.answer(localization.get_error_text("error.product_input_too_long", lang))
             return
 
-        # Зберегти введений продукт
         await FilterStateManager.apply_filter(state, "product", product_input)
-        await state.set_state(None)  # Вийти зі стану
+        await state.set_state(None)
 
-        await message.answer(localization.get_text("messages.product_selected", lang, product=product_input))
+        await message.answer(
+            localization.get_text("messages.product_selected", lang, product=product_input)
+        )
 
-        # Перевірити поточну сторінку і оновити відповідне відображення
         current_page = data.get("current_page")
 
         if current_page == "flexible_products":
             from bot.handlers.filtered_products import _display_flexible_products
+
             await _display_flexible_products(message, state, page=1, is_callback=False, lang=lang)
         elif current_page == "locked_products":
             from bot.handlers.filtered_products import _display_locked_products
+
             await _display_locked_products(message, state, page=1, is_callback=False, lang=lang)
         elif current_page == "all_products":
             from bot.handlers.filtered_products import _display_all_products
+
             await _display_all_products(message, state, page=1, is_callback=False, lang=lang)
         elif current_page == "exchange_products":
-            # Повернутись до сторінки продуктів конкретної біржі з новим фільтром
             provider = data.get("provider")
             if provider:
                 from bot.handlers.exchange_products import _display_exchange_products
-                await _display_exchange_products(message, state, provider, page=1, is_callback=False, lang=lang)
+
+                await _display_exchange_products(
+                    message, state, provider, page=1, is_callback=False, lang=lang
+                )
             else:
                 from bot.handlers.filtered_products import show_product_all_exchanges
+
                 await show_product_all_exchanges(message, state, product_input, lang=lang)
         else:
             from bot.handlers.filtered_products import show_product_all_exchanges
+
             await show_product_all_exchanges(message, state, product_input, lang=lang)
 
     except Exception as e:
@@ -1002,38 +1029,54 @@ async def process_filter_manual_product_input(message: Message, state: FSMContex
 
 @router.callback_query(F.data == "cancel_manual_product_input")
 async def cancel_filter_manual_product_input(callback: CallbackQuery, state: FSMContext) -> None:
-    """Скасувати введення продукту вручну в контексті фільтрів."""
     data = await state.get_data()
     lang = data.get("lang", "ua")
-    
+
     try:
-        await state.set_state(None)  # Вийти зі стану
+        await state.set_state(None)
         await callback.answer(localization.get_text("messages.cancelled", lang))
 
-        # Повернутися до поточної сторінки з поточною сторінкою користувача
         current_page = data.get("current_page")
-        current_page_num = data.get("page", 1)  # Отримуємо поточну сторінку користувача
+        current_page_num = data.get("page", 1)
 
         if current_page == "flexible_products":
             from bot.handlers.filtered_products import _display_flexible_products
-            await _display_flexible_products(callback.message, state, page=current_page_num, is_callback=True, lang=lang)
+
+            await _display_flexible_products(
+                callback.message, state, page=current_page_num, is_callback=True, lang=lang
+            )
         elif current_page == "locked_products":
             from bot.handlers.filtered_products import _display_locked_products
-            await _display_locked_products(callback.message, state, page=current_page_num, is_callback=True, lang=lang)
+
+            await _display_locked_products(
+                callback.message, state, page=current_page_num, is_callback=True, lang=lang
+            )
         elif current_page == "all_products":
             from bot.handlers.filtered_products import _display_all_products
-            await _display_all_products(callback.message, state, page=current_page_num, is_callback=True, lang=lang)
+
+            await _display_all_products(
+                callback.message, state, page=current_page_num, is_callback=True, lang=lang
+            )
         elif current_page == "exchange_products":
-            # Повернутись до таблиці продуктів конкретної біржі з поточними фільтрами
             provider = data.get("provider")
             if provider:
                 from bot.handlers.exchange_products import _display_exchange_products
-                await _display_exchange_products(callback.message, state, provider, page=current_page_num, is_callback=True, lang=lang)
+
+                await _display_exchange_products(
+                    callback.message,
+                    state,
+                    provider,
+                    page=current_page_num,
+                    is_callback=True,
+                    lang=lang,
+                )
             else:
                 from bot.handlers.main_menu import show_main_page
+
                 await show_main_page(callback.message, state, lang=lang)
         else:
             from bot.handlers.main_menu import show_main_page
+
             await show_main_page(callback.message, state, lang=lang)
 
     except Exception as e:

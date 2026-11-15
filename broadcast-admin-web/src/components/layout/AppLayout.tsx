@@ -1,9 +1,10 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { useApiKey } from "../../context/ApiKeyContext";
+import { useApiKey } from "../../context/apiKey";
 import { ExitIcon } from "@radix-ui/react-icons";
 
 const NAV_LINKS = [
   { to: "/", label: "Dashboard" },
+  ...(import.meta.env.VITE_PREVIEW_MODE === "true" ? [{ to: "/catalogue", label: "Earn catalogue" }] : []),
   { to: "/broadcasts", label: "Broadcasts" },
   { to: "/broadcasts/create", label: "Create broadcast" },
 ];
@@ -27,11 +28,12 @@ export const AppLayout = () => {
             </NavLink>
           ))}
         </nav>
-        <button className="sidebar__logout" onClick={clearApiKey}>
+        {import.meta.env.VITE_PREVIEW_MODE !== "true" && <button className="sidebar__logout" onClick={clearApiKey}>
           <ExitIcon /> Change API key
-        </button>
+        </button>}
       </aside>
       <main className="content">
+        {import.meta.env.VITE_PREVIEW_MODE === "true" && <p className="preview-banner" role="status">Interactive preview · Synthetic rates · Broadcasts stay as drafts · No messages are sent</p>}
         <Outlet />
       </main>
     </div>

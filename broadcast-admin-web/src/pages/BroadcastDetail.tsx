@@ -29,6 +29,7 @@ export const BroadcastDetailPage = () => {
         <p>Inspect configuration, content and high-level delivery stats.</p>
       </header>
 
+      {detailQuery.isError && <p role="alert" className="error">Could not load this broadcast. Check its ID and your API connection.</p>}
       {detailQuery.isLoading && <div className="card placeholder">Loading broadcast…</div>}
 
       {detail && (

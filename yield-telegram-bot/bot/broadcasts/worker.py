@@ -1,7 +1,3 @@
-"""
-Асинхронний worker для обробки ручних розсилок.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -28,8 +24,6 @@ from bot.utils.metrics import (
 
 
 class BroadcastWorker:
-    """Worker який читає чергу та розсилає повідомлення."""
-
     def __init__(
         self,
         *,
@@ -112,7 +106,6 @@ class BroadcastWorker:
             finally:
                 BROADCAST_IN_PROGRESS.dec()
 
-            # Якщо немає більше pending, позначаємо як completed
             remaining_stmt = select(BroadcastRecipient.id).where(
                 BroadcastRecipient.broadcast_id == broadcast_id,
                 BroadcastRecipient.status == "pending",
@@ -161,7 +154,9 @@ class BroadcastWorker:
             recipient.status = "failed"
             recipient.error_code = type(exc).__name__
             BROADCAST_FAILURES_TOTAL.inc()
-            logger.exception("Failed to deliver broadcast %s to %s", broadcast.id, recipient.telegram_id)
+            logger.exception(
+                "Failed to deliver broadcast %s to %s", broadcast.id, recipient.telegram_id
+            )
         finally:
             recipient.attempts += 1
             recipient.last_attempt_at = datetime.now(UTC)
@@ -176,4 +171,3 @@ def build_worker(bot: Bot) -> BroadcastWorker:
     queue = BroadcastQueue()
     sender = BroadcastSender(bot)
     return BroadcastWorker(queue=queue, sender=sender)
-
