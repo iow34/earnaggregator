@@ -165,7 +165,7 @@ class UserAnalyticsDB(Base):
     user_agent = Column(String(500), nullable=True, comment="User Agent")
 
     __table_args__ = (
-        Index("idx_user_timestamp", "user_id", "timestamp"),
+        Index("idx_user_analytics_user_timestamp", "user_id", "timestamp"),
         Index("idx_action_type", "action_type", "timestamp"),
         Index("idx_symbol_provider", "symbol", "provider"),
         Index("idx_user_analytics_timestamp", "timestamp"),

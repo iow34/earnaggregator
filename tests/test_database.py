@@ -64,3 +64,15 @@ async def test_fresh_schemas_catalogue_and_hashed_admin_keys():
             await conn.run_sync(BotBase.metadata.drop_all)
             await conn.run_sync(DataBase.metadata.drop_all)
         await engine.dispose()
+
+
+def test_index_names_are_unique_across_both_service_schemas():
+    from collections import Counter
+
+    names = Counter(
+        index.name
+        for base in (DataBase, BotBase)
+        for table in base.metadata.tables.values()
+        for index in table.indexes
+    )
+    assert all(count == 1 for count in names.values())

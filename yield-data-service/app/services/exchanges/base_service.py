@@ -21,16 +21,12 @@ class BaseExchangeService(ABC):
         self.api_secret = getattr(settings, f"{exchange_name}_api_secret", "")
 
         if self.api_key:
-            logger.info(
-                f"🔑 {exchange_name} API Key: {self.api_key[:10]}... (довжина: {len(self.api_key)})"
-            )
+            logger.info(f"🔑 {exchange_name} API Key: configured")
         else:
             logger.warning(f"⚠️ {exchange_name} API Key: не встановлено")
 
         if self.api_secret:
-            logger.info(
-                f"🔑 {exchange_name} API Secret: {'*' * 10}... (довжина: {len(self.api_secret)})"
-            )
+            logger.info(f"🔑 {exchange_name} API Secret: configured")
         else:
             logger.warning(f"⚠️ {exchange_name} API Secret: не встановлено")
 

@@ -1,9 +1,29 @@
 import logging
+import re
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 from typing import Optional
 
 from bot.config import settings
+
+
+class SecretRedactingFormatter(logging.Formatter):
+    """Redact credentials from messages and formatted exception tracebacks."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        rendered = super().format(record)
+        for name, value in settings.model_dump().items():
+            if (
+                any(
+                    part in name.lower()
+                    for part in ("password", "secret", "token", "api_key", "passphrase")
+                )
+                and isinstance(value, str)
+                and len(value) >= 8
+            ):
+                rendered = rendered.replace(value, "[REDACTED]")
+        rendered = re.sub(r"(://[^\s:/]+:)[^\s@]+@", r"\1[REDACTED]@", rendered)
+        return rendered
 
 
 def setup_logger(name: str = "yield_telegram_bot", level: Optional[str] = None) -> logging.Logger:
@@ -27,7 +47,7 @@ def setup_logger(name: str = "yield_telegram_bot", level: Optional[str] = None) 
     logs_dir = Path("logs")
     logs_dir.mkdir(exist_ok=True)
 
-    fmt = logging.Formatter(
+    fmt = SecretRedactingFormatter(
         fmt="[%(asctime)s] %(levelname)s - %(name)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )

@@ -108,7 +108,7 @@ class UserAction(Base):
     latency_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     __table_args__ = (
-        Index("idx_user_timestamp", "user_id", "timestamp"),
+        Index("idx_user_actions_user_timestamp", "user_id", "timestamp"),
         Index("idx_action_timestamp", "action_type", "timestamp"),
         Index("idx_session_timestamp", "session_id", "timestamp"),
     )
