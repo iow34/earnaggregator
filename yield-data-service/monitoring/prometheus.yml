@@ -1,7 +1,7 @@
 
 global:
-  scrape_interval: 30s # Збір метрик кожні 30 секунд
-  evaluation_interval: 30s # Оцінка правил кожні 30 секунд
+  scrape_interval: 30s # Collect metrics every 30 seconds
+  evaluation_interval: 30s # Evaluate alert rules every 30 seconds
   external_labels:
     monitor: "earnaggregator"
     environment: "production"

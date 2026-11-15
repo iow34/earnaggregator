@@ -1,5 +1,5 @@
--- Створення таблиці top_products для зберігання TOP 10 трендових монет
--- Дані оновлюються з CoinGecko, доповнені найкращим flexible APY з yield_products
+-- Store the ten highest-ranked trending assets.
+-- Combine CoinGecko popularity with the best flexible APY from yield_products.
 
 CREATE TABLE IF NOT EXISTS top_products (
     id SERIAL PRIMARY KEY,
@@ -14,16 +14,16 @@ CREATE TABLE IF NOT EXISTS top_products (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Унікальний запис на кожну позицію
+-- Keep one record per rank.
 ALTER TABLE top_products
     ADD CONSTRAINT unique_top_products_rank UNIQUE (rank);
 
--- Індекси
+-- Query indexes.
 CREATE INDEX IF NOT EXISTS idx_top_products_rank ON top_products(rank);
 CREATE INDEX IF NOT EXISTS idx_top_products_symbol ON top_products(symbol);
 CREATE INDEX IF NOT EXISTS idx_top_products_updated_at ON top_products(updated_at);
 
--- Тригер для автооновлення updated_at
+-- Update the modification timestamp automatically.
 CREATE OR REPLACE FUNCTION update_top_products_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
